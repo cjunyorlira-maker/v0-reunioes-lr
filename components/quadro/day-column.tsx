@@ -23,10 +23,10 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
 
   return (
     <div
-      className={`w-[280px] flex-shrink-0 bg-[#0f0f0f] border rounded-xl p-3.5 min-h-[420px] ${
+      className={`w-[280px] flex-shrink-0 bg-black/20 backdrop-blur-sm border rounded-xl p-3.5 min-h-[420px] ${
         isToday 
-          ? "border-[rgba(212,175,55,0.4)] shadow-[0_0_15px_rgba(212,175,55,0.1)]" 
-          : "border-[rgba(212,175,55,0.1)] hover:border-[rgba(212,175,55,0.2)]"
+          ? "border-[rgba(212,175,55,0.4)] shadow-[0_0_20px_rgba(212,175,55,0.15)]" 
+          : "border-[rgba(212,175,55,0.12)] hover:border-[rgba(212,175,55,0.25)]"
       }`}
     >
       {/* Day header */}

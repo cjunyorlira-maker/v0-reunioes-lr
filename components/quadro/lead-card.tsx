@@ -29,7 +29,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.25)] transition-all cursor-pointer group"
+      className="bg-white/[0.03] backdrop-blur-sm border border-[rgba(212,175,55,0.12)] rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:bg-white/[0.05] transition-all cursor-pointer group"
       onClick={() => onEdit(lead)}
     >
       <div className="p-3.5">
