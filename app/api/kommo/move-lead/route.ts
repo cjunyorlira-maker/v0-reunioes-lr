@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     // IDs dos campos personalizados no Kommo
     const CAMPO_ATENDENTE_ID = 1026812
     const CAMPO_DATA_NAO_VIERAM_ID = 1026052
+    const CAMPO_DATA_VIERAM_ID = 1026050
 
     if (!status || !["veio", "nao", "remarcou"].includes(status)) {
       return NextResponse.json(
@@ -168,15 +169,29 @@ export async function POST(request: NextRequest) {
     // Prepara campos personalizados
     const customFields: Array<{ field_id: number; values: Array<{ value: string | number }> }> = []
     
-    // Se for "veio" e tiver atendente, adiciona ao campo 1026812
-    if (status === "veio" && atendente) {
-      customFields.push({
-        field_id: CAMPO_ATENDENTE_ID,
-        values: [{ value: atendente }]
-      })
+    // Se for "veio", adiciona atendente e data da reunião
+    if (status === "veio") {
+      // Adiciona atendente se tiver
+      if (atendente) {
+        customFields.push({
+          field_id: CAMPO_ATENDENTE_ID,
+          values: [{ value: atendente }]
+        })
+      }
+      
+      // Adiciona data da reunião no campo Vieram (1026050)
+      if (data_reuniao) {
+        const dataObj = new Date(`${data_reuniao}T12:00:00`)
+        const timestamp = Math.floor(dataObj.getTime() / 1000)
+        
+        customFields.push({
+          field_id: CAMPO_DATA_VIERAM_ID,
+          values: [{ value: timestamp }]
+        })
+      }
     }
     
-    // Se for "nao" (faltou) ou "remarcou", preenche o campo de data com a data da reunião
+    // Se for "nao" (faltou) ou "remarcou", preenche o campo de data Não Vieram
     if ((status === "nao" || status === "remarcou") && data_reuniao) {
       // Kommo espera timestamp Unix (segundos) para campos de data
       // Converte "YYYY-MM-DD" para timestamp
