@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     const updateData: { 
       status_id: number
       responsible_user_id?: number
-      custom_fields_values?: Array<{ field_id: number; values: Array<{ value: string }> }>
+      custom_fields_values?: Array<{ field_id: number; values: Array<{ value: string | number }> }>
     } = {
       status_id: statusId,
     }
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Prepara campos personalizados
-    const customFields: Array<{ field_id: number; values: Array<{ value: string }> }> = []
+    const customFields: Array<{ field_id: number; values: Array<{ value: string | number }> }> = []
     
     // Se for "veio" e tiver atendente, adiciona ao campo 1026812
     if (status === "veio" && atendente) {
@@ -178,20 +178,14 @@ export async function POST(request: NextRequest) {
     
     // Se for "nao" (faltou) ou "remarcou", preenche o campo de data com a data da reunião
     if ((status === "nao" || status === "remarcou") && data_reuniao) {
-      // Converte a data para formato ISO 8601 completo que o Kommo espera (Y-m-d\TH:i:sP)
-      // Exemplo: "2026-04-06" -> "2026-04-06T12:00:00-03:00"
-      let dataFormatada = data_reuniao
-      if (data_reuniao.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // Se é apenas data (YYYY-MM-DD), adiciona hora e timezone
-        dataFormatada = `${data_reuniao}T12:00:00-03:00`
-      } else if (!data_reuniao.includes("T")) {
-        // Se não tem T, tenta formatar
-        dataFormatada = `${data_reuniao}T12:00:00-03:00`
-      }
+      // Kommo espera timestamp Unix (segundos) para campos de data
+      // Converte "YYYY-MM-DD" para timestamp
+      const dataObj = new Date(`${data_reuniao}T12:00:00`)
+      const timestamp = Math.floor(dataObj.getTime() / 1000)
       
       customFields.push({
         field_id: CAMPO_DATA_NAO_VIERAM_ID,
-        values: [{ value: dataFormatada }]
+        values: [{ value: timestamp }]
       })
     }
     
