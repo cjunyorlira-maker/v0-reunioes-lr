@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
+import { AnimatedBackground } from '@/components/ui/animated-background'
 import './globals.css'
 
 const dmSans = DM_Sans({ 
@@ -36,7 +37,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${dmSans.variable} ${playfair.variable} font-sans antialiased`}>
-        {children}
+        <AnimatedBackground />
+        <div className="relative z-10">
+          {children}
+        </div>
         <Toaster />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
