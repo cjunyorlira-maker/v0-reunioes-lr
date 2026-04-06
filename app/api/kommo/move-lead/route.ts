@@ -12,7 +12,7 @@ const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, kommo_lead_id, status, nome } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome, responsavel_id } = await request.json()
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Prioriza kommo_lead_id (ID numérico do lead), depois kommo_id (se for numérico)
     let leadId: number | null = null
+    let foundResponsibleUserId: number | null = null
     
     if (kommo_lead_id && !isNaN(Number(kommo_lead_id))) {
       leadId = Number(kommo_lead_id)
@@ -68,10 +69,11 @@ export async function POST(request: NextRequest) {
           if (searchData._embedded?.leads?.length > 0) {
             // Pega o lead mais recente (maior ID) na etapa correta
             const leads = searchData._embedded.leads
-            const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+            const latestLead = leads.reduce((prev: { id: number; responsible_user_id?: number }, curr: { id: number; responsible_user_id?: number }) => 
               curr.id > prev.id ? curr : prev
             , leads[0])
             leadId = latestLead.id
+            foundResponsibleUserId = latestLead.responsible_user_id || null
           }
         }
       }
@@ -115,14 +117,36 @@ export async function POST(request: NextRequest) {
 
         // Pega o lead mais recente (maior ID)
         const leads = fallbackData._embedded.leads
-        const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+        const latestLead = leads.reduce((prev: { id: number; responsible_user_id?: number }, curr: { id: number; responsible_user_id?: number }) => 
           curr.id > prev.id ? curr : prev
         , leads[0])
         leadId = latestLead.id
+        foundResponsibleUserId = latestLead.responsible_user_id || null
       }
+    }
+    
+    // Usa o responsible_user_id encontrado na busca, se não foi passado
+    const finalResponsibleUserId = responsavel_id || foundResponsibleUserId
+
+    // Validação final: leadId deve ser um número
+    if (!leadId || isNaN(Number(leadId))) {
+      return NextResponse.json(
+        { error: `Não foi possível encontrar o ID numérico do lead "${nome}"` },
+        { status: 404 }
+      )
     }
 
     const statusId = ETAPAS[status as keyof typeof ETAPAS]
+    
+    // Prepara os dados para atualizar
+    const updateData: { status_id: number; responsible_user_id?: number } = {
+      status_id: statusId,
+    }
+    
+    // Se tiver responsible_user_id, adiciona (necessário para etapa "Vieram")
+    if (finalResponsibleUserId && !isNaN(Number(finalResponsibleUserId))) {
+      updateData.responsible_user_id = Number(finalResponsibleUserId)
+    }
 
     // Faz a requisição PATCH para a API do Kommo
     const response = await fetch(
@@ -133,9 +157,7 @@ export async function POST(request: NextRequest) {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          status_id: statusId,
-        }),
+        body: JSON.stringify(updateData),
       }
     )
 
