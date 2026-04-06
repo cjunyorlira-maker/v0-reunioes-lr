@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     
     if (leadDetails.responsible_user_id) {
       const userResponse = await fetch(
-        `https://${subdomain}.kommo.com/api/v4/users/${leadDetails.responsible_user_id}`,
+        `https://${subdomain}.kommo.com/api/v4/users/${leadDetails.responsible_user_id}?with=group`,
         {
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -116,10 +116,17 @@ export async function POST(request: NextRequest) {
       
       if (userResponse.ok) {
         const user = await userResponse.json()
+        console.log("[v0] Dados do usuário Kommo:", JSON.stringify(user, null, 2))
         responsavelNome = user.name || "Não informado"
         responsavelId = user.id?.toString() || null
         fotoResponsavel = user.avatar || null
-        equipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+        // Tenta várias formas de pegar a equipe
+        equipe = user._embedded?.groups?.[0]?.name || 
+                 user.group?.name || 
+                 user.rights?.group_name ||
+                 user.group_id?.toString() ||
+                 "Sem equipe"
+        console.log("[v0] Equipe encontrada:", equipe)
       }
     }
     

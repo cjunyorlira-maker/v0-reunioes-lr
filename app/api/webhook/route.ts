@@ -47,7 +47,12 @@ async function getKommoGroups() {
     
     if (response.ok) {
       const data = await response.json()
-      return data._embedded?.users || []
+      const users = data._embedded?.users || []
+      // Log para debug
+      if (users.length > 0) {
+        console.log("[v0] Exemplo de usuário com groups:", JSON.stringify(users[0], null, 2))
+      }
+      return users
     }
   } catch (error) {
     console.error("Erro ao buscar grupos Kommo:", error)
@@ -263,10 +268,16 @@ export async function POST(request: NextRequest) {
           const user = users.find((u: { id: number }) => u.id === responsibleUserId)
           
           if (user) {
+            console.log("[v0] Usuário encontrado:", user.name, "Groups:", JSON.stringify(user._embedded?.groups || user.group || "sem grupo"))
             responsavelNome = user.name || "Não informado"
             responsavelId = user.id?.toString() || null
             fotoResponsavel = user.avatar || null // URL da foto do avatar
-            equipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+            // Tenta várias formas de pegar a equipe
+            equipe = user._embedded?.groups?.[0]?.name || 
+                     user.group?.name ||
+                     user.rights?.group_name ||
+                     (user.group_id ? `Equipe ${user.group_id}` : null) ||
+                     "Sem equipe"
           }
         }
         
