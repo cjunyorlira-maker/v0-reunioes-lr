@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -36,13 +37,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[rgba(212,175,55,0.02)] via-transparent to-[rgba(212,175,55,0.01)] pointer-events-none" />
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated Background */}
+      <AnimatedBackground />
       
-      <div className="relative w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md">
         {/* Card */}
-        <div className="bg-[#111111] border border-[rgba(212,175,55,0.15)] rounded-2xl p-8 shadow-xl">
+        <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] backdrop-blur-xl border border-[rgba(212,175,55,0.2)] rounded-2xl p-8 shadow-2xl shadow-black/50">
           {/* Decorative line */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent rounded-full" />
           
@@ -81,7 +82,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#0a0a0a] border-[rgba(212,175,55,0.2)] text-[#f5f0e8] placeholder:text-[#5a5040] focus:border-[#d4af37] focus:ring-[#d4af37]/20 h-12"
+                className="bg-black/40 border-[rgba(212,175,55,0.25)] text-[#f5f0e8] placeholder:text-[#5a5040] focus:border-[#d4af37] focus:ring-[#d4af37]/20 h-12 backdrop-blur-sm"
               />
             </div>
             
@@ -96,7 +97,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#0a0a0a] border-[rgba(212,175,55,0.2)] text-[#f5f0e8] placeholder:text-[#5a5040] focus:border-[#d4af37] focus:ring-[#d4af37]/20 h-12"
+                className="bg-black/40 border-[rgba(212,175,55,0.25)] text-[#f5f0e8] placeholder:text-[#5a5040] focus:border-[#d4af37] focus:ring-[#d4af37]/20 h-12 backdrop-blur-sm"
               />
             </div>
             
