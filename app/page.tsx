@@ -6,6 +6,8 @@ import { Header } from "@/components/quadro/header"
 import { StatsCards } from "@/components/quadro/stats-cards"
 import { DayColumn } from "@/components/quadro/day-column"
 import { NewLeadModal } from "@/components/quadro/new-lead-modal"
+import { EditLeadModal } from "@/components/quadro/edit-lead-modal"
+import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
@@ -14,6 +16,8 @@ import type { WeekDay } from "@/lib/types"
 export default function QuadroReunioes() {
   const [weekOffset, setWeekOffset] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [mounted, setMounted] = useState(false)
   const [weekDays, setWeekDays] = useState<WeekDay[]>([])
   const [weekLabel, setWeekLabel] = useState("")
@@ -66,6 +70,28 @@ export default function QuadroReunioes() {
     }
   }
 
+  const handleEdit = (lead: Lead) => {
+    setEditingLead(lead)
+    setIsEditModalOpen(true)
+  }
+
+  const handleEditSubmit = async (id: string, data: {
+    nome: string
+    data: string
+    hora: string
+    responsavel: string
+    tipo: string
+    kommo_id?: string
+  }) => {
+    try {
+      await updateLead(id, data)
+      toast.success("Lead atualizado com sucesso!")
+    } catch {
+      toast.error("Erro ao atualizar lead")
+      throw new Error("Erro ao atualizar lead")
+    }
+  }
+
   const handleCreateLead = async (data: {
     nome: string
     data: string
@@ -112,6 +138,7 @@ export default function QuadroReunioes() {
                 leads={leads}
                 onUpdateStatus={handleUpdateStatus}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))}
           </div>
@@ -123,6 +150,16 @@ export default function QuadroReunioes() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateLead}
         defaultDate={dateRange.start}
+      />
+
+      <EditLeadModal
+        open={isEditModalOpen}
+        lead={editingLead}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingLead(null)
+        }}
+        onSubmit={handleEditSubmit}
       />
     </div>
   )

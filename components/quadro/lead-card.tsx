@@ -7,6 +7,7 @@ interface LeadCardProps {
   lead: Lead
   onUpdateStatus: (id: string, status: "veio" | "nao" | "pending") => void
   onDelete: (id: string) => void
+  onEdit: (lead: Lead) => void
 }
 
 function getTipoClass(tipo: string) {
@@ -16,7 +17,7 @@ function getTipoClass(tipo: string) {
   return "bg-[rgba(96,165,250,0.08)] text-[#60a5fa] border-[rgba(96,165,250,0.2)]"
 }
 
-export function LeadCard({ lead, onUpdateStatus, onDelete }: LeadCardProps) {
+export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardProps) {
   const stripeClass = 
     lead.status === "veio" 
       ? "bg-gradient-to-r from-[#4ade80] to-[rgba(74,222,128,0.2)]"
@@ -27,7 +28,10 @@ export function LeadCard({ lead, onUpdateStatus, onDelete }: LeadCardProps) {
   const statusIcon = lead.status === "veio" ? "✓" : lead.status === "nao" ? "✗" : ""
 
   return (
-    <div className="bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] p-2.5 hover:border-[rgba(212,175,55,0.25)] hover:-translate-y-0.5 transition-all">
+    <div 
+      className="bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] p-2.5 hover:border-[rgba(212,175,55,0.25)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      onClick={() => onEdit(lead)}
+    >
       {/* Stripe */}
       <div className={`h-0.5 rounded-sm mb-2 ${stripeClass}`} />
       
@@ -55,7 +59,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete }: LeadCardProps) {
       </span>
       
       {/* Actions */}
-      <div className="flex gap-1 mt-2 pt-1.5 border-t border-[rgba(212,175,55,0.1)]">
+      <div className="flex gap-1 mt-2 pt-1.5 border-t border-[rgba(212,175,55,0.1)]" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => onUpdateStatus(lead.id, "veio")}
           className="flex-1 text-[9px] py-1 px-0.5 rounded-md border border-[rgba(74,222,128,0.2)] text-[#4ade80] bg-transparent hover:bg-[rgba(74,222,128,0.08)] font-medium transition-all"
