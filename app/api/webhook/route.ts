@@ -40,8 +40,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await parseBody(request)
     
-    console.log("[v0] Webhook received:", JSON.stringify(body, null, 2))
-    
     // Função para extrair data e hora de um campo combinado (ex: "2025-04-10 14:30" ou "10/04/2025 14:30")
     const parseDateTime = (dateTimeStr: string) => {
       if (!dateTimeStr) return { data: null, hora: null }
@@ -102,11 +100,8 @@ export async function POST(request: NextRequest) {
       status: body.status || "pending",
     }
     
-    console.log("[v0] Parsed lead data:", JSON.stringify(leadData, null, 2))
-    
     // Validação básica - apenas nome é obrigatório
     if (!leadData.nome) {
-      console.log("[v0] Validation failed - nome missing")
       return NextResponse.json(
         { 
           error: "Campo 'nome' é obrigatório",
