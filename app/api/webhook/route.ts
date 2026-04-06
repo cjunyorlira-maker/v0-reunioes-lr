@@ -1,12 +1,46 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
-// Webhook endpoint para integração com Make.com / Kommo
+// Função para parsear body dependendo do content-type
+async function parseBody(request: NextRequest) {
+  const contentType = request.headers.get("content-type") || ""
+  
+  if (contentType.includes("application/json")) {
+    return await request.json()
+  }
+  
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    const text = await request.text()
+    const params = new URLSearchParams(text)
+    const obj: Record<string, unknown> = {}
+    params.forEach((value, key) => {
+      // Tenta parsear como JSON se possível
+      try {
+        obj[key] = JSON.parse(value)
+      } catch {
+        obj[key] = value
+      }
+    })
+    return obj
+  }
+  
+  // Tenta JSON como fallback
+  try {
+    return await request.json()
+  } catch {
+    const text = await request.text()
+    return { raw: text }
+  }
+}
+
+// Webhook endpoint para integração com Make.com / Kommo / Pluga
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
   try {
-    const body = await request.json()
+    const body = await parseBody(request)
+    
+    console.log("[v0] Webhook received:", JSON.stringify(body, null, 2))
     
     // Função para extrair data e hora de um campo combinado (ex: "2025-04-10 14:30" ou "10/04/2025 14:30")
     const parseDateTime = (dateTimeStr: string) => {
@@ -38,6 +72,14 @@ export async function POST(request: NextRequest) {
       return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
     }
     
+    // Suporte para formato nativo do Kommo (leads[status][0][id], etc)
+    let kommoLead = null
+    if (body.leads) {
+      // Kommo envia em formato: leads[status][0], leads[add][0], leads[update][0]
+      const leadsData = body.leads
+      kommoLead = leadsData.status?.[0] || leadsData.add?.[0] || leadsData.update?.[0]
+    }
+    
     // Verifica se veio campo combinado de data/hora
     const dataHoraCombinada = body.data_hora || body.datetime || body.data_reuniao || body.meeting_datetime
     let dataFinal = body.data || body.date || body.meeting_date
@@ -49,27 +91,41 @@ export async function POST(request: NextRequest) {
       horaFinal = parsed.hora
     }
     
-    // Suporte para diferentes formatos de payload do Make/Kommo
+    // Suporte para diferentes formatos de payload do Make/Kommo/Pluga
     const leadData = {
-      nome: body.nome || body.name || body.lead_name || body.contact_name,
-      data: dataFinal,
-      hora: horaFinal,
-      responsavel: body.responsavel || body.responsible || body.assigned_to || body.user_name || body.atendente,
+      nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
+      data: dataFinal || (kommoLead ? new Date().toISOString().split("T")[0] : null),
+      hora: horaFinal || "09:00",
+      responsavel: body.responsavel || body.responsible || body.assigned_to || body.user_name || body.atendente || kommoLead?.responsible_user_id?.toString() || "Não informado",
       tipo: body.tipo || body.type || "",
-      kommo_id: body.kommo_id || body.lead_id || body.id?.toString() || body.atendente_id,
+      kommo_id: body.kommo_id || body.lead_id || body.id?.toString() || body.atendente_id || kommoLead?.id?.toString(),
       status: body.status || "pending",
     }
     
-    // Validação básica
-    if (!leadData.nome || !leadData.data || !leadData.hora || !leadData.responsavel) {
+    console.log("[v0] Parsed lead data:", JSON.stringify(leadData, null, 2))
+    
+    // Validação básica - apenas nome é obrigatório
+    if (!leadData.nome) {
+      console.log("[v0] Validation failed - nome missing")
       return NextResponse.json(
         { 
-          error: "Campos obrigatórios faltando",
-          required: ["nome", "data", "hora", "responsavel"],
-          received: leadData 
+          error: "Campo 'nome' é obrigatório",
+          received: leadData,
+          rawBody: body
         },
         { status: 400 }
       )
+    }
+    
+    // Define valores padrão para campos faltantes
+    if (!leadData.data) {
+      leadData.data = new Date().toISOString().split("T")[0]
+    }
+    if (!leadData.hora) {
+      leadData.hora = "09:00"
+    }
+    if (!leadData.responsavel) {
+      leadData.responsavel = "Não informado"
     }
     
     // Verifica se já existe lead com mesmo kommo_id (evita duplicatas)
