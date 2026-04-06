@@ -31,14 +31,14 @@ export function LeadCard({ lead, onUpdateStatus, onDelete }: LeadCardProps) {
       {/* Stripe */}
       <div className={`h-0.5 rounded-sm mb-2 ${stripeClass}`} />
       
-      {/* Responsável (em destaque) */}
-      <p className="text-[13px] font-semibold text-[#d4af37] truncate mb-1" title={lead.responsavel}>
-        {lead.responsavel}
+      {/* Nome do cliente (título) */}
+      <p className="text-[13px] font-semibold text-[#f5f0e8] truncate mb-1" title={lead.nome}>
+        {lead.nome}
       </p>
       
-      {/* Nome do cliente */}
-      <p className="text-[11px] text-[#f5f0e8] truncate mb-1" title={lead.nome}>
-        {lead.nome}
+      {/* Responsável */}
+      <p className="text-[11px] text-[#d4af37] truncate mb-1" title={lead.responsavel}>
+        {lead.responsavel}
       </p>
       
       {/* Hora + Status icon */}
