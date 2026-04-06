@@ -14,9 +14,9 @@ interface LeadCardProps {
 
 function getTipoClass(tipo: string) {
   const t = (tipo || "").toLowerCase()
-  if (t.includes("cam")) return "bg-amber-100 text-amber-700 border-amber-200"
-  if (t.includes("casa")) return "bg-emerald-100 text-emerald-700 border-emerald-200"
-  return "bg-sky-100 text-sky-700 border-sky-200"
+  if (t.includes("cam")) return "bg-amber-500/10 text-amber-400 border-amber-500/20"
+  if (t.includes("casa")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  return "bg-sky-500/10 text-sky-400 border-sky-500/20"
 }
 
 export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado }: LeadCardProps) {
@@ -29,7 +29,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-[#d4af37]/50 hover:shadow-lg transition-all cursor-pointer group"
+      className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.25)] transition-all cursor-pointer group"
       onClick={() => onEdit(lead)}
     >
       <div className="p-3.5">
@@ -40,10 +40,10 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             <img 
               src={lead.foto_responsavel} 
               alt={lead.responsavel}
-              className="w-11 h-11 rounded-full object-cover border-2 border-[#d4af37]/30 flex-shrink-0"
+              className="w-11 h-11 rounded-full object-cover border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
             />
           ) : (
-            <div className="w-11 h-11 rounded-full bg-[#d4af37]/10 border-2 border-[#d4af37]/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
               <span className="text-[16px] text-[#d4af37] font-semibold">
                 {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
               </span>
@@ -54,7 +54,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             {/* Status + Time row */}
             <div className="flex items-center gap-2 mb-1">
               <div className={`w-2 h-2 rounded-full ${statusDot}`} />
-              <span className="text-[11px] text-gray-500 font-medium">
+              <span className="text-[11px] text-[#8a8070] font-medium">
                 {formatTimeDisplay(lead.hora)}
               </span>
               {lead.remarcado && (
@@ -63,7 +63,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                     e.stopPropagation()
                     onRemoveRemarcado?.(lead.id)
                   }}
-                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-600 border border-purple-200 hover:bg-purple-200"
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)]"
                 >
                   REMARCADO
                 </button>
@@ -71,18 +71,18 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             </div>
             
             {/* Client name */}
-            <h3 className="text-[14px] font-semibold text-gray-900 leading-tight truncate" title={lead.nome}>
+            <h3 className="text-[14px] font-semibold text-[#f5f0e8] leading-tight truncate" title={lead.nome}>
               {lead.nome}
             </h3>
             
             {/* Responsavel */}
-            <p className="text-[12px] text-[#b8960c] font-medium truncate" title={lead.responsavel}>
+            <p className="text-[12px] text-[#d4af37] font-medium truncate" title={lead.responsavel}>
               {lead.responsavel}
             </p>
             
             {/* Equipe */}
             {lead.equipe && lead.equipe !== "Sem equipe" && (
-              <p className="text-[10px] text-gray-500 truncate mt-0.5">{lead.equipe}</p>
+              <p className="text-[10px] text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
             )}
           </div>
         </div>
@@ -92,8 +92,8 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           {lead.tipo_reuniao && (
             <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
-                ? "bg-violet-100 text-violet-600 border-violet-200"
-                : "bg-pink-100 text-pink-600 border-pink-200"
+                ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                : "bg-pink-500/10 text-pink-400 border-pink-500/20"
             }`}>
               {lead.tipo_reuniao}
             </span>
@@ -106,7 +106,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           )}
           
           {lead.atendente && (
-            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-100 text-sky-600 border border-sky-200">
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
               Atendente: {lead.atendente}
             </span>
           )}
@@ -114,23 +114,23 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       </div>
       
       {/* Actions */}
-      <div className="px-3.5 pb-3 pt-1 bg-gray-50" onClick={(e) => e.stopPropagation()}>
+      <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-1.5 mb-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-300 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-semibold transition-colors"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 font-semibold transition-colors"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 font-semibold transition-colors"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-purple-300 text-purple-600 bg-purple-50 hover:bg-purple-100 font-semibold transition-colors"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-colors"
           >
             Remarcar
           </button>
@@ -138,7 +138,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         {onSync && (
           <button
             onClick={() => onSync(lead.id)}
-            className="w-full text-[10px] py-1.5 rounded-lg border border-[#d4af37]/30 text-[#b8960c] hover:bg-[#d4af37]/10 font-medium transition-colors"
+            className="w-full text-[10px] py-1.5 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] font-medium transition-colors"
           >
             Sincronizar com Kommo
           </button>
