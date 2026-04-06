@@ -6,8 +6,11 @@ import { Lead } from "@/lib/types"
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export function useLeads(startDate: string, endDate: string) {
+  // Só faz a requisição se as datas estiverem definidas
+  const shouldFetch = startDate && endDate
+  
   const { data, error, isLoading, mutate } = useSWR<Lead[]>(
-    `/api/leads?startDate=${startDate}&endDate=${endDate}`,
+    shouldFetch ? `/api/leads?startDate=${startDate}&endDate=${endDate}` : null,
     fetcher,
     {
       refreshInterval: 30000, // Atualiza a cada 30 segundos

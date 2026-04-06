@@ -13,9 +13,10 @@ interface NewLeadModalProps {
     tipo: string
     kommo_id?: string
   }) => Promise<void>
+  defaultDate?: string
 }
 
-export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
+export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: "",
@@ -27,13 +28,13 @@ export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
   })
 
   useEffect(() => {
-    if (open) {
+    if (open && defaultDate) {
       setFormData(prev => ({
         ...prev,
-        data: new Date().toISOString().split("T")[0],
+        data: defaultDate,
       }))
     }
-  }, [open])
+  }, [open, defaultDate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +48,7 @@ export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
       await onSubmit(formData)
       setFormData({
         nome: "",
-        data: new Date().toISOString().split("T")[0],
+        data: defaultDate || "",
         hora: "09:00",
         responsavel: "",
         tipo: "Imóvel",

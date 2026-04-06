@@ -74,14 +74,19 @@ export default function QuadroReunioes() {
     tipo: string
     kommo_id?: string
   }) => {
+    console.log("[v0] Creating lead with data:", data)
+    console.log("[v0] Current week range:", dateRange)
+    
     try {
-      await createLead({
+      const result = await createLead({
         ...data,
         kommo_id: data.kommo_id || null,
         status: "pending",
       })
+      console.log("[v0] Lead created successfully:", result)
       toast.success("Lead criado com sucesso!")
-    } catch {
+    } catch (error) {
+      console.error("[v0] Error creating lead:", error)
       toast.error("Erro ao criar lead")
       throw new Error("Erro ao criar lead")
     }
@@ -122,6 +127,7 @@ export default function QuadroReunioes() {
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateLead}
+        defaultDate={dateRange.start}
       />
     </div>
   )
