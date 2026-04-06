@@ -350,7 +350,7 @@ export async function POST(request: NextRequest) {
       equipe: equipe !== "Sem equipe" ? equipe : (body.equipe || "Sem equipe"),
       remarcado: isRemarcado,
       status: body.status || "pending",
-      origem: origem || body.origem || null,
+      origem: (typeof origem !== 'undefined' ? origem : null) || body.origem || null,
       venda_fechada: false,
       retorno: false,
     }
