@@ -272,18 +272,15 @@ export async function POST(request: NextRequest) {
           
           if (user) {
             console.log("[v0] Usuário encontrado:", user.name, "Groups:", JSON.stringify(user._embedded?.groups || user.group || "sem grupo"))
-            // Só usa dados do Kommo se o Pluga não enviou responsável
-            const plugaResponsavel = body.responsavel || body.responsible || body.vendedor || body.seller
-            if (!plugaResponsavel) {
-              responsavelNome = user.name || "Não informado"
-              responsavelId = user.id?.toString() || null
-              fotoResponsavel = user.avatar || null
-              equipe = user._embedded?.groups?.[0]?.name || 
-                       user.group?.name ||
-                       user.rights?.group_name ||
-                       (user.group_id ? `Equipe ${user.group_id}` : null) ||
-                       "Sem equipe"
-            }
+            // Sempre usa dados do Kommo para responsável e equipe
+            responsavelNome = user.name || "Não informado"
+            responsavelId = user.id?.toString() || null
+            fotoResponsavel = user.avatar || null
+            equipe = user._embedded?.groups?.[0]?.name || 
+                     user.group?.name ||
+                     user.rights?.group_name ||
+                     (user.group_id ? `Equipe ${user.group_id}` : null) ||
+                     "Sem equipe"
           }
         }
         
@@ -343,16 +340,16 @@ export async function POST(request: NextRequest) {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
       data: dataFinal || new Date().toISOString().split("T")[0],
       hora: horaFinal || "09:00",
-      // PRIORIZA dados do Pluga sobre dados do Kommo
-      responsavel: body.responsavel || body.responsible || body.vendedor || body.seller || responsavelNome || "Não informado",
+      // Usa dados do Kommo para responsável e equipe (usuário responsável e grupo)
+      responsavel: responsavelNome || body.responsavel || body.responsible || "Não informado",
       responsavel_id: responsavelId,
       foto_responsavel: fotoResponsavel,
       tipo: body.tipo || body.type || "",
       tipo_reuniao: tipoReuniao || body.tipo_reuniao || body.modalidade || null,
       kommo_id: body.kommo_id || body.atendente || null,
       kommo_lead_id: kommoLeadId || body.lead_id || body.id?.toString() || null,
-      // PRIORIZA equipe do Pluga se disponível
-      equipe: body.equipe || (equipe !== "Sem equipe" ? equipe : "Sem equipe"),
+      // Usa equipe do Kommo (grupo do usuário)
+      equipe: equipe || body.equipe || "Sem equipe",
       remarcado: isRemarcado,
       status: body.status || "pending",
       origem: (typeof origem !== 'undefined' ? origem : null) || body.origem || null,
