@@ -21,11 +21,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Converte a data para formato ISO 8601 que o Kommo espera: Y-m-d\TH:i:sP
-    // Exemplo: "2026-04-08" -> "2026-04-08T12:00:00-03:00"
-    const dataFormatada = `${data_reuniao}T12:00:00-03:00`
+    // Para campos de data (sem hora) no Kommo, usa-se timestamp Unix (segundos desde 1970)
+    // Converte "YYYY-MM-DD" para timestamp Unix
+    const dataObj = new Date(`${data_reuniao}T12:00:00`)
+    const timestamp = Math.floor(dataObj.getTime() / 1000)
     
-    console.log(`[v0] Atualizando data no Kommo: leadId=${leadId}, data=${data_reuniao} -> ${dataFormatada}, tipo=${tipo}, campo=${campoDataId}`)
+    console.log(`[v0] Atualizando data no Kommo: leadId=${leadId}, data=${data_reuniao} -> timestamp=${timestamp}, tipo=${tipo}, campo=${campoDataId}`)
 
     // Faz a requisição PATCH para atualizar o campo de data
     const response = await fetch(
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           custom_fields_values: [{
             field_id: campoDataId,
-            values: [{ value: dataFormatada }]
+            values: [{ value: timestamp }]
           }]
         }),
       }
