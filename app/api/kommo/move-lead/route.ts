@@ -8,8 +8,9 @@ const ETAPAS = {
 
 // Etapas permitidas para mover leads
 const ETAPAS_PERMITIDAS = [
-  67567420,  // Confirmar reunião
-  58498483,  // Reunião confirmada
+  67567420,   // Confirmar reunião
+  58498483,   // Reunião confirmada
+  102225923,  // Remarcados
 ]
 const PIPELINE_ID = 7012299
 
