@@ -178,9 +178,20 @@ export async function POST(request: NextRequest) {
     
     // Se for "nao" (faltou) ou "remarcou", preenche o campo de data com a data da reunião
     if ((status === "nao" || status === "remarcou") && data_reuniao) {
+      // Converte a data para formato ISO 8601 completo que o Kommo espera (Y-m-d\TH:i:sP)
+      // Exemplo: "2026-04-06" -> "2026-04-06T12:00:00-03:00"
+      let dataFormatada = data_reuniao
+      if (data_reuniao.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Se é apenas data (YYYY-MM-DD), adiciona hora e timezone
+        dataFormatada = `${data_reuniao}T12:00:00-03:00`
+      } else if (!data_reuniao.includes("T")) {
+        // Se não tem T, tenta formatar
+        dataFormatada = `${data_reuniao}T12:00:00-03:00`
+      }
+      
       customFields.push({
         field_id: CAMPO_DATA_NAO_VIERAM_ID,
-        values: [{ value: data_reuniao }]
+        values: [{ value: dataFormatada }]
       })
     }
     

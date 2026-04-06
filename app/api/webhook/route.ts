@@ -343,32 +343,58 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Verifica se já existe lead com mesmo kommo_lead_id (evita duplicatas)
+    // Verifica se já existe lead com mesmo kommo_lead_id
+    let existingLead = null
+    
     if (leadData.kommo_lead_id) {
-      const { data: existing } = await supabase
+      const { data: byKommoId } = await supabase
         .from("leads")
-        .select("id")
+        .select("*")
         .eq("kommo_lead_id", leadData.kommo_lead_id)
         .single()
       
-      if (existing) {
-        const { data, error } = await supabase
-          .from("leads")
-          .update(leadData)
-          .eq("kommo_lead_id", leadData.kommo_lead_id)
-          .select()
-          .single()
-        
-        if (error) {
-          return NextResponse.json({ error: error.message }, { status: 500 })
-        }
-        
-        return NextResponse.json({ 
-          success: true, 
-          action: "updated",
-          lead: data 
-        })
+      existingLead = byKommoId
+    }
+    
+    // Se não encontrou por kommo_lead_id, busca por nome (para leads que não vieram e agora remarcaram)
+    if (!existingLead && leadData.nome) {
+      const { data: byNome } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("nome", leadData.nome)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      
+      existingLead = byNome
+    }
+    
+    // Se encontrou lead existente, atualiza
+    if (existingLead) {
+      // Se for remarcado, reseta o status para pending
+      const updateData = {
+        ...leadData,
+        status: isRemarcado ? "pending" : leadData.status,
+        remarcado: isRemarcado ? true : existingLead.remarcado,
       }
+      
+      const { data, error } = await supabase
+        .from("leads")
+        .update(updateData)
+        .eq("id", existingLead.id)
+        .select()
+        .single()
+      
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        action: isRemarcado ? "remarked" : "updated",
+        message: isRemarcado ? "Lead atualizado como remarcado" : "Lead existente atualizado",
+        lead: data 
+      })
     }
     
     // Cria novo lead
