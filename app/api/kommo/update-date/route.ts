@@ -21,9 +21,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Converte a data para timestamp Unix
-    const dataObj = new Date(`${data_reuniao}T12:00:00`)
-    const timestamp = Math.floor(dataObj.getTime() / 1000)
+    // Converte a data de YYYY-MM-DD para DD.MM.YYYY (formato do Kommo)
+    // Exemplo: "2026-04-08" -> "08.04.2026"
+    const [year, month, day] = data_reuniao.split("-")
+    const dataFormatada = `${day}.${month}.${year}`
+    
+    console.log(`[v0] Atualizando data no Kommo: leadId=${leadId}, data=${data_reuniao} -> ${dataFormatada}, tipo=${tipo}, campo=${campoDataId}`)
 
     // Faz a requisição PATCH para atualizar o campo de data
     const response = await fetch(
@@ -37,22 +40,24 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           custom_fields_values: [{
             field_id: campoDataId,
-            values: [{ value: timestamp }]
+            values: [{ value: dataFormatada }]
           }]
         }),
       }
     )
 
+    const responseText = await response.text()
+    console.log(`[v0] Resposta do Kommo: status=${response.status}, body=${responseText}`)
+    
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[Kommo API Error] Update date:", response.status, errorText)
+      console.error("[Kommo API Error] Update date:", response.status, responseText)
       return NextResponse.json(
-        { error: "Erro ao atualizar data no Kommo", details: errorText },
+        { error: "Erro ao atualizar data no Kommo", details: responseText },
         { status: response.status }
       )
     }
 
-    const data = await response.json()
+    const data = responseText ? JSON.parse(responseText) : {}
 
     return NextResponse.json({
       success: true,
