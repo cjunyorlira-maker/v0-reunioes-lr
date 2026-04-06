@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 
 interface HeaderProps {
@@ -18,9 +19,14 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
       {/* Brand */}
       <div className="relative flex items-center gap-3.5">
         {/* Logo */}
-        <div className="h-[52px] w-[52px] rounded-xl bg-gradient-to-br from-[#b8960c] via-[#d4af37] to-[#f0d060] flex items-center justify-center shadow-[0_0_12px_rgba(212,175,55,0.3)]">
-          <span className="font-serif font-bold text-xl text-black">LR</span>
-        </div>
+        <Image
+          src="/images/logo-lr.png"
+          alt="LR Multimarcas"
+          width={180}
+          height={60}
+          className="h-[50px] w-auto object-contain"
+          priority
+        />
         
         {/* Divider */}
         <div className="hidden sm:block w-px h-10 bg-[rgba(212,175,55,0.25)] mx-1" />
@@ -30,9 +36,6 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
           <h1 className="font-serif text-[22px] font-semibold text-[#f5f0e8] tracking-tight">
             Reuniões Agendadas
           </h1>
-          <p className="text-[11px] text-[#8a8070] tracking-wide mt-0.5">
-            Grupo LR Multimarcas · Soluções Financeiras
-          </p>
         </div>
       </div>
 
