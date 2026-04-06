@@ -259,7 +259,7 @@ export default function QuadroReunioes() {
     }
   }
 
-  const handleVeioWithAtendente = async (atendente: string) => {
+  const handleVeioWithAtendente = async (atendente: string, atendenteId?: number) => {
     if (!pendingVeioLead) return
     
     const lead = pendingVeioLead
@@ -281,6 +281,7 @@ export default function QuadroReunioes() {
             nome: lead.nome,
             status: "veio",
             atendente: atendente,
+            atendenteId: atendenteId, // ID do enum para o campo de seleção
             data_reuniao: lead.data,
           })
         })

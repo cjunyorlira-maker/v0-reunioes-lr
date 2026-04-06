@@ -18,20 +18,22 @@ interface Atendente {
 interface AtendenteModalProps {
   open: boolean
   onClose: () => void
-  onConfirm: (atendente: string) => void
+  onConfirm: (atendente: string, atendenteId?: number) => void
   leadNome: string
 }
 
 export function AtendenteModal({ open, onClose, onConfirm, leadNome }: AtendenteModalProps) {
   const [atendentes, setAtendentes] = useState<Atendente[]>([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<string>("")
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedNome, setSelectedNome] = useState<string>("")
   const [customName, setCustomName] = useState("")
 
   useEffect(() => {
     if (open) {
       fetchAtendentes()
-      setSelected("")
+      setSelectedId(null)
+      setSelectedNome("")
       setCustomName("")
     }
   }, [open])
@@ -56,9 +58,12 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
   }
 
   const handleConfirm = () => {
-    const atendente = selected === "outro" ? customName : selected
-    if (atendente) {
-      onConfirm(atendente)
+    if (selectedNome === "outro" && customName) {
+      // Se é customizado, não tem ID
+      onConfirm(customName, undefined)
+    } else if (selectedId && selectedNome) {
+      // Se selecionou da lista, passa nome e ID
+      onConfirm(selectedNome, selectedId)
     }
   }
 
@@ -84,9 +89,12 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
                 {atendentes.map((atendente) => (
                   <button
                     key={atendente.id}
-                    onClick={() => setSelected(atendente.nome)}
+                    onClick={() => {
+                      setSelectedId(atendente.id)
+                      setSelectedNome(atendente.nome)
+                    }}
                     className={`p-3 rounded-lg border text-left transition-all ${
-                      selected === atendente.nome
+                      selectedId === atendente.id
                         ? "bg-[rgba(212,175,55,0.15)] border-[rgba(212,175,55,0.5)] text-[#d4af37]"
                         : "bg-[rgba(255,255,255,0.02)] border-[rgba(212,175,55,0.1)] text-[#f5f0e8] hover:border-[rgba(212,175,55,0.3)]"
                     }`}
@@ -97,9 +105,12 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
                 
                 {/* Opção "Outro" */}
                 <button
-                  onClick={() => setSelected("outro")}
+                  onClick={() => {
+                    setSelectedId(null)
+                    setSelectedNome("outro")
+                  }}
                   className={`p-3 rounded-lg border text-left transition-all ${
-                    selected === "outro"
+                    selectedNome === "outro"
                       ? "bg-[rgba(212,175,55,0.15)] border-[rgba(212,175,55,0.5)] text-[#d4af37]"
                       : "bg-[rgba(255,255,255,0.02)] border-[rgba(212,175,55,0.1)] text-[#f5f0e8] hover:border-[rgba(212,175,55,0.3)]"
                   }`}
@@ -109,7 +120,7 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
               </div>
 
               {/* Campo para nome customizado */}
-              {selected === "outro" && (
+              {selectedNome === "outro" && (
                 <input
                   type="text"
                   value={customName}
@@ -133,7 +144,7 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selected || (selected === "outro" && !customName)}
+            disabled={(!selectedId && selectedNome !== "outro") || (selectedNome === "outro" && !customName)}
             className="flex-1 py-2.5 rounded-lg bg-[rgba(74,222,128,0.15)] border border-[rgba(74,222,128,0.3)] text-[#4ade80] hover:bg-[rgba(74,222,128,0.25)] transition-all text-[14px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Confirmar Presença

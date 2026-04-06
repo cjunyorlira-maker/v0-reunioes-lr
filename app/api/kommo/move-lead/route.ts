@@ -17,10 +17,11 @@ const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente, data_reuniao } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente, atendenteId, data_reuniao } = await request.json()
     
     // IDs dos campos personalizados no Kommo
-    const CAMPO_ATENDENTE_ID = 1026812
+    const CAMPO_ATENDENTE_SELECAO_ID = 1026479  // Campo de seleção (enum) do atendente
+    const CAMPO_ATENDENTE_TEXTO_ID = 1026812     // Campo de texto do atendente
     const CAMPO_DATA_NAO_VIERAM_ID = 1026052
     const CAMPO_DATA_VIERAM_ID = 1026050
 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     const updateData: { 
       status_id: number
       responsible_user_id?: number
-      custom_fields_values?: Array<{ field_id: number; values: Array<{ value: string | number }> }>
+      custom_fields_values?: Array<{ field_id: number; values: Array<{ value?: string | number; enum_id?: number }> }>
     } = {
       status_id: statusId,
     }
@@ -167,14 +168,24 @@ export async function POST(request: NextRequest) {
     }
     
     // Prepara campos personalizados para atendente (envia junto com o status)
-    const customFieldsImediato: Array<{ field_id: number; values: Array<{ value: string | number }> }> = []
+    const customFieldsImediato: Array<{ field_id: number; values: Array<{ value?: string | number; enum_id?: number }> }> = []
     
     // Atendente vai junto com a mudança de status (sem delay)
-    if (status === "veio" && atendente) {
-      customFieldsImediato.push({
-        field_id: CAMPO_ATENDENTE_ID,
-        values: [{ value: atendente }]
-      })
+    if (status === "veio") {
+      // Se tiver ID do atendente (do campo de seleção), usa o enum_id
+      if (atendenteId) {
+        customFieldsImediato.push({
+          field_id: CAMPO_ATENDENTE_SELECAO_ID,
+          values: [{ enum_id: atendenteId }]
+        })
+      }
+      // Se tiver texto do atendente, também preenche o campo de texto
+      if (atendente) {
+        customFieldsImediato.push({
+          field_id: CAMPO_ATENDENTE_TEXTO_ID,
+          values: [{ value: atendente }]
+        })
+      }
     }
     
     // Adiciona campos personalizados imediatos se houver
