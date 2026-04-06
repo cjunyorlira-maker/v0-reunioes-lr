@@ -107,7 +107,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           
           {lead.atendente && (
             <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              {lead.atendente}
+              Atendente: {lead.atendente}
             </span>
           )}
         </div>
