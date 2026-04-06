@@ -31,26 +31,23 @@ export function LeadCard({ lead, onUpdateStatus, onDelete }: LeadCardProps) {
       {/* Stripe */}
       <div className={`h-0.5 rounded-sm mb-2 ${stripeClass}`} />
       
-      {/* Nome */}
-      <p className="text-[12px] font-medium text-[#f5f0e8] truncate mb-1" title={lead.nome}>
+      {/* Responsável (em destaque) */}
+      <p className="text-[13px] font-semibold text-[#d4af37] truncate mb-1" title={lead.responsavel}>
+        {lead.responsavel}
+      </p>
+      
+      {/* Nome do cliente */}
+      <p className="text-[11px] text-[#f5f0e8] truncate mb-1" title={lead.nome}>
         {lead.nome}
       </p>
       
-      {/* Hora + Kommo dot + Status icon */}
-      <div className="flex items-center gap-1 text-[10px] text-[#8a8070] mb-0.5">
+      {/* Hora + Status icon */}
+      <div className="flex items-center gap-1 text-[10px] text-[#8a8070] mb-1.5">
         <span>{formatTimeDisplay(lead.hora)}</span>
-        {lead.kommo_id && (
-          <span className="w-[5px] h-[5px] rounded-full bg-[#d4af37]" />
-        )}
         {statusIcon && (
           <span className="ml-auto text-[10px] opacity-60">{statusIcon}</span>
         )}
       </div>
-      
-      {/* Responsável */}
-      <p className="text-[10px] text-[#8a8070] truncate mb-1.5">
-        {lead.responsavel}
-      </p>
       
       {/* Tipo pill */}
       <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${getTipoClass(lead.tipo)}`}>
