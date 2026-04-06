@@ -53,14 +53,15 @@ export default function QuadroReunioes() {
       // Encontra o lead para pegar o kommo_id
       const lead = leads.find(l => l.id === id)
       
-      // Move o lead no Kommo (apenas se tiver kommo_id e não for "pending")
-      if (lead?.kommo_id && status !== "pending") {
+      // Move o lead no Kommo (apenas se não for "pending")
+      if (lead && status !== "pending") {
         try {
           const response = await fetch("/api/kommo/move-lead", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               kommo_id: lead.kommo_id,
+              nome: lead.nome,
               status: status,
             })
           })

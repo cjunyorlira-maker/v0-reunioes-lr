@@ -8,14 +8,7 @@ const ETAPAS = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, status } = await request.json()
-
-    if (!kommo_id) {
-      return NextResponse.json(
-        { error: "kommo_id é obrigatório" },
-        { status: 400 }
-      )
-    }
+    const { kommo_id, status, nome } = await request.json()
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
@@ -34,11 +27,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let leadId = kommo_id
+
+    // Se kommo_id não é numérico, busca o lead pelo nome no Kommo
+    if (!leadId || isNaN(Number(leadId))) {
+      if (!nome) {
+        return NextResponse.json(
+          { error: "kommo_id ou nome é obrigatório" },
+          { status: 400 }
+        )
+      }
+
+      // Busca o lead pelo nome
+      const searchResponse = await fetch(
+        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      if (!searchResponse.ok) {
+        const errorText = await searchResponse.text()
+        console.error("[Kommo Search Error]", searchResponse.status, errorText)
+        return NextResponse.json(
+          { error: "Erro ao buscar lead no Kommo", details: errorText },
+          { status: searchResponse.status }
+        )
+      }
+
+      const searchData = await searchResponse.json()
+      
+      if (!searchData._embedded?.leads?.length) {
+        return NextResponse.json(
+          { error: `Lead "${nome}" não encontrado no Kommo` },
+          { status: 404 }
+        )
+      }
+
+      // Pega o primeiro lead encontrado
+      leadId = searchData._embedded.leads[0].id
+    }
+
     const statusId = ETAPAS[status as keyof typeof ETAPAS]
 
     // Faz a requisição PATCH para a API do Kommo
     const response = await fetch(
-      `https://${subdomain}.kommo.com/api/v4/leads/${kommo_id}`,
+      `https://${subdomain}.kommo.com/api/v4/leads/${leadId}`,
       {
         method: "PATCH",
         headers: {
@@ -65,6 +103,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Lead movido para etapa "${status === "veio" ? "Vieram" : "Não vieram"}"`,
+      leadId,
       data,
     })
   } catch (error) {
