@@ -8,14 +8,55 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Função para extrair data e hora de um campo combinado (ex: "2025-04-10 14:30" ou "10/04/2025 14:30")
+    const parseDateTime = (dateTimeStr: string) => {
+      if (!dateTimeStr) return { data: null, hora: null }
+      
+      // Remove espaços extras
+      const str = dateTimeStr.trim()
+      
+      // Tenta diferentes formatos
+      // Formato ISO: "2025-04-10T14:30:00" ou "2025-04-10 14:30"
+      let match = str.match(/(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/)
+      if (match) {
+        return { data: match[1], hora: match[2] }
+      }
+      
+      // Formato BR: "10/04/2025 14:30"
+      match = str.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2})/)
+      if (match) {
+        return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: match[4] }
+      }
+      
+      // Formato BR sem hora: "10/04/2025"
+      match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+      if (match) {
+        return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: "09:00" }
+      }
+      
+      // Se não conseguiu parsear, retorna como está
+      return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
+    }
+    
+    // Verifica se veio campo combinado de data/hora
+    const dataHoraCombinada = body.data_hora || body.datetime || body.data_reuniao || body.meeting_datetime
+    let dataFinal = body.data || body.date || body.meeting_date
+    let horaFinal = body.hora || body.time || body.meeting_time
+    
+    if (dataHoraCombinada) {
+      const parsed = parseDateTime(dataHoraCombinada)
+      dataFinal = parsed.data
+      horaFinal = parsed.hora
+    }
+    
     // Suporte para diferentes formatos de payload do Make/Kommo
     const leadData = {
       nome: body.nome || body.name || body.lead_name || body.contact_name,
-      data: body.data || body.date || body.meeting_date,
-      hora: body.hora || body.time || body.meeting_time,
-      responsavel: body.responsavel || body.responsible || body.assigned_to || body.user_name,
-      tipo: body.tipo || body.type || "Imóvel",
-      kommo_id: body.kommo_id || body.lead_id || body.id?.toString(),
+      data: dataFinal,
+      hora: horaFinal,
+      responsavel: body.responsavel || body.responsible || body.assigned_to || body.user_name || body.atendente,
+      tipo: body.tipo || body.type || "",
+      kommo_id: body.kommo_id || body.lead_id || body.id?.toString() || body.atendente_id,
       status: body.status || "pending",
     }
     

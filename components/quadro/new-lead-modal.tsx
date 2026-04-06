@@ -23,7 +23,7 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
     data: "",
     hora: "09:00",
     responsavel: "",
-    tipo: "Imóvel",
+    tipo: "",
     kommo_id: "",
   })
 
@@ -51,7 +51,7 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
         data: defaultDate || "",
         hora: "09:00",
         responsavel: "",
-        tipo: "Imóvel",
+        tipo: "",
         kommo_id: "",
       })
       onClose()
@@ -139,27 +139,25 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
             <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
               Tipo do bem
             </label>
-            <select
+            <input
+              type="text"
               value={formData.tipo}
               onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
-            >
-              <option value="Imóvel">Imóvel</option>
-              <option value="Casa">Casa</option>
-              <option value="Caminhão">Caminhão</option>
-            </select>
+              placeholder="Ex: Imóvel, Casa, Caminhão"
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
           </div>
           
-          {/* Kommo ID */}
+          {/* Atendente */}
           <div className="mb-3">
             <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
-              ID do lead no Kommo
+              Atendente
             </label>
             <input
               type="text"
               value={formData.kommo_id}
               onChange={(e) => setFormData({ ...formData, kommo_id: e.target.value })}
-              placeholder="Ex: 22428977"
+              placeholder="Ex: Maria, João"
               className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
             />
           </div>
