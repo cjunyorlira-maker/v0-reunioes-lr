@@ -17,14 +17,45 @@ export function AnimatedBackground() {
 
     // Cores - Dourado e Azul Del Rey
     const GOLD = { r: 212, g: 175, b: 55 }
-    const BLUE = { r: 30, g: 64, b: 120 }
+    const BLUE = { r: 25, g: 50, b: 100 }
 
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
     }
 
-    // Orbs flutuantes
+    // Partículas grandes
+    interface Particle {
+      x: number
+      y: number
+      size: number
+      baseOpacity: number
+      speed: number
+      color: typeof GOLD | typeof BLUE
+      pulse: number
+      pulseSpeed: number
+    }
+
+    const particles: Particle[] = []
+    const particleCount = 120
+
+    const createParticles = () => {
+      particles.length = 0
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          size: Math.random() * 25 + 10, // Partículas bem maiores (10-35px)
+          baseOpacity: Math.random() * 0.4 + 0.2,
+          speed: Math.random() * 0.8 + 0.3,
+          color: Math.random() > 0.4 ? GOLD : BLUE,
+          pulse: Math.random() * Math.PI * 2,
+          pulseSpeed: Math.random() * 0.02 + 0.01
+        })
+      }
+    }
+
+    // Orbs de fundo
     interface Orb {
       x: number
       y: number
@@ -35,67 +66,43 @@ export function AnimatedBackground() {
     }
 
     const orbs: Orb[] = []
-    const orbCount = 6
+    const orbCount = 5
 
-    for (let i = 0; i < orbCount; i++) {
-      orbs.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        radius: 200 + Math.random() * 300,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        color: i % 2 === 0 ? GOLD : BLUE
-      })
-    }
-
-    // Partículas sutis
-    interface Particle {
-      x: number
-      y: number
-      size: number
-      opacity: number
-      speed: number
-      color: typeof GOLD | typeof BLUE
-    }
-
-    const particles: Particle[] = []
-    const particleCount = 50
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        size: Math.random() * 2 + 1,
-        opacity: Math.random() * 0.3 + 0.1,
-        speed: Math.random() * 0.5 + 0.2,
-        color: Math.random() > 0.5 ? GOLD : BLUE
-      })
+    const createOrbs = () => {
+      orbs.length = 0
+      for (let i = 0; i < orbCount; i++) {
+        orbs.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          radius: 300 + Math.random() * 400,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
+          color: i % 2 === 0 ? GOLD : BLUE
+        })
+      }
     }
 
     const animate = () => {
       if (!ctx || !canvas) return
       
-      time += 0.005
+      time += 0.008
 
       // Fundo base
       ctx.fillStyle = "#080808"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Orbs com gradiente suave (blur effect)
+      // Orbs com gradiente suave
       for (const orb of orbs) {
-        // Movimento suave
         orb.x += orb.vx
         orb.y += orb.vy
 
-        // Bounce nas bordas
         if (orb.x < -orb.radius) orb.x = canvas.width + orb.radius
         if (orb.x > canvas.width + orb.radius) orb.x = -orb.radius
         if (orb.y < -orb.radius) orb.y = canvas.height + orb.radius
         if (orb.y > canvas.height + orb.radius) orb.y = -orb.radius
 
-        // Movimento ondulante
-        const wobbleX = Math.sin(time + orb.radius) * 20
-        const wobbleY = Math.cos(time * 0.7 + orb.radius) * 15
+        const wobbleX = Math.sin(time + orb.radius * 0.01) * 30
+        const wobbleY = Math.cos(time * 0.7 + orb.radius * 0.01) * 20
 
         const gradient = ctx.createRadialGradient(
           orb.x + wobbleX,
@@ -106,82 +113,65 @@ export function AnimatedBackground() {
           orb.radius
         )
         
-        gradient.addColorStop(0, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.08)`)
-        gradient.addColorStop(0.5, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.03)`)
+        gradient.addColorStop(0, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.12)`)
+        gradient.addColorStop(0.4, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.05)`)
         gradient.addColorStop(1, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0)`)
 
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
 
-      // Linhas de grid sutis
-      ctx.strokeStyle = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.02)`
-      ctx.lineWidth = 1
-      
-      const gridSize = 80
-      for (let x = 0; x < canvas.width; x += gridSize) {
-        ctx.beginPath()
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, canvas.height)
-        ctx.stroke()
-      }
-      for (let y = 0; y < canvas.height; y += gridSize) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(canvas.width, y)
-        ctx.stroke()
-      }
-
-      // Partículas flutuantes
+      // Partículas grandes flutuantes
       for (const p of particles) {
         p.y -= p.speed
-        p.x += Math.sin(time * 2 + p.y * 0.01) * 0.3
+        p.x += Math.sin(time * 1.5 + p.y * 0.005) * 0.5
+        p.pulse += p.pulseSpeed
 
-        if (p.y < -10) {
-          p.y = canvas.height + 10
+        if (p.y < -p.size * 2) {
+          p.y = canvas.height + p.size * 2
           p.x = Math.random() * canvas.width
         }
 
-        const pulse = Math.sin(time * 3 + p.x * 0.01) * 0.5 + 0.5
-        const currentOpacity = p.opacity * (0.5 + pulse * 0.5)
+        const pulseMultiplier = Math.sin(p.pulse) * 0.4 + 0.6
+        const currentOpacity = p.baseOpacity * pulseMultiplier
+
+        // Gradiente radial para cada partícula
+        const particleGradient = ctx.createRadialGradient(
+          p.x, p.y, 0,
+          p.x, p.y, p.size
+        )
+        particleGradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${currentOpacity})`)
+        particleGradient.addColorStop(0.4, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${currentOpacity * 0.5})`)
+        particleGradient.addColorStop(1, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 0)`)
 
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${currentOpacity})`
+        ctx.fillStyle = particleGradient
         ctx.fill()
       }
 
       // Brilho sutil no rodapé
-      const footerGlow = ctx.createLinearGradient(0, canvas.height - 200, 0, canvas.height)
+      const footerGlow = ctx.createLinearGradient(0, canvas.height - 300, 0, canvas.height)
       footerGlow.addColorStop(0, "rgba(8, 8, 8, 0)")
-      footerGlow.addColorStop(0.5, `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.02)`)
-      footerGlow.addColorStop(1, `rgba(${BLUE.r}, ${BLUE.g}, ${BLUE.b}, 0.03)`)
+      footerGlow.addColorStop(0.5, `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.04)`)
+      footerGlow.addColorStop(1, `rgba(${BLUE.r}, ${BLUE.g}, ${BLUE.b}, 0.06)`)
       
       ctx.fillStyle = footerGlow
-      ctx.fillRect(0, canvas.height - 200, canvas.width, 200)
-
-      // Vinheta sutil
-      const vignette = ctx.createRadialGradient(
-        canvas.width / 2,
-        canvas.height / 2,
-        canvas.height * 0.3,
-        canvas.width / 2,
-        canvas.height / 2,
-        canvas.height
-      )
-      vignette.addColorStop(0, "rgba(8, 8, 8, 0)")
-      vignette.addColorStop(1, "rgba(0, 0, 0, 0.4)")
-      
-      ctx.fillStyle = vignette
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, canvas.height - 300, canvas.width, 300)
 
       animationFrameId = requestAnimationFrame(animate)
     }
 
     resize()
+    createParticles()
+    createOrbs()
     animate()
 
-    window.addEventListener("resize", resize)
+    window.addEventListener("resize", () => {
+      resize()
+      createParticles()
+      createOrbs()
+    })
 
     return () => {
       cancelAnimationFrame(animationFrameId)

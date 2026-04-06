@@ -29,7 +29,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
 
   return (
     <div 
-      className="bg-[rgba(25,25,25,0.75)] backdrop-blur-sm border border-[rgba(212,175,55,0.15)] rounded-[10px] overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      className="bg-[rgba(20,20,20,0.4)] backdrop-blur-[2px] border border-[rgba(212,175,55,0.2)] rounded-[10px] overflow-hidden hover:border-[rgba(212,175,55,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer"
       onClick={() => onEdit(lead)}
     >
       {/* Header com foto maior e tipo de reunião */}

@@ -39,7 +39,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="relative overflow-hidden bg-[rgba(17,17,17,0.7)] backdrop-blur-sm border border-[rgba(212,175,55,0.15)] rounded-2xl p-4 hover:border-[rgba(212,175,55,0.3)] transition-all"
+          className="relative overflow-hidden bg-[rgba(12,12,12,0.35)] backdrop-blur-[2px] border border-[rgba(212,175,55,0.2)] rounded-2xl p-4 hover:border-[rgba(212,175,55,0.4)] transition-all"
         >
           {/* Stripe no topo */}
           <div className={`absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl ${card.stripeClass}`} />
