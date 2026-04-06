@@ -21,10 +21,10 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit }: DayC
 
   return (
     <div
-      className={`bg-[#111111] border rounded-2xl p-3 min-h-[140px] transition-all ${
+      className={`bg-[rgba(17,17,17,0.7)] backdrop-blur-sm border rounded-2xl p-3 min-h-[140px] transition-all ${
         isToday 
-          ? "border-[rgba(212,175,55,0.4)] shadow-[0_0_0_1px_rgba(212,175,55,0.08)_inset,0_4px_24px_rgba(212,175,55,0.06)]" 
-          : "border-[rgba(212,175,55,0.1)] hover:border-[rgba(212,175,55,0.25)]"
+          ? "border-[rgba(212,175,55,0.5)] shadow-[0_0_0_1px_rgba(212,175,55,0.1)_inset,0_4px_24px_rgba(212,175,55,0.08)]" 
+          : "border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)]"
       }`}
     >
       {/* Day header */}
