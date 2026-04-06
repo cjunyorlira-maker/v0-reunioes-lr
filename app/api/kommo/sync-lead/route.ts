@@ -130,42 +130,28 @@ export async function POST(request: NextRequest) {
     
     const customFields = leadDetails.custom_fields_values || []
     const CAMPO_TIPO_REUNIAO_ID = 1026810
-    
-    // IDs conhecidos de campos de data no Kommo (ajuste conforme necessário)
-    const CAMPOS_DATA = [1026050, 1026052] // Vieram, Não Vieram
-    
-    console.log("[v0] Campos personalizados do lead:", JSON.stringify(customFields, null, 2))
+    const CAMPO_DATA_REUNIAO_ID = 1025159
     
     for (const field of customFields) {
       const fieldId = field.field_id
       const value = field.values?.[0]?.value
-      const fieldName = field.field_name?.toLowerCase() || ""
       
+      // Tipo de reunião (online/presencial)
       if (fieldId === CAMPO_TIPO_REUNIAO_ID) {
         tipoReuniao = field.values?.[0]?.enum || value || null
       }
       
-      // Busca campos de data - prioriza campos que parecem ser data de reunião
-      if (fieldName.includes("data") && fieldName.includes("reuni")) {
+      // Data da reunião - campo específico ID 1025159
+      if (fieldId === CAMPO_DATA_REUNIAO_ID) {
         if (value && typeof value === "number") {
+          // Timestamp Unix - converte para data
           const date = new Date(value * 1000)
           dataReuniao = date.toISOString().split("T")[0]
         } else if (value && typeof value === "string" && value.match(/\d{4}-\d{2}-\d{2}/)) {
           dataReuniao = value.split("T")[0]
         }
       }
-      
-      // Se não encontrou por nome, tenta por timestamp
-      if (!dataReuniao && value && typeof value === "number" && !CAMPOS_DATA.includes(fieldId)) {
-        // Verifica se parece um timestamp válido (depois de 2020)
-        const date = new Date(value * 1000)
-        if (date.getFullYear() >= 2020) {
-          dataReuniao = date.toISOString().split("T")[0]
-        }
-      }
     }
-    
-    console.log("[v0] Data encontrada:", dataReuniao)
     
     // Prepara dados para atualizar
     const updateData: Record<string, unknown> = {

@@ -166,50 +166,23 @@ export async function POST(request: NextRequest) {
       updateData.responsible_user_id = Number(finalResponsibleUserId)
     }
     
-    // Prepara campos personalizados
-    const customFields: Array<{ field_id: number; values: Array<{ value: string | number }> }> = []
+    // Prepara campos personalizados para atendente (envia junto com o status)
+    const customFieldsImediato: Array<{ field_id: number; values: Array<{ value: string | number }> }> = []
     
-    // Se for "veio", adiciona atendente e data da reunião
-    if (status === "veio") {
-      // Adiciona atendente se tiver
-      if (atendente) {
-        customFields.push({
-          field_id: CAMPO_ATENDENTE_ID,
-          values: [{ value: atendente }]
-        })
-      }
-      
-      // Adiciona data da reunião no campo Vieram (1026050)
-      if (data_reuniao) {
-        const dataObj = new Date(`${data_reuniao}T12:00:00`)
-        const timestamp = Math.floor(dataObj.getTime() / 1000)
-        
-        customFields.push({
-          field_id: CAMPO_DATA_VIERAM_ID,
-          values: [{ value: timestamp }]
-        })
-      }
-    }
-    
-    // Se for "nao" (faltou) ou "remarcou", preenche o campo de data Não Vieram
-    if ((status === "nao" || status === "remarcou") && data_reuniao) {
-      // Kommo espera timestamp Unix (segundos) para campos de data
-      // Converte "YYYY-MM-DD" para timestamp
-      const dataObj = new Date(`${data_reuniao}T12:00:00`)
-      const timestamp = Math.floor(dataObj.getTime() / 1000)
-      
-      customFields.push({
-        field_id: CAMPO_DATA_NAO_VIERAM_ID,
-        values: [{ value: timestamp }]
+    // Atendente vai junto com a mudança de status (sem delay)
+    if (status === "veio" && atendente) {
+      customFieldsImediato.push({
+        field_id: CAMPO_ATENDENTE_ID,
+        values: [{ value: atendente }]
       })
     }
     
-    // Adiciona campos personalizados se houver
-    if (customFields.length > 0) {
-      updateData.custom_fields_values = customFields
+    // Adiciona campos personalizados imediatos se houver
+    if (customFieldsImediato.length > 0) {
+      updateData.custom_fields_values = customFieldsImediato
     }
 
-    // Faz a requisição PATCH para a API do Kommo
+    // Faz a requisição PATCH para mover o lead de etapa
     const response = await fetch(
       `https://${subdomain}.kommo.com/api/v4/leads/${leadId}`,
       {
@@ -232,6 +205,40 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json()
+    
+    // DELAY DE 5 SEGUNDOS antes de atualizar campos de data
+    // Isso permite que o bot do Kommo preencha primeiro, depois sobrescrevemos com a data correta
+    if (data_reuniao && (status === "veio" || status === "nao" || status === "remarcou")) {
+      // Executa em background sem bloquear a resposta
+      setTimeout(async () => {
+        try {
+          const dataObj = new Date(`${data_reuniao}T12:00:00`)
+          const timestamp = Math.floor(dataObj.getTime() / 1000)
+          
+          const campoDataId = status === "veio" ? CAMPO_DATA_VIERAM_ID : CAMPO_DATA_NAO_VIERAM_ID
+          
+          await fetch(
+            `https://${subdomain}.kommo.com/api/v4/leads/${leadId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                custom_fields_values: [{
+                  field_id: campoDataId,
+                  values: [{ value: timestamp }]
+                }]
+              }),
+            }
+          )
+          console.log(`[Kommo] Data atualizada após delay: ${data_reuniao} -> campo ${campoDataId}`)
+        } catch (err) {
+          console.error("[Kommo] Erro ao atualizar data após delay:", err)
+        }
+      }, 5000) // 5 segundos de delay
+    }
 
     const etapaNomes = {
       veio: "Vieram",
