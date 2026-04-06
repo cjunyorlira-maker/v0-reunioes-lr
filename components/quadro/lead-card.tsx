@@ -31,90 +31,93 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="bg-[rgba(20,20,20,0.4)] backdrop-blur-[2px] border border-[rgba(212,175,55,0.2)] rounded-[10px] overflow-hidden hover:border-[rgba(212,175,55,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      className="bg-[rgba(18,18,18,0.8)] backdrop-blur-sm border border-[rgba(212,175,55,0.12)] rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:shadow-lg hover:shadow-[rgba(212,175,55,0.05)] transition-all cursor-pointer group"
       onClick={() => onEdit(lead)}
     >
-      {/* Header com foto maior e tipo de reunião */}
-      <div className="flex items-start gap-3 p-3 pb-2">
-        {/* Foto do responsável - maior e na lateral */}
-        {lead.foto_responsavel ? (
-          <img 
-            src={lead.foto_responsavel} 
-            alt={lead.responsavel}
-            className="w-14 h-14 rounded-full object-cover border-2 border-[rgba(212,175,55,0.3)] flex-shrink-0"
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-[#2a2820] border-2 border-[rgba(212,175,55,0.3)] flex items-center justify-center flex-shrink-0">
-            <span className="text-[20px] text-[#d4af37] font-semibold">
-              {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
-            </span>
+      {/* Status bar no topo */}
+      <div className={`h-1 ${stripeClass}`} />
+      
+      {/* Header com foto e info */}
+      <div className="p-4">
+        <div className="flex items-start gap-4">
+          {/* Foto do responsável */}
+          {lead.foto_responsavel ? (
+            <img 
+              src={lead.foto_responsavel} 
+              alt={lead.responsavel}
+              className="w-16 h-16 rounded-xl object-cover border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0 group-hover:border-[rgba(212,175,55,0.4)] transition-all"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
+              <span className="text-[24px] text-[#d4af37] font-bold">
+                {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
+              </span>
+            </div>
+          )}
+          
+          {/* Info principal */}
+          <div className="flex-1 min-w-0">
+            {/* Badges */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {/* Badge Remarcado */}
+              {lead.remarcado && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemoveRemarcado?.(lead.id)
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)] transition-all"
+                  title="Clique para remover"
+                >
+                  REMARCADO
+                  <span className="text-[8px] opacity-60">×</span>
+                </button>
+              )}
+              
+              {/* Hora */}
+              <span className="text-[12px] text-[#d4af37] font-semibold bg-[rgba(212,175,55,0.08)] px-2 py-1 rounded-md">
+                {formatTimeDisplay(lead.hora)}
+              </span>
+              
+              {/* Status icon */}
+              {statusIcon && (
+                <span className={`text-[14px] font-bold w-6 h-6 rounded-full flex items-center justify-center ${
+                  lead.status === "veio" 
+                    ? "bg-[rgba(74,222,128,0.15)] text-[#4ade80]" 
+                    : "bg-[rgba(248,113,113,0.15)] text-[#f87171]"
+                }`}>
+                  {statusIcon}
+                </span>
+              )}
+            </div>
+            
+            {/* Nome do cliente */}
+            <h3 className="text-[18px] font-bold text-[#f5f0e8] leading-tight mb-1" title={lead.nome}>
+              {lead.nome}
+            </h3>
+            
+            {/* Responsável */}
+            <p className="text-[14px] text-[#d4af37] font-medium" title={lead.responsavel}>
+              {lead.responsavel}
+            </p>
+            
+            {/* Equipe */}
+            {lead.equipe && lead.equipe !== "Sem equipe" && (
+              <p className="text-[12px] text-[#6a6a6a] mt-0.5" title={lead.equipe}>
+                {lead.equipe}
+              </p>
+            )}
           </div>
-        )}
-        
-        {/* Info principal */}
-        <div className="flex-1 min-w-0">
-          {/* Badge Remarcado - clicável para remover */}
-          {lead.remarcado && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemoveRemarcado?.(lead.id)
-              }}
-              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(243,190,255,0.15)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] mb-1 hover:bg-[rgba(243,190,255,0.25)] transition-all cursor-pointer"
-              title="Clique para remover tag"
-            >
-              REMARCADO
-              <span className="text-[8px] opacity-60">×</span>
-            </button>
-          )}
-          
-          {/* Nome do cliente */}
-          <p className="text-[16px] font-semibold text-[#f5f0e8] truncate leading-tight" title={lead.nome}>
-            {lead.nome}
-          </p>
-          
-          {/* Responsável e Equipe */}
-          <p className="text-[14px] text-[#d4af37] truncate" title={lead.responsavel}>
-            {lead.responsavel}
-          </p>
-          {lead.equipe && lead.equipe !== "Sem equipe" && (
-            <p className="text-[12px] text-[#8a8070] truncate" title={lead.equipe}>
-              {lead.equipe}
-            </p>
-          )}
-          {/* Atendente */}
-          {lead.atendente && (
-            <p className="text-[12px] text-[#60a5fa] truncate mt-0.5" title={`Atendente: ${lead.atendente}`}>
-              Atend: {lead.atendente}
-            </p>
-          )}
         </div>
         
-        {/* Status indicator */}
-        {statusIcon && (
-          <span className={`text-[16px] font-bold ${lead.status === "veio" ? "text-[#4ade80]" : "text-[#f87171]"}`}>
-            {statusIcon}
-          </span>
-        )}
-      </div>
-      
-      {/* Stripe de status */}
-      <div className={`h-0.5 ${stripeClass}`} />
-      
-      {/* Conteúdo inferior */}
-      <div className="p-3 pt-2">
-        {/* Hora + Tags */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="text-[13px] text-[#8a8070] font-medium">
-            {formatTimeDisplay(lead.hora)}
-          </span>
-          
-          {/* Tipo de reunião (Online/Presencial) */}
+        {/* Tags */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {/* Tipo de reunião */}
           {lead.tipo_reuniao && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border ${
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
-                ? "bg-[rgba(139,92,246,0.08)] text-[#8b5cf6] border-[rgba(139,92,246,0.2)]"
-                : "bg-[rgba(236,72,153,0.08)] text-[#ec4899] border-[rgba(236,72,153,0.2)]"
+                ? "bg-[rgba(139,92,246,0.08)] text-[#a78bfa] border-[rgba(139,92,246,0.2)]"
+                : "bg-[rgba(236,72,153,0.08)] text-[#f472b6] border-[rgba(236,72,153,0.2)]"
             }`}>
               <span className="w-2 h-2 rounded-full bg-current"></span>
               {lead.tipo_reuniao}
@@ -123,46 +126,58 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           
           {/* Tipo do bem */}
           {lead.tipo && (
-            <span className={`text-[11px] font-medium px-2 py-1 rounded-full border ${getTipoClass(lead.tipo)}`}>
+            <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border ${getTipoClass(lead.tipo)}`}>
               {lead.tipo}
             </span>
           )}
+          
+          {/* Atendente */}
+          {lead.atendente && (
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[rgba(96,165,250,0.08)] text-[#60a5fa] border border-[rgba(96,165,250,0.2)]">
+              {lead.atendente}
+            </span>
+          )}
         </div>
+      </div>
       
       {/* Actions */}
-        <div className="flex gap-1.5 pt-2 border-t border-[rgba(212,175,55,0.1)]" onClick={(e) => e.stopPropagation()}>
+      <div className="px-4 pb-4 pt-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-2">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[12px] py-1.5 px-1 rounded-lg border border-[rgba(74,222,128,0.2)] text-[#4ade80] bg-transparent hover:bg-[rgba(74,222,128,0.1)] font-semibold transition-all"
+            className="flex-1 text-[13px] py-2.5 px-2 rounded-lg border border-[rgba(74,222,128,0.2)] text-[#4ade80] bg-[rgba(74,222,128,0.05)] hover:bg-[rgba(74,222,128,0.15)] font-semibold transition-all"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[12px] py-1.5 px-1 rounded-lg border border-[rgba(248,113,113,0.2)] text-[#f87171] bg-transparent hover:bg-[rgba(248,113,113,0.1)] font-semibold transition-all"
+            className="flex-1 text-[13px] py-2.5 px-2 rounded-lg border border-[rgba(248,113,113,0.2)] text-[#f87171] bg-[rgba(248,113,113,0.05)] hover:bg-[rgba(248,113,113,0.15)] font-semibold transition-all"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[12px] py-1.5 px-1 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-transparent hover:bg-[rgba(243,190,255,0.1)] font-semibold transition-all"
+            className="flex-1 text-[13px] py-2.5 px-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-all"
           >
             Remarcou
           </button>
+        </div>
+        
+        <div className="flex gap-2 mt-2">
           {onSync && (
             <button
               onClick={() => onSync(lead.id)}
-              className="w-[28px] text-[12px] py-1.5 rounded-lg border border-[rgba(96,165,250,0.2)] text-[#60a5fa] bg-transparent hover:bg-[rgba(96,165,250,0.1)] font-semibold transition-all"
+              className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(96,165,250,0.15)] text-[#60a5fa] bg-transparent hover:bg-[rgba(96,165,250,0.1)] font-medium transition-all"
               title="Sincronizar com Kommo"
             >
-              ↻
+              ↻ Sincronizar
             </button>
           )}
           <button
             onClick={() => onDelete(lead.id)}
-            className="w-[28px] text-[14px] py-1.5 rounded-lg border border-[rgba(212,175,55,0.1)] text-[#8a8070] bg-transparent hover:bg-[rgba(248,113,113,0.1)] hover:text-[#f87171] hover:border-[rgba(248,113,113,0.2)] transition-all"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(248,113,113,0.15)] text-[#8a8070] bg-transparent hover:bg-[rgba(248,113,113,0.1)] hover:text-[#f87171] font-medium transition-all"
           >
-            ×
+            Remover
           </button>
         </div>
       </div>

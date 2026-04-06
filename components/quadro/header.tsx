@@ -22,9 +22,9 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
     router.refresh()
   }
   return (
-    <header className="relative flex items-center justify-between mx-4 md:mx-6 mt-6 mb-6 p-5 bg-[#111111] border border-[rgba(212,175,55,0.1)] rounded-[20px] flex-wrap gap-4">
+    <header className="relative flex items-center justify-between mx-4 md:mx-8 mt-6 mb-6 p-6 bg-[rgba(18,18,18,0.8)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-2xl flex-wrap gap-4">
       {/* Gradiente decorativo */}
-      <div className="absolute inset-0 rounded-[20px] bg-gradient-to-br from-[rgba(212,175,55,0.03)] to-transparent pointer-events-none" />
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[rgba(212,175,55,0.02)] to-transparent pointer-events-none" />
       
       {/* Brand */}
       <div className="relative flex items-center gap-3.5">
