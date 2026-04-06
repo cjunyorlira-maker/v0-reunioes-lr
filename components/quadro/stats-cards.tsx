@@ -1,6 +1,5 @@
 "use client"
 
-import { Users, UserCheck, UserX, Clock } from "lucide-react"
 import { Stats } from "@/lib/types"
 
 interface StatsCardsProps {
@@ -10,49 +9,47 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
     {
-      label: "Total",
+      label: "Total da semana",
       value: stats.total,
-      icon: Users,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      stripeClass: "bg-gradient-to-r from-[#b8960c] to-[#f0d060]",
+      valueClass: "text-[#d4af37]",
     },
     {
       label: "Vieram",
       value: stats.veio,
-      icon: UserCheck,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
+      stripeClass: "bg-[#4ade80]",
+      valueClass: "text-[#4ade80]",
     },
     {
       label: "Não vieram",
       value: stats.nao,
-      icon: UserX,
-      color: "text-red-500",
-      bg: "bg-red-500/10",
+      stripeClass: "bg-[#f87171]",
+      valueClass: "text-[#f87171]",
     },
     {
       label: "Pendentes",
       value: stats.pending,
-      icon: Clock,
-      color: "text-amber-500",
-      bg: "bg-amber-500/10",
+      stripeClass: "bg-[#fbbf24]",
+      valueClass: "text-[#fbbf24]",
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-8 py-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 px-4 md:px-6 mb-4">
       {cards.map((card) => (
         <div
           key={card.label}
-          className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border/50"
+          className="relative overflow-hidden bg-[#111111] border border-[rgba(212,175,55,0.1)] rounded-2xl p-4 hover:border-[rgba(212,175,55,0.25)] transition-all"
         >
-          <div className={`p-3 rounded-lg ${card.bg}`}>
-            <card.icon className={`h-5 w-5 ${card.color}`} />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">{card.value}</p>
-            <p className="text-sm text-muted-foreground">{card.label}</p>
-          </div>
+          {/* Stripe no topo */}
+          <div className={`absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl ${card.stripeClass}`} />
+          
+          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider font-medium mb-1.5">
+            {card.label}
+          </p>
+          <p className={`font-serif text-[32px] font-bold leading-none tracking-tight ${card.valueClass}`}>
+            {card.value}
+          </p>
         </div>
       ))}
     </div>

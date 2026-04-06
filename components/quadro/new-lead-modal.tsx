@@ -1,13 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
-import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
+import { useState, useEffect } from "react"
 
 interface NewLeadModalProps {
   open: boolean
@@ -22,30 +15,25 @@ interface NewLeadModalProps {
   }) => Promise<void>
 }
 
-const responsaveis = [
-  "Wesley",
-  "Reinaldo", 
-  "Lucas",
-  "Outro"
-]
-
-const tipos = [
-  "Imóvel",
-  "Veículo",
-  "Consórcio",
-  "Outro"
-]
-
 export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: "",
-    data: new Date().toISOString().split("T")[0],
-    hora: "10:00",
+    data: "",
+    hora: "09:00",
     responsavel: "",
     tipo: "Imóvel",
     kommo_id: "",
   })
+
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        data: new Date().toISOString().split("T")[0],
+      }))
+    }
+  }, [open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,7 +48,7 @@ export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
       setFormData({
         nome: "",
         data: new Date().toISOString().split("T")[0],
-        hora: "10:00",
+        hora: "09:00",
         responsavel: "",
         tipo: "Imóvel",
         kommo_id: "",
@@ -71,124 +59,130 @@ export function NewLeadModal({ open, onClose, onSubmit }: NewLeadModalProps) {
     }
   }
 
+  if (!open) return null
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="text-foreground">Novo Lead</DialogTitle>
-        </DialogHeader>
+    <div 
+      className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative bg-[#111111] border border-[rgba(212,175,55,0.25)] rounded-[20px] p-7 w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-200">
+        {/* Linha decorativa */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-px bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+        
+        <h2 className="font-serif text-[20px] font-semibold text-[#f0d060] mb-6 tracking-tight">
+          Novo lead
+        </h2>
         
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="nome">Nome do Cliente</FieldLabel>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Nome completo"
-                required
-                className="bg-input border-border"
-              />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="data">Data</FieldLabel>
-                <Input
-                  id="data"
-                  type="date"
-                  value={formData.data}
-                  onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                  required
-                  className="bg-input border-border"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="hora">Hora</FieldLabel>
-                <Input
-                  id="hora"
-                  type="time"
-                  value={formData.hora}
-                  onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
-                  required
-                  className="bg-input border-border"
-                />
-              </Field>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="responsavel">Responsável</FieldLabel>
-              <Select
-                value={formData.responsavel}
-                onValueChange={(value) => setFormData({ ...formData, responsavel: value })}
-              >
-                <SelectTrigger className="bg-input border-border">
-                  <SelectValue placeholder="Selecione o responsável" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {responsaveis.map((resp) => (
-                    <SelectItem key={resp} value={resp}>
-                      {resp}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="tipo">Tipo de Negócio</FieldLabel>
-              <Select
-                value={formData.tipo}
-                onValueChange={(value) => setFormData({ ...formData, tipo: value })}
-              >
-                <SelectTrigger className="bg-input border-border">
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {tipos.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="kommo_id">ID Kommo (opcional)</FieldLabel>
-              <Input
-                id="kommo_id"
-                value={formData.kommo_id}
-                onChange={(e) => setFormData({ ...formData, kommo_id: e.target.value })}
-                placeholder="ID do lead no Kommo"
-                className="bg-input border-border"
-              />
-            </Field>
-          </FieldGroup>
-
-          <div className="flex gap-3 mt-6">
-            <Button
+          {/* Nome */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Nome do cliente
+            </label>
+            <input
+              type="text"
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              placeholder="Ex: João Silva"
+              required
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
+          </div>
+          
+          {/* Data */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Data
+            </label>
+            <input
+              type="date"
+              value={formData.data}
+              onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+              required
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
+            />
+          </div>
+          
+          {/* Horário */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Horário
+            </label>
+            <input
+              type="time"
+              value={formData.hora}
+              onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+              required
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
+            />
+          </div>
+          
+          {/* Responsável */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Responsável
+            </label>
+            <input
+              type="text"
+              value={formData.responsavel}
+              onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
+              placeholder="Ex: Amanda"
+              required
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
+          </div>
+          
+          {/* Tipo */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Tipo do bem
+            </label>
+            <select
+              value={formData.tipo}
+              onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
+            >
+              <option value="Imóvel">Imóvel</option>
+              <option value="Casa">Casa</option>
+              <option value="Caminhão">Caminhão</option>
+            </select>
+          </div>
+          
+          {/* Kommo ID */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              ID do lead no Kommo
+            </label>
+            <input
+              type="text"
+              value={formData.kommo_id}
+              onChange={(e) => setFormData({ ...formData, kommo_id: e.target.value })}
+              placeholder="Ex: 22428977"
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
+          </div>
+          
+          {/* Buttons */}
+          <div className="flex gap-2 mt-6">
+            <button
               type="button"
-              variant="outline"
               onClick={onClose}
-              className="flex-1"
               disabled={loading}
+              className="flex-1 bg-transparent border border-[rgba(212,175,55,0.1)] text-[#8a8070] text-[13px] py-3 rounded-[10px] hover:border-[rgba(212,175,55,0.25)] hover:text-[#f5f0e8] transition-all"
             >
               Cancelar
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={loading}
+              className="flex-[2] bg-gradient-to-br from-[#b8960c] via-[#d4af37] to-[#f0d060] text-black text-[13px] font-medium py-3 rounded-[10px] hover:opacity-90 transition-all tracking-wide disabled:opacity-50"
             >
-              {loading ? <Spinner className="mr-2" /> : null}
-              {loading ? "Salvando..." : "Salvar"}
-            </Button>
+              {loading ? "Salvando..." : "Salvar lead"}
+            </button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }

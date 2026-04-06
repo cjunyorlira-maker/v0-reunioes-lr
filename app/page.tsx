@@ -88,7 +88,7 @@ export default function QuadroReunioes() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-[#080808] z-[1] max-w-[1440px] mx-auto">
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
@@ -103,8 +103,8 @@ export default function QuadroReunioes() {
           <Spinner className="h-8 w-8 text-primary" />
         </div>
       ) : (
-        <div className="px-4 md:px-8 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 overflow-x-auto">
+        <div className="px-4 md:px-6 pb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {weekDays.map((day) => (
               <DayColumn
                 key={day.date.toISOString()}

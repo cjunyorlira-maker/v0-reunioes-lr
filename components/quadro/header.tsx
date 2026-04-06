@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 interface HeaderProps {
   weekLabel: string
@@ -11,55 +10,70 @@ interface HeaderProps {
 }
 
 export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderProps) {
-  
   return (
-    <header className="flex items-center justify-between py-6 px-4 md:px-8 border-b border-border/50">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-            <span className="text-primary font-bold text-lg">LR</span>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-semibold text-foreground">Quadro de Reuniões</h1>
-            <p className="text-sm text-muted-foreground">LR Multimarcas</p>
-          </div>
-        </div>
-      </div>
+    <header className="relative flex items-center justify-between mx-4 md:mx-6 mt-6 mb-6 p-5 bg-[#111111] border border-[rgba(212,175,55,0.1)] rounded-[20px] flex-wrap gap-4">
+      {/* Gradiente decorativo */}
+      <div className="absolute inset-0 rounded-[20px] bg-gradient-to-br from-[rgba(212,175,55,0.03)] to-transparent pointer-events-none" />
       
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onPrevWeek}
-          className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span className="sr-only">Semana anterior</span>
-        </Button>
-        
-        <div className="px-4 py-2 bg-secondary rounded-lg min-w-[140px] text-center">
-          <span className="text-sm font-medium text-foreground">{weekLabel || "Carregando..."}</span>
+      {/* Brand */}
+      <div className="relative flex items-center gap-3.5">
+        {/* Logo */}
+        <div className="h-[52px] w-[52px] rounded-xl bg-gradient-to-br from-[#b8960c] via-[#d4af37] to-[#f0d060] flex items-center justify-center shadow-[0_0_12px_rgba(212,175,55,0.3)]">
+          <span className="font-serif font-bold text-xl text-black">LR</span>
         </div>
         
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onNextWeek}
-          className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-        >
-          <ChevronRight className="h-5 w-5" />
-          <span className="sr-only">Próxima semana</span>
-        </Button>
+        {/* Divider */}
+        <div className="hidden sm:block w-px h-10 bg-[rgba(212,175,55,0.25)] mx-1" />
+        
+        {/* Título */}
+        <div className="hidden sm:block">
+          <h1 className="font-serif text-[22px] font-semibold text-[#f5f0e8] tracking-tight">
+            Reuniões Agendadas
+          </h1>
+          <p className="text-[11px] text-[#8a8070] tracking-wide mt-0.5">
+            Grupo LR Multimarcas · Soluções Financeiras
+          </p>
+        </div>
       </div>
-      
-      <Button
-        onClick={onNewLead}
-        className="bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Novo Lead</span>
-        <span className="sm:hidden">Novo</span>
-      </Button>
+
+      {/* Right side */}
+      <div className="relative flex items-center gap-2.5 flex-wrap">
+        {/* Sync badge */}
+        <span className="text-[11px] px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 whitespace-nowrap bg-[rgba(74,222,128,0.08)] text-[#4ade80] border border-[rgba(74,222,128,0.2)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+          Sincronizado
+        </span>
+        
+        {/* Week navigation */}
+        <div className="flex items-center gap-1.5 bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-xl p-1">
+          <button
+            onClick={onPrevWeek}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(212,175,55,0.08)] hover:text-[#d4af37] transition-all"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          
+          <span className="font-serif text-[13px] font-semibold text-[#f5f0e8] min-w-[170px] text-center">
+            {weekLabel || "..."}
+          </span>
+          
+          <button
+            onClick={onNextWeek}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(212,175,55,0.08)] hover:text-[#d4af37] transition-all"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        
+        {/* Add button */}
+        <button
+          onClick={onNewLead}
+          className="bg-gradient-to-br from-[#b8960c] via-[#d4af37] to-[#f0d060] text-black text-[13px] font-medium px-5 py-2.5 rounded-[10px] hover:opacity-90 hover:shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition-all tracking-wide whitespace-nowrap"
+        >
+          <Plus className="h-4 w-4 inline mr-1 -mt-0.5" />
+          Novo lead
+        </button>
+      </div>
     </header>
   )
 }
