@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Verifica se já existe lead com mesmo kommo_lead_id
+    // Verifica se já existe lead com mesmo kommo_lead_id (único identificador confiável)
     let existingLead = null
     
     if (leadData.kommo_lead_id) {
@@ -380,18 +380,8 @@ export async function POST(request: NextRequest) {
       existingLead = byKommoId
     }
     
-    // Se não encontrou por kommo_lead_id, busca por nome (para leads que não vieram e agora remarcaram)
-    if (!existingLead && leadData.nome) {
-      const { data: byNome } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("nome", leadData.nome)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-      
-      existingLead = byNome
-    }
+    // NÃO busca mais por nome - clientes diferentes podem ter o mesmo nome
+    // Cada lead do Kommo é identificado apenas pelo kommo_lead_id
     
     // Se encontrou lead existente, atualiza
     if (existingLead) {
