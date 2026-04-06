@@ -76,8 +76,9 @@ export function NextWeekPreview({ leads, onNavigateToWeek }: NextWeekPreviewProp
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-[#f5f0e8] font-medium truncate">{lead.nome}</p>
+                      <p className="text-[9px] text-[#d4af37]">{lead.responsavel}</p>
                       <p className="text-[9px] text-[#8a8070]">
-                        {formatTimeDisplay(lead.hora)} - {lead.responsavel}
+                        {formatTimeDisplay(lead.hora)} {lead.equipe && lead.equipe !== "Sem equipe" && `• ${lead.equipe}`}
                       </p>
                     </div>
                   </div>
