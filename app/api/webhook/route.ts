@@ -442,9 +442,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[v0] Webhook error detalhado:", error)
     console.error("[v0] Webhook error message:", error instanceof Error ? error.message : String(error))
-    console.error("[v0] Webhook error stack:", error instanceof Error ? error.stack : "No stack")
+    
+    // Retorna erro mais detalhado para debug
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    // Se for erro de constraint do banco, provavelmente é dado duplicado
+    if (errorMessage.includes("duplicate") || errorMessage.includes("unique")) {
+      return NextResponse.json(
+        { success: true, message: "Lead já existe no sistema", details: errorMessage },
+        { status: 200 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: "Erro ao processar webhook", details: error instanceof Error ? error.message : String(error) },
+      { error: "Erro ao processar webhook", details: errorMessage },
       { status: 500 }
     )
   }
