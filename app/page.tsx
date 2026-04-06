@@ -36,7 +36,7 @@ export default function QuadroReunioes() {
     }
   }, [weekOffset, mounted])
 
-  const { leads, isLoading, createLead, updateLead, deleteLead } = useLeads(dateRange.start, dateRange.end)
+  const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
 
   // Lista de equipes únicas
   const equipes = useMemo(() => {
@@ -180,9 +180,15 @@ export default function QuadroReunioes() {
       const data = await response.json()
       
       if (response.ok) {
-        toast.success(data.message || "Lead sincronizado com sucesso!", { id: "sync" })
         // Recarrega os leads para mostrar os dados atualizados
-        window.location.reload()
+        await mutate()
+        
+        // Se a data mudou para fora do período atual, avisa o usuário
+        if (data.novaData && (data.novaData < dateRange.start || data.novaData > dateRange.end)) {
+          toast.success(`Lead sincronizado! A nova data (${data.novaData}) está em outra semana. Navegue para visualizar.`, { id: "sync", duration: 5000 })
+        } else {
+          toast.success(data.message || "Lead sincronizado com sucesso!", { id: "sync" })
+        }
       } else {
         toast.error(data.error || "Erro ao sincronizar", { id: "sync" })
       }
