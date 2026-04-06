@@ -38,6 +38,34 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
 
+  // Sincronização automática com Kommo a cada 5 minutos
+  useEffect(() => {
+    if (!mounted) return
+
+    const syncWithKommo = async () => {
+      try {
+        const response = await fetch("/api/kommo/sync-all", { method: "POST" })
+        const data = await response.json()
+        
+        if (response.ok && data.updated > 0) {
+          // Recarrega os leads se houve atualizações
+          await mutate()
+          toast.success(`Sincronização automática: ${data.updated} lead(s) atualizado(s)`, { duration: 3000 })
+        }
+      } catch (error) {
+        console.error("Erro na sincronização automática:", error)
+      }
+    }
+
+    // Sincroniza imediatamente ao carregar a página
+    syncWithKommo()
+
+    // Configura intervalo de 5 minutos (300000ms)
+    const interval = setInterval(syncWithKommo, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [mounted, mutate])
+
   // Lista de equipes únicas
   const equipes = useMemo(() => {
     const equipesSet = new Set<string>()
