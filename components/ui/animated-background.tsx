@@ -17,219 +17,162 @@ export function AnimatedBackground() {
 
     // Cores - Dourado e Azul Del Rey
     const GOLD = { r: 212, g: 175, b: 55 }
-    const BLUE_DEL_REY = { r: 30, g: 64, b: 120 } // Azul del rey escuro
+    const BLUE = { r: 30, g: 64, b: 120 }
 
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
     }
 
-    // Partículas
+    // Orbs flutuantes
+    interface Orb {
+      x: number
+      y: number
+      radius: number
+      vx: number
+      vy: number
+      color: typeof GOLD | typeof BLUE
+    }
+
+    const orbs: Orb[] = []
+    const orbCount = 6
+
+    for (let i = 0; i < orbCount; i++) {
+      orbs.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        radius: 200 + Math.random() * 300,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        color: i % 2 === 0 ? GOLD : BLUE
+      })
+    }
+
+    // Partículas sutis
     interface Particle {
       x: number
       y: number
-      vx: number
-      vy: number
       size: number
-      color: "gold" | "blue"
-      life: number
-      maxLife: number
       opacity: number
+      speed: number
+      color: typeof GOLD | typeof BLUE
     }
 
     const particles: Particle[] = []
-    const maxParticles = 150 // Muitas partículas
+    const particleCount = 50
 
-    const createParticle = () => {
-      const isGold = Math.random() > 0.4 // 60% dourado, 40% azul
-      return {
-        x: Math.random() * canvas.width,
-        y: canvas.height + 20,
-        vx: (Math.random() - 0.5) * 3,
-        vy: -Math.random() * 4 - 2,
-        size: Math.random() * 4 + 2,
-        color: isGold ? "gold" : "blue" as "gold" | "blue",
-        life: 0,
-        maxLife: Math.random() * 200 + 150,
-        opacity: Math.random() * 0.8 + 0.2
-      }
-    }
-
-    // Inicializa partículas
-    for (let i = 0; i < maxParticles; i++) {
-      const p = createParticle()
-      p.y = Math.random() * canvas.height
-      p.life = Math.random() * p.maxLife
-      particles.push(p)
-    }
-
-    // Função de ruído para movimento orgânico
-    const noise = (x: number, y: number, t: number) => {
-      return (
-        Math.sin(x * 0.01 + t) * 0.5 +
-        Math.sin(y * 0.008 + t * 0.7) * 0.3 +
-        Math.sin((x + y) * 0.005 + t * 0.5) * 0.2
-      )
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.3 + 0.1,
+        speed: Math.random() * 0.5 + 0.2,
+        color: Math.random() > 0.5 ? GOLD : BLUE
+      })
     }
 
     const animate = () => {
       if (!ctx || !canvas) return
       
-      time += 0.008
+      time += 0.005
 
-      // Limpa com fade suave
-      ctx.fillStyle = "rgba(8, 8, 8, 0.08)"
+      // Fundo base
+      ctx.fillStyle = "#080808"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Labaredas grandes - douradas e azuis
-      const flameCount = 12
-      for (let f = 0; f < flameCount; f++) {
-        const baseX = (canvas.width / (flameCount - 1)) * f
-        const isBlue = f % 3 === 0 // Cada 3ª labareda é azul
-        
-        const color = isBlue ? BLUE_DEL_REY : GOLD
-        
-        const points: { x: number; y: number }[] = []
-        const segments = 80
-        
-        for (let i = 0; i <= segments; i++) {
-          const progress = i / segments
-          const y = canvas.height - (canvas.height * 1.3 * progress)
-          const waveAmplitude = 40 + progress * 120
-          const wave = noise(baseX, y, time + f * 0.5) * waveAmplitude
-          const x = baseX + wave
-          points.push({ x, y })
-        }
+      // Orbs com gradiente suave (blur effect)
+      for (const orb of orbs) {
+        // Movimento suave
+        orb.x += orb.vx
+        orb.y += orb.vy
 
-        // Gradiente da labareda
-        const gradient = ctx.createLinearGradient(baseX, canvas.height, baseX, 0)
-        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`)
-        gradient.addColorStop(0.15, `rgba(${color.r}, ${color.g}, ${color.b}, 0.35)`)
-        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, 0.2)`)
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`)
-        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`)
-        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`)
+        // Bounce nas bordas
+        if (orb.x < -orb.radius) orb.x = canvas.width + orb.radius
+        if (orb.x > canvas.width + orb.radius) orb.x = -orb.radius
+        if (orb.y < -orb.radius) orb.y = canvas.height + orb.radius
+        if (orb.y > canvas.height + orb.radius) orb.y = -orb.radius
 
-        ctx.beginPath()
-        ctx.moveTo(points[0].x - 80, canvas.height)
+        // Movimento ondulante
+        const wobbleX = Math.sin(time + orb.radius) * 20
+        const wobbleY = Math.cos(time * 0.7 + orb.radius) * 15
+
+        const gradient = ctx.createRadialGradient(
+          orb.x + wobbleX,
+          orb.y + wobbleY,
+          0,
+          orb.x + wobbleX,
+          orb.y + wobbleY,
+          orb.radius
+        )
         
-        for (let i = 0; i < points.length; i++) {
-          const point = points[i]
-          const width = 80 * (1 - i / points.length) + 15
-          
-          if (i === 0) {
-            ctx.lineTo(point.x - width, point.y)
-          } else {
-            const prev = points[i - 1]
-            const cpX = (prev.x + point.x) / 2 - width
-            const cpY = (prev.y + point.y) / 2
-            ctx.quadraticCurveTo(prev.x - width, prev.y, cpX, cpY)
-          }
-        }
-        
-        for (let i = points.length - 1; i >= 0; i--) {
-          const point = points[i]
-          const width = 80 * (1 - i / points.length) + 15
-          
-          if (i === points.length - 1) {
-            ctx.lineTo(point.x + width, point.y)
-          } else {
-            const next = points[i + 1]
-            const cpX = (next.x + point.x) / 2 + width
-            const cpY = (next.y + point.y) / 2
-            ctx.quadraticCurveTo(next.x + width, next.y, cpX, cpY)
-          }
-        }
-        
-        ctx.closePath()
+        gradient.addColorStop(0, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.08)`)
+        gradient.addColorStop(0.5, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0.03)`)
+        gradient.addColorStop(1, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, 0)`)
+
         ctx.fillStyle = gradient
-        ctx.fill()
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
 
-      // Atualiza e desenha partículas
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i]
-        
-        // Movimento com turbulência
-        p.x += p.vx + noise(p.x, p.y, time) * 2
-        p.y += p.vy
-        p.life++
-        
-        // Turbulência adicional
-        p.vx += (Math.random() - 0.5) * 0.1
-        
-        // Reset quando sai da tela ou morre
-        if (p.y < -50 || p.life > p.maxLife) {
-          const newP = createParticle()
-          particles[i] = newP
-          continue
-        }
-        
-        // Fade baseado na vida
-        const lifeFade = 1 - (p.life / p.maxLife)
-        const currentOpacity = p.opacity * lifeFade
-        
-        const color = p.color === "gold" ? GOLD : BLUE_DEL_REY
-        
-        // Brilho da partícula
-        const glowGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 6)
-        glowGradient.addColorStop(0, `rgba(${color.r + 40}, ${color.g + 40}, ${color.b + 40}, ${currentOpacity})`)
-        glowGradient.addColorStop(0.4, `rgba(${color.r}, ${color.g}, ${color.b}, ${currentOpacity * 0.4})`)
-        glowGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`)
-        
+      // Linhas de grid sutis
+      ctx.strokeStyle = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.02)`
+      ctx.lineWidth = 1
+      
+      const gridSize = 80
+      for (let x = 0; x < canvas.width; x += gridSize) {
         ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * 6, 0, Math.PI * 2)
-        ctx.fillStyle = glowGradient
-        ctx.fill()
-        
-        // Núcleo brilhante
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, canvas.height)
+        ctx.stroke()
+      }
+      for (let y = 0; y < canvas.height; y += gridSize) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(canvas.width, y)
+        ctx.stroke()
+      }
+
+      // Partículas flutuantes
+      for (const p of particles) {
+        p.y -= p.speed
+        p.x += Math.sin(time * 2 + p.y * 0.01) * 0.3
+
+        if (p.y < -10) {
+          p.y = canvas.height + 10
+          p.x = Math.random() * canvas.width
+        }
+
+        const pulse = Math.sin(time * 3 + p.x * 0.01) * 0.5 + 0.5
+        const currentOpacity = p.opacity * (0.5 + pulse * 0.5)
+
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 255, ${currentOpacity * 0.8})`
+        ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${currentOpacity})`
         ctx.fill()
       }
 
-      // Ondas de energia horizontais
-      for (let w = 0; w < 6; w++) {
-        const waveY = canvas.height - (canvas.height * 0.15) - w * (canvas.height * 0.12)
-        const isBlueWave = w % 2 === 0
-        const color = isBlueWave ? BLUE_DEL_REY : GOLD
-        
-        const waveGradient = ctx.createLinearGradient(0, waveY - 60, 0, waveY + 60)
-        waveGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`)
-        waveGradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.06 - w * 0.008})`)
-        waveGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`)
-        
-        ctx.beginPath()
-        ctx.moveTo(0, waveY)
-        
-        for (let x = 0; x <= canvas.width; x += 8) {
-          const y = waveY + Math.sin(x * 0.008 + time * 2 + w) * (20 + w * 8)
-          ctx.lineTo(x, y)
-        }
-        
-        ctx.lineTo(canvas.width, waveY + 60)
-        ctx.lineTo(0, waveY + 60)
-        ctx.closePath()
-        ctx.fillStyle = waveGradient
-        ctx.fill()
-      }
+      // Brilho sutil no rodapé
+      const footerGlow = ctx.createLinearGradient(0, canvas.height - 200, 0, canvas.height)
+      footerGlow.addColorStop(0, "rgba(8, 8, 8, 0)")
+      footerGlow.addColorStop(0.5, `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.02)`)
+      footerGlow.addColorStop(1, `rgba(${BLUE.r}, ${BLUE.g}, ${BLUE.b}, 0.03)`)
+      
+      ctx.fillStyle = footerGlow
+      ctx.fillRect(0, canvas.height - 200, canvas.width, 200)
 
-      // Brilho ambiente combinado
-      const ambientGradient = ctx.createRadialGradient(
+      // Vinheta sutil
+      const vignette = ctx.createRadialGradient(
         canvas.width / 2,
-        canvas.height,
-        0,
+        canvas.height / 2,
+        canvas.height * 0.3,
         canvas.width / 2,
-        canvas.height,
+        canvas.height / 2,
         canvas.height
       )
-      ambientGradient.addColorStop(0, `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.12)`)
-      ambientGradient.addColorStop(0.3, `rgba(${BLUE_DEL_REY.r}, ${BLUE_DEL_REY.g}, ${BLUE_DEL_REY.b}, 0.08)`)
-      ambientGradient.addColorStop(0.6, `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, 0.04)`)
-      ambientGradient.addColorStop(1, "rgba(8, 8, 8, 0)")
+      vignette.addColorStop(0, "rgba(8, 8, 8, 0)")
+      vignette.addColorStop(1, "rgba(0, 0, 0, 0.4)")
       
-      ctx.fillStyle = ambientGradient
+      ctx.fillStyle = vignette
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       animationFrameId = requestAnimationFrame(animate)
