@@ -177,11 +177,36 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Se veio do Kommo nativo, busca dados completos via API
+    // Busca dados completos via API do Kommo
     let responsavelNome = "Não informado"
     let equipe = "Sem equipe"
     let dataReuniao: string | null = null
     let horaReuniao: string | null = null
+    
+    // Se não temos o ID do lead mas temos o nome, busca pelo nome no Kommo
+    const nomeLead = body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name
+    
+    if (!kommoLeadId && nomeLead && process.env.KOMMO_ACCESS_TOKEN && process.env.KOMMO_SUBDOMAIN) {
+      try {
+        const searchResponse = await fetch(
+          `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.KOMMO_ACCESS_TOKEN}`,
+            },
+          }
+        )
+        
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
+          if (searchData._embedded?.leads?.length > 0) {
+            kommoLeadId = searchData._embedded.leads[0].id?.toString()
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar lead por nome:", error)
+      }
+    }
     
     if (kommoLeadId && process.env.KOMMO_ACCESS_TOKEN) {
       // Busca detalhes do lead
