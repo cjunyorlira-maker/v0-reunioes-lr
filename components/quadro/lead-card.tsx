@@ -51,6 +51,13 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
         
         {/* Info principal */}
         <div className="flex-1 min-w-0">
+          {/* Badge Remarcado */}
+          {lead.remarcado && (
+            <span className="inline-block text-[8px] font-bold px-1.5 py-0.5 rounded bg-[rgba(243,190,255,0.15)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] mb-0.5">
+              REMARCADO
+            </span>
+          )}
+          
           {/* Nome do cliente */}
           <p className="text-[13px] font-semibold text-[#f5f0e8] truncate" title={lead.nome}>
             {lead.nome}

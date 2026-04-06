@@ -12,6 +12,7 @@ export interface Lead {
   tipo_reuniao: string | null
   responsavel_id: string | null
   atendente: string | null
+  remarcado: boolean
   status: "pending" | "veio" | "nao"
   created_at: string
   updated_at: string

@@ -148,9 +148,11 @@ const parseDateTime = (dateTimeStr: string) => {
 
 // Etapas permitidas no Kommo
 const ETAPAS_PERMITIDAS = [
-  67567420,  // Confirmar reunião
-  58498483,  // Reunião confirmada
+  67567420,   // Confirmar reunião
+  58498483,   // Reunião confirmada
+  102225923,  // Remarcados
 ]
+const ETAPA_REMARCADOS = 102225923
 const PIPELINE_ID = 7012299
 
 // Webhook endpoint para integração com Kommo / Make / Pluga
@@ -309,6 +311,9 @@ export async function POST(request: NextRequest) {
       horaFinal = parsed.hora
     }
     
+    // Verifica se o lead veio da etapa "Remarcados"
+    const isRemarcado = statusId === ETAPA_REMARCADOS
+    
     // Monta dados do lead
     const leadData = {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
@@ -322,6 +327,7 @@ export async function POST(request: NextRequest) {
       kommo_id: body.kommo_id || body.atendente || null,
       kommo_lead_id: kommoLeadId || body.lead_id || body.id?.toString() || null,
       equipe: equipe !== "Sem equipe" ? equipe : (body.equipe || "Sem equipe"),
+      remarcado: isRemarcado,
       status: body.status || "pending",
     }
     
