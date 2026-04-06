@@ -7,6 +7,7 @@ import { StatsCards } from "@/components/quadro/stats-cards"
 import { DayColumn } from "@/components/quadro/day-column"
 import { NewLeadModal } from "@/components/quadro/new-lead-modal"
 import { EditLeadModal } from "@/components/quadro/edit-lead-modal"
+import { AtendenteModal } from "@/components/quadro/atendente-modal"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
@@ -23,6 +24,8 @@ export default function QuadroReunioes() {
   const [weekLabel, setWeekLabel] = useState("")
   const [dateRange, setDateRange] = useState({ start: "", end: "" })
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
+  const [isAtendenteModalOpen, setIsAtendenteModalOpen] = useState(false)
+  const [pendingVeioLead, setPendingVeioLead] = useState<Lead | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -110,6 +113,16 @@ export default function QuadroReunioes() {
   }, [leads, filteredLeads, selectedEquipe])
 
   const handleUpdateStatus = async (id: string, status: "veio" | "nao" | "pending" | "remarcou") => {
+    // Se for "veio", abre o modal para selecionar o atendente
+    if (status === "veio") {
+      const lead = leads.find(l => l.id === id)
+      if (lead) {
+        setPendingVeioLead(lead)
+        setIsAtendenteModalOpen(true)
+      }
+      return
+    }
+    
     try {
       // Se for remarcou, atualiza o campo remarcado para true e mantém status pending
       const updateData = status === "remarcou" 
@@ -243,6 +256,66 @@ export default function QuadroReunioes() {
     } catch (error) {
       console.error("Erro ao sincronizar:", error)
       toast.error("Erro ao sincronizar com Kommo", { id: "sync" })
+    }
+  }
+
+  const handleVeioWithAtendente = async (atendente: string) => {
+    if (!pendingVeioLead) return
+    
+    const lead = pendingVeioLead
+    setIsAtendenteModalOpen(false)
+    setPendingVeioLead(null)
+    
+    try {
+      // Atualiza o lead com o atendente e status veio
+      await updateLead(lead.id, { status: "veio", atendente })
+      
+      // Move o lead no Kommo
+      try {
+        const response = await fetch("/api/kommo/move-lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kommo_id: lead.kommo_id,
+            kommo_lead_id: lead.kommo_lead_id,
+            nome: lead.nome,
+            status: "veio",
+            atendente: atendente,
+            data_reuniao: lead.data,
+          })
+        })
+        
+        if (response.ok) {
+          const responseData = await response.json()
+          toast.success(`Cliente marcado como presente! Atendente: ${atendente}`)
+          
+          // Chama a API para atualizar a data após 5 segundos
+          if (lead.data && responseData.leadId) {
+            setTimeout(async () => {
+              try {
+                await fetch("/api/kommo/update-date", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    leadId: responseData.leadId,
+                    data_reuniao: lead.data,
+                    tipo: "veio",
+                  })
+                })
+              } catch (err) {
+                console.error("Erro ao atualizar data após delay:", err)
+              }
+            }, 5000)
+          }
+        } else {
+          toast.success(`Cliente marcado como presente! Atendente: ${atendente}`)
+        }
+      } catch (kommoError) {
+        console.error("Erro ao mover no Kommo:", kommoError)
+        toast.success(`Cliente marcado como presente! Atendente: ${atendente}`)
+      }
+    } catch {
+      toast.error("Erro ao atualizar status")
     }
   }
 
@@ -403,6 +476,16 @@ export default function QuadroReunioes() {
           setEditingLead(null)
         }}
         onSubmit={handleEditSubmit}
+      />
+
+      <AtendenteModal
+        open={isAtendenteModalOpen}
+        onClose={() => {
+          setIsAtendenteModalOpen(false)
+          setPendingVeioLead(null)
+        }}
+        onConfirm={handleVeioWithAtendente}
+        leadNome={pendingVeioLead?.nome || ""}
       />
     </div>
   )
