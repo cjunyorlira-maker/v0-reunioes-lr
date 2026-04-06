@@ -90,6 +90,12 @@ export default function QuadroReunioes() {
       
       // Move o lead no Kommo (apenas se não for "pending")
       if (lead && status !== "pending") {
+        console.log("[v0] Tentando mover lead no Kommo:", { 
+          kommo_id: lead.kommo_id, 
+          kommo_lead_id: lead.kommo_lead_id, 
+          nome: lead.nome, 
+          status 
+        })
         try {
           const response = await fetch("/api/kommo/move-lead", {
             method: "POST",
@@ -101,6 +107,7 @@ export default function QuadroReunioes() {
               status: status,
             })
           })
+          console.log("[v0] Resposta do Kommo:", response.status, response.ok)
           
           if (response.ok) {
             toast.success(

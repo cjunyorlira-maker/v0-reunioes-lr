@@ -7,8 +7,10 @@ const ETAPAS = {
 }
 
 export async function POST(request: NextRequest) {
+  console.log("[v0] move-lead API chamada")
   try {
     const { kommo_id, kommo_lead_id, status, nome } = await request.json()
+    console.log("[v0] Dados recebidos:", { kommo_id, kommo_lead_id, status, nome })
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
