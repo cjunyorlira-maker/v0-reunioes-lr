@@ -144,7 +144,27 @@ export default function QuadroReunioes() {
           }
           
           if (response.ok) {
+            const responseData = await response.json()
             toast.success(toastMessages[status as keyof typeof toastMessages])
+            
+            // Chama a API para atualizar a data após 5 segundos (para sobrescrever o bot do Kommo)
+            if (lead.data && responseData.leadId) {
+              setTimeout(async () => {
+                try {
+                  await fetch("/api/kommo/update-date", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      leadId: responseData.leadId,
+                      data_reuniao: lead.data,
+                      tipo: status,
+                    })
+                  })
+                } catch (err) {
+                  console.error("Erro ao atualizar data após delay:", err)
+                }
+              }, 5000) // 5 segundos de delay
+            }
           } else {
             toast.success(
               status === "veio" 
@@ -223,6 +243,15 @@ export default function QuadroReunioes() {
     } catch (error) {
       console.error("Erro ao sincronizar:", error)
       toast.error("Erro ao sincronizar com Kommo", { id: "sync" })
+    }
+  }
+
+  const handleRemoveRemarcado = async (id: string) => {
+    try {
+      await updateLead(id, { remarcado: false })
+      toast.success("Tag remarcado removida")
+    } catch {
+      toast.error("Erro ao remover tag")
     }
   }
 
@@ -352,6 +381,7 @@ export default function QuadroReunioes() {
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onSync={handleSync}
+                onRemoveRemarcado={handleRemoveRemarcado}
               />
             ))}
           </div>

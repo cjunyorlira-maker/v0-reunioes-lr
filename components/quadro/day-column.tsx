@@ -11,9 +11,10 @@ interface DayColumnProps {
   onDelete: (id: string) => void
   onEdit: (lead: Lead) => void
   onSync: (id: string) => void
+  onRemoveRemarcado: (id: string) => void
 }
 
-export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync }: DayColumnProps) {
+export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado }: DayColumnProps) {
   const dayLeads = leads
     .filter((lead) => lead.data === formatDateForDB(day.date))
     .sort((a, b) => a.hora.localeCompare(b.hora))
@@ -64,6 +65,7 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
               onDelete={onDelete}
               onEdit={onEdit}
               onSync={onSync}
+              onRemoveRemarcado={onRemoveRemarcado}
             />
           ))
         )}

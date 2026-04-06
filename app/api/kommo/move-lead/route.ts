@@ -205,40 +205,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json()
-    
-    // DELAY DE 5 SEGUNDOS antes de atualizar campos de data
-    // Isso permite que o bot do Kommo preencha primeiro, depois sobrescrevemos com a data correta
-    if (data_reuniao && (status === "veio" || status === "nao" || status === "remarcou")) {
-      // Executa em background sem bloquear a resposta
-      setTimeout(async () => {
-        try {
-          const dataObj = new Date(`${data_reuniao}T12:00:00`)
-          const timestamp = Math.floor(dataObj.getTime() / 1000)
-          
-          const campoDataId = status === "veio" ? CAMPO_DATA_VIERAM_ID : CAMPO_DATA_NAO_VIERAM_ID
-          
-          await fetch(
-            `https://${subdomain}.kommo.com/api/v4/leads/${leadId}`,
-            {
-              method: "PATCH",
-              headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                custom_fields_values: [{
-                  field_id: campoDataId,
-                  values: [{ value: timestamp }]
-                }]
-              }),
-            }
-          )
-          console.log(`[Kommo] Data atualizada após delay: ${data_reuniao} -> campo ${campoDataId}`)
-        } catch (err) {
-          console.error("[Kommo] Erro ao atualizar data após delay:", err)
-        }
-      }, 5000) // 5 segundos de delay
-    }
 
     const etapaNomes = {
       veio: "Vieram",

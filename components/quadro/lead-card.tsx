@@ -9,6 +9,7 @@ interface LeadCardProps {
   onDelete: (id: string) => void
   onEdit: (lead: Lead) => void
   onSync?: (id: string) => void
+  onRemoveRemarcado?: (id: string) => void
 }
 
 function getTipoClass(tipo: string) {
@@ -18,7 +19,7 @@ function getTipoClass(tipo: string) {
   return "bg-[rgba(96,165,250,0.08)] text-[#60a5fa] border-[rgba(96,165,250,0.2)]"
 }
 
-export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync }: LeadCardProps) {
+export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado }: LeadCardProps) {
   const stripeClass = 
     lead.status === "veio" 
       ? "bg-gradient-to-r from-[#4ade80] to-[rgba(74,222,128,0.2)]"
@@ -52,11 +53,19 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync }: Lea
         
         {/* Info principal */}
         <div className="flex-1 min-w-0">
-          {/* Badge Remarcado */}
+          {/* Badge Remarcado - clicável para remover */}
           {lead.remarcado && (
-            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(243,190,255,0.15)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] mb-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemoveRemarcado?.(lead.id)
+              }}
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(243,190,255,0.15)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] mb-1 hover:bg-[rgba(243,190,255,0.25)] transition-all cursor-pointer"
+              title="Clique para remover tag"
+            >
               REMARCADO
-            </span>
+              <span className="text-[8px] opacity-60">×</span>
+            </button>
           )}
           
           {/* Nome do cliente */}
