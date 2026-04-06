@@ -1,7 +1,9 @@
 "use client"
 
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight, Plus, LogOut } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 interface HeaderProps {
   weekLabel: string
@@ -11,6 +13,14 @@ interface HeaderProps {
 }
 
 export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/auth/login")
+    router.refresh()
+  }
   return (
     <header className="relative flex items-center justify-between mx-4 md:mx-6 mt-6 mb-6 p-5 bg-[#111111] border border-[rgba(212,175,55,0.1)] rounded-[20px] flex-wrap gap-4">
       {/* Gradiente decorativo */}
@@ -75,6 +85,15 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
         >
           <Plus className="h-4 w-4 inline mr-1 -mt-0.5" />
           Novo lead
+        </button>
+        
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          className="w-10 h-10 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(239,68,68,0.1)] hover:text-red-400 transition-all"
+          title="Sair"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>
