@@ -51,29 +51,9 @@ export async function POST() {
     // Para cada lead local, verifica no Kommo se houve mudanças
     for (const leadLocal of leadsLocais) {
       try {
-        let kommoLeadId = leadLocal.kommo_lead_id
+        const kommoLeadId = leadLocal.kommo_lead_id
 
-        // Se não tem kommo_lead_id, busca pelo nome
-        if (!kommoLeadId && leadLocal.nome) {
-          const statusFilters = ETAPAS_PERMITIDAS.map((statusId, i) => 
-            `filter[statuses][${i}][pipeline_id]=7012299&filter[statuses][${i}][status_id]=${statusId}`
-          ).join("&")
-          
-          const searchResponse = await fetch(
-            `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(leadLocal.nome)}&${statusFilters}`,
-            {
-              headers: { "Authorization": `Bearer ${token}` }
-            }
-          )
-
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json()
-            if (searchData._embedded?.leads?.[0]) {
-              kommoLeadId = searchData._embedded.leads[0].id.toString()
-            }
-          }
-        }
-
+        // Se não tem kommo_lead_id, pula esse lead (não busca por nome para evitar conflitos)
         if (!kommoLeadId) continue
 
         // Busca detalhes do lead no Kommo
