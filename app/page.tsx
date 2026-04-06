@@ -49,6 +49,28 @@ export default function QuadroReunioes() {
   const handleUpdateStatus = async (id: string, status: "veio" | "nao" | "pending") => {
     try {
       await updateLead(id, { status })
+      
+      // Encontra o lead para pegar o kommo_id
+      const lead = leads.find(l => l.id === id)
+      
+      // Envia webhook para Pluga mover no Kommo (apenas se tiver kommo_id e não for "pending")
+      if (lead?.kommo_id && status !== "pending") {
+        try {
+          await fetch("https://hooks.pluga.co/v2/webhooks/MTcxMDcyNjIwODA2OTkzMDQ4NTlUMTc3NTQ1MDc0NA", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              kommo_id: lead.kommo_id,
+              status: status,
+              nome: lead.nome,
+              responsavel: lead.responsavel
+            })
+          })
+        } catch (webhookError) {
+          console.error("Erro ao enviar webhook para Pluga:", webhookError)
+        }
+      }
+      
       toast.success(
         status === "veio" 
           ? "Cliente marcado como presente!" 
