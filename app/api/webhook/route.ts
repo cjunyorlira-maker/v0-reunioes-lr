@@ -146,6 +146,9 @@ const parseDateTime = (dateTimeStr: string) => {
   return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
 }
 
+// ID da etapa "Confirmar reunião" no Kommo
+const ETAPA_CONFIRMAR_REUNIAO = 67567420
+
 // Webhook endpoint para integração com Kommo / Make / Pluga
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -156,11 +159,22 @@ export async function POST(request: NextRequest) {
     // Suporte para formato nativo do Kommo (leads[status][0][id], etc)
     let kommoLead = null
     let kommoLeadId: string | null = null
+    let statusId: number | null = null
     
     if (body.leads) {
       const leadsData = body.leads
       kommoLead = leadsData.status?.[0] || leadsData.add?.[0] || leadsData.update?.[0]
       kommoLeadId = kommoLead?.id?.toString() || null
+      statusId = kommoLead?.status_id || null
+      
+      // Se veio do Kommo nativo, só processa se for da etapa "Confirmar reunião"
+      if (statusId && statusId !== ETAPA_CONFIRMAR_REUNIAO) {
+        return NextResponse.json({ 
+          success: true, 
+          action: "ignored",
+          reason: `Lead não está na etapa 'Confirmar reunião' (status_id: ${statusId})` 
+        })
+      }
     }
     
     // Se veio do Kommo nativo, busca dados completos via API
