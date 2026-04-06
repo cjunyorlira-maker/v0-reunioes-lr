@@ -105,6 +105,7 @@ export default function QuadroReunioes() {
               nome: lead.nome,
               status: status,
               atendente: lead.atendente || null,
+              data_reuniao: lead.data, // Envia a data da reunião para preencher no Kommo
             })
           })
           

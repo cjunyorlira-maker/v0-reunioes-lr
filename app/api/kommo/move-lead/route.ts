@@ -17,10 +17,11 @@ const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente, data_reuniao } = await request.json()
     
-    // ID do campo "Atendente" no Kommo
+    // IDs dos campos personalizados no Kommo
     const CAMPO_ATENDENTE_ID = 1026812
+    const CAMPO_DATA_NAO_VIERAM_ID = 1026052
 
     if (!status || !["veio", "nao", "remarcou"].includes(status)) {
       return NextResponse.json(
@@ -164,14 +165,28 @@ export async function POST(request: NextRequest) {
       updateData.responsible_user_id = Number(finalResponsibleUserId)
     }
     
-    // Se for "veio" e tiver atendente, adiciona ao campo personalizado 1026812
+    // Prepara campos personalizados
+    const customFields: Array<{ field_id: number; values: Array<{ value: string }> }> = []
+    
+    // Se for "veio" e tiver atendente, adiciona ao campo 1026812
     if (status === "veio" && atendente) {
-      updateData.custom_fields_values = [
-        {
-          field_id: CAMPO_ATENDENTE_ID,
-          values: [{ value: atendente }]
-        }
-      ]
+      customFields.push({
+        field_id: CAMPO_ATENDENTE_ID,
+        values: [{ value: atendente }]
+      })
+    }
+    
+    // Se for "nao" (faltou) ou "remarcou", preenche o campo de data com a data da reunião
+    if ((status === "nao" || status === "remarcou") && data_reuniao) {
+      customFields.push({
+        field_id: CAMPO_DATA_NAO_VIERAM_ID,
+        values: [{ value: data_reuniao }]
+      })
+    }
+    
+    // Adiciona campos personalizados se houver
+    if (customFields.length > 0) {
+      updateData.custom_fields_values = customFields
     }
 
     // Faz a requisição PATCH para a API do Kommo
