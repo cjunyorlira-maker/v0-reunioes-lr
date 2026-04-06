@@ -153,12 +153,8 @@ const ETAPA_CONFIRMAR_REUNIAO = 67567420
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
-  console.log("[v0] Webhook POST recebido")
-  
   try {
     const body = await parseBody(request)
-    
-    console.log("[v0] Body recebido:", JSON.stringify(body).substring(0, 500))
     
     // Suporte para formato nativo do Kommo (leads[status][0][id], etc)
     let kommoLead = null
