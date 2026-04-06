@@ -9,50 +9,42 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
     {
-      label: "Total da semana",
+      label: "Total",
       value: stats.total,
-      stripeClass: "bg-gradient-to-r from-[#b8960c] to-[#f0d060]",
-      valueClass: "text-[#d4af37]",
+      color: "text-[#a78bfa]",
+      bg: "bg-[#a78bfa]/10",
     },
     {
       label: "Vieram",
       value: stats.veio,
-      stripeClass: "bg-[#4ade80]",
-      valueClass: "text-[#4ade80]",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
     },
     {
-      label: "Não vieram",
+      label: "Faltaram",
       value: stats.nao,
-      stripeClass: "bg-[#f87171]",
-      valueClass: "text-[#f87171]",
+      color: "text-red-400",
+      bg: "bg-red-500/10",
     },
     {
       label: "Pendentes",
       value: stats.pending,
-      stripeClass: "bg-[#fbbf24]",
-      valueClass: "text-[#fbbf24]",
+      color: "text-amber-400",
+      bg: "bg-amber-500/10",
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-8 mb-6">
+    <div className="flex gap-2 px-4 md:px-6 mb-4 overflow-x-auto">
       {cards.map((card) => (
         <div
           key={card.label}
-          className="relative overflow-hidden bg-[rgba(18,18,18,0.6)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-2xl p-5 hover:border-[rgba(212,175,55,0.2)] transition-all group"
+          className="flex items-center gap-3 bg-[#111] border border-white/[0.06] rounded-lg px-4 py-2.5 min-w-fit"
         >
-          {/* Stripe no topo */}
-          <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-2xl ${card.stripeClass}`} />
-          
-          {/* Glow effect */}
-          <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-8 blur-xl opacity-20 ${card.stripeClass}`} />
-          
-          <p className="text-[11px] text-[#6a6a6a] uppercase tracking-wider font-medium mb-2">
-            {card.label}
-          </p>
-          <p className={`font-serif text-[40px] font-bold leading-none tracking-tight ${card.valueClass}`}>
-            {card.value}
-          </p>
+          <div className={`w-8 h-8 rounded-md ${card.bg} flex items-center justify-center`}>
+            <span className={`text-[14px] font-bold ${card.color}`}>{card.value}</span>
+          </div>
+          <span className="text-[11px] text-white/40 font-medium">{card.label}</span>
         </div>
       ))}
     </div>

@@ -21,58 +21,51 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
     router.push("/auth/login")
     router.refresh()
   }
+  
   return (
-    <header className="relative flex items-center justify-between mx-4 md:mx-8 mt-6 mb-6 p-6 bg-[rgba(18,18,18,0.8)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-2xl flex-wrap gap-4">
-      {/* Gradiente decorativo */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[rgba(212,175,55,0.02)] to-transparent pointer-events-none" />
-      
+    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-4 p-4 bg-[#111] border border-white/[0.06] rounded-lg">
       {/* Brand */}
-      <div className="relative flex items-center gap-3.5">
-        {/* Logo */}
+      <div className="flex items-center gap-3">
         <Image
           src="/images/logo-lr.png"
           alt="LR Multimarcas"
-          width={180}
-          height={60}
-          className="h-[50px] w-auto object-contain"
+          width={140}
+          height={46}
+          className="h-[40px] w-auto object-contain"
           priority
         />
         
-        {/* Divider */}
-        <div className="hidden sm:block w-px h-10 bg-[rgba(212,175,55,0.25)] mx-1" />
+        <div className="hidden sm:block w-px h-8 bg-white/10 mx-2" />
         
-        {/* Título */}
-        <div className="hidden sm:block">
-          <h1 className="font-serif text-[22px] font-semibold text-[#f5f0e8] tracking-tight">
-            Reuniões Agendadas
-          </h1>
-        </div>
+        <h1 className="hidden sm:block text-[15px] font-medium text-white/80">
+          Reunioes
+        </h1>
       </div>
 
-      {/* Right side */}
-      <div className="relative flex items-center gap-2.5 flex-wrap">
-        {/* Sync badge */}
-        <span className="text-[11px] px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 whitespace-nowrap bg-[rgba(74,222,128,0.08)] text-[#4ade80] border border-[rgba(74,222,128,0.2)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
-          Sincronizado
+      {/* Controls */}
+      <div className="flex items-center gap-2">
+        {/* Sync indicator */}
+        <span className="hidden md:flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-md font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          Sync
         </span>
         
         {/* Week navigation */}
-        <div className="flex items-center gap-1.5 bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-xl p-1">
+        <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-md">
           <button
             onClick={onPrevWeek}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(212,175,55,0.08)] hover:text-[#d4af37] transition-all"
+            className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.04] rounded-l-md transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           
-          <span className="font-serif text-[13px] font-semibold text-[#f5f0e8] min-w-[170px] text-center">
+          <span className="text-[12px] font-medium text-white/70 min-w-[140px] text-center px-2">
             {weekLabel || "..."}
           </span>
           
           <button
             onClick={onNextWeek}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(212,175,55,0.08)] hover:text-[#d4af37] transition-all"
+            className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.04] rounded-r-md transition-colors"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -81,16 +74,16 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
         {/* Add button */}
         <button
           onClick={onNewLead}
-          className="bg-gradient-to-br from-[#b8960c] via-[#d4af37] to-[#f0d060] text-black text-[13px] font-medium px-5 py-2.5 rounded-[10px] hover:opacity-90 hover:shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition-all tracking-wide whitespace-nowrap"
+          className="flex items-center gap-1.5 bg-[#a78bfa] hover:bg-[#8b5cf6] text-black text-[12px] font-medium px-3 py-2 rounded-md transition-colors"
         >
-          <Plus className="h-4 w-4 inline mr-1 -mt-0.5" />
-          Novo lead
+          <Plus className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Novo</span>
         </button>
         
-        {/* Logout button */}
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-[#8a8070] hover:bg-[rgba(239,68,68,0.1)] hover:text-red-400 transition-all"
+          className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
           title="Sair"
         >
           <LogOut className="h-4 w-4" />

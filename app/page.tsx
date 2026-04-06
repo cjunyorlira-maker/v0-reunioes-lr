@@ -373,7 +373,7 @@ export default function QuadroReunioes() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#080808] z-[1]">
+    <div className="relative min-h-screen bg-[#0a0a0a] z-[1]">
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
@@ -383,58 +383,34 @@ export default function QuadroReunioes() {
 
       <StatsCards stats={stats} />
 
-      {/* Filtro por Equipe e Estatísticas */}
+      {/* Filtro por Equipe */}
       {equipes.length > 0 && (
-        <div className="px-4 md:px-8 mb-6">
-          <div className="bg-[rgba(18,18,18,0.6)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-2xl p-5">
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className="text-[12px] text-[#6a6a6a] uppercase tracking-wider font-medium">Equipe:</span>
+        <div className="px-4 md:px-6 mb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium mr-1">Equipe:</span>
+            <button
+              onClick={() => setSelectedEquipe(null)}
+              className={`text-[11px] px-3 py-1.5 rounded-md border transition-colors ${
+                selectedEquipe === null
+                  ? "bg-[#a78bfa] text-black border-[#a78bfa] font-medium"
+                  : "bg-transparent text-white/50 border-white/[0.08] hover:border-white/20 hover:text-white/70"
+              }`}
+            >
+              Todas
+            </button>
+            {equipes.map(equipe => (
               <button
-                onClick={() => setSelectedEquipe(null)}
-                className={`text-[12px] px-4 py-2 rounded-xl border transition-all ${
-                  selectedEquipe === null
-                    ? "bg-gradient-to-r from-[#d4af37] to-[#b8960c] text-[#080808] border-[#d4af37] font-bold shadow-lg shadow-[rgba(212,175,55,0.2)]"
-                    : "bg-transparent text-[#a0a0a0] border-[rgba(255,255,255,0.08)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
+                key={equipe}
+                onClick={() => setSelectedEquipe(equipe)}
+                className={`text-[11px] px-3 py-1.5 rounded-md border transition-colors ${
+                  selectedEquipe === equipe
+                    ? "bg-[#a78bfa] text-black border-[#a78bfa] font-medium"
+                    : "bg-transparent text-white/50 border-white/[0.08] hover:border-white/20 hover:text-white/70"
                 }`}
               >
-                Todas
+                {equipe}
               </button>
-              {equipes.map(equipe => (
-                <button
-                  key={equipe}
-                  onClick={() => setSelectedEquipe(equipe)}
-                  className={`text-[12px] px-4 py-2 rounded-xl border transition-all ${
-                    selectedEquipe === equipe
-                      ? "bg-gradient-to-r from-[#d4af37] to-[#b8960c] text-[#080808] border-[#d4af37] font-bold shadow-lg shadow-[rgba(212,175,55,0.2)]"
-                      : "bg-transparent text-[#a0a0a0] border-[rgba(255,255,255,0.08)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
-                  }`}
-                >
-                  {equipe}
-                </button>
-              ))}
-            </div>
-            
-            {/* Estatísticas por Equipe */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {Object.entries(statsByEquipe).map(([equipe, estatisticas]) => (
-                <div 
-                  key={equipe}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                    selectedEquipe === equipe 
-                      ? "bg-[rgba(212,175,55,0.08)] border-[rgba(212,175,55,0.3)]" 
-                      : "bg-[rgba(0,0,0,0.3)] border-[rgba(255,255,255,0.04)] hover:border-[rgba(212,175,55,0.15)]"
-                  }`}
-                  onClick={() => setSelectedEquipe(selectedEquipe === equipe ? null : equipe)}
-                >
-                  <p className="text-[13px] text-[#d4af37] font-bold truncate mb-2">{equipe}</p>
-                  <div className="flex items-center gap-3 text-[11px]">
-                    <span className="text-[#f5f0e8] font-semibold">{estatisticas.total}</span>
-                    <span className="text-[#4ade80]">{estatisticas.veio} ✓</span>
-                    <span className="text-[#f87171]">{estatisticas.nao} ✗</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       )}
@@ -444,8 +420,8 @@ export default function QuadroReunioes() {
           <Spinner className="h-8 w-8 text-primary" />
         </div>
       ) : (
-        <div className="px-4 md:px-8 pb-8 overflow-x-auto">
-          <div className="flex gap-4" style={{ minWidth: "fit-content" }}>
+        <div className="px-4 md:px-6 pb-6 overflow-x-auto">
+          <div className="flex gap-3" style={{ minWidth: "fit-content" }}>
             {weekDays.map((day) => (
               <DayColumn
                 key={day.date.toISOString()}

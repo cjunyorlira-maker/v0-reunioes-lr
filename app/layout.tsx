@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans, Playfair_Display } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import './globals.css'
 
-const dmSans = DM_Sans({ 
+const inter = Inter({ 
   subsets: ["latin"],
-  weight: ['300', '400', '500'],
-  variable: '--font-dm-sans'
+  variable: '--font-inter'
 })
 
-const playfair = Playfair_Display({ 
+const jetbrains = JetBrains_Mono({ 
   subsets: ["latin"],
-  weight: ['600', '700'],
-  variable: '--font-playfair'
+  variable: '--font-mono'
 })
 
 export const metadata: Metadata = {
@@ -24,7 +22,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#080808',
+  themeColor: '#0a0a0a',
   width: 'device-width',
   initialScale: 1,
 }
@@ -36,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${dmSans.variable} ${playfair.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${jetbrains.variable} font-sans antialiased`}>
         <AnimatedBackground />
         <div className="relative z-10">
           {children}

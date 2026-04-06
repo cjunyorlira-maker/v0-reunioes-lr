@@ -23,66 +23,48 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
 
   return (
     <div
-      className={`w-[320px] flex-shrink-0 bg-[rgba(12,12,12,0.5)] backdrop-blur-sm border rounded-2xl p-4 min-h-[500px] transition-all ${
+      className={`w-[260px] flex-shrink-0 bg-[#111] border rounded-lg p-3 min-h-[400px] ${
         isToday 
-          ? "border-[rgba(212,175,55,0.6)] shadow-[0_0_20px_rgba(212,175,55,0.1)]" 
-          : "border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)]"
+          ? "border-[#a78bfa]/40 ring-1 ring-[#a78bfa]/20" 
+          : "border-white/[0.06] hover:border-white/[0.1]"
       }`}
     >
       {/* Day header */}
-      <div className="mb-4 pb-3 border-b border-[rgba(212,175,55,0.1)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-              isToday 
-                ? "bg-gradient-to-br from-[#d4af37] to-[#b8960c] shadow-lg" 
-                : "bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)]"
-            }`}>
-              <span className={`font-serif text-[28px] font-bold leading-none ${
-                isToday ? "text-[#080808]" : "text-[#d4af37]"
-              }`}>
-                {day.dayNumber}
-              </span>
-            </div>
-            <div>
-              <p className={`text-[13px] font-medium uppercase tracking-wide ${
-                isToday ? "text-[#d4af37]" : "text-[#8a8070]"
-              }`}>
-                {day.dayName}
-              </p>
-              {isToday && (
-                <span className="text-[10px] text-[#4ade80] font-semibold uppercase tracking-wider">
-                  Hoje
-                </span>
-              )}
-            </div>
-          </div>
-          
-          {/* Count badge */}
-          <div className={`px-3 py-1.5 rounded-lg ${
-            dayLeads.length > 0 
-              ? "bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)]" 
-              : "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]"
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-10 h-10 rounded-md flex items-center justify-center text-[18px] font-semibold ${
+            isToday 
+              ? "bg-[#a78bfa] text-black" 
+              : "bg-white/[0.04] text-white/70"
           }`}>
-            <span className={`text-[18px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
-              {dayLeads.length}
-            </span>
-            <span className="text-[10px] text-[#8a8070] ml-1">reuniões</span>
+            {day.dayNumber}
+          </div>
+          <div>
+            <p className={`text-[12px] font-medium ${isToday ? "text-[#a78bfa]" : "text-white/50"}`}>
+              {day.dayName}
+            </p>
+            {isToday && (
+              <span className="text-[10px] text-emerald-400 font-medium">Hoje</span>
+            )}
           </div>
         </div>
+        
+        {/* Count */}
+        <span className={`text-[11px] font-medium px-2 py-1 rounded ${
+          dayLeads.length > 0 
+            ? "bg-white/[0.06] text-white/70" 
+            : "text-white/20"
+        }`}>
+          {dayLeads.length}
+        </span>
       </div>
 
       {/* Leads */}
-      <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
         {dayLeads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center mb-3">
-              <span className="text-[20px] text-[#2a2a2a]">📅</span>
-            </div>
-            <p className="text-[12px] text-[#3a3a3a]">
-              Nenhuma reunião agendada
-            </p>
-          </div>
+          <p className="text-[11px] text-white/20 text-center py-8">
+            Sem reuniões
+          </p>
         ) : (
           dayLeads.map((lead) => (
             <LeadCard
