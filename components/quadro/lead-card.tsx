@@ -10,6 +10,8 @@ interface LeadCardProps {
   onEdit: (lead: Lead) => void
   onSync?: (id: string) => void
   onRemoveRemarcado?: (id: string) => void
+  onVendaFechada?: (id: string) => void
+  onRetorno?: (id: string) => void
 }
 
 function getTipoClass(tipo: string) {
@@ -19,7 +21,7 @@ function getTipoClass(tipo: string) {
   return "bg-sky-500/10 text-sky-400 border-sky-500/20"
 }
 
-export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado }: LeadCardProps) {
+export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado, onVendaFechada, onRetorno }: LeadCardProps) {
   const statusDot = 
     lead.status === "veio" 
       ? "bg-emerald-400"
@@ -67,6 +69,16 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                 >
                   REMARCADO
                 </button>
+              )}
+              {lead.venda_fechada && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                  VENDA FECHADA
+                </span>
+              )}
+              {lead.retorno && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                  RETORNO
+                </span>
               )}
             </div>
             
@@ -135,6 +147,27 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             Remarcar
           </button>
         </div>
+        {/* Botões de Venda Fechada e Retorno - só aparecem quando veio */}
+        {lead.status === "veio" && (
+          <div className="flex gap-1.5 mb-1.5">
+            {!lead.venda_fechada && onVendaFechada && (
+              <button
+                onClick={() => onVendaFechada(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
+              >
+                Venda Fechada
+              </button>
+            )}
+            {!lead.retorno && onRetorno && (
+              <button
+                onClick={() => onRetorno(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 font-semibold transition-colors"
+              >
+                Marcar Retorno
+              </button>
+            )}
+          </div>
+        )}
         {onSync && (
           <button
             onClick={() => onSync(lead.id)}

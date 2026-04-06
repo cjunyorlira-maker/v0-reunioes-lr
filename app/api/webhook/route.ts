@@ -273,8 +273,11 @@ export async function POST(request: NextRequest) {
         // Busca campos personalizados (data/hora da reunião, tipo de reunião)
         const customFields = leadDetails.custom_fields_values || []
         
-        // ID do campo tipo de reunião no Kommo
+        // IDs dos campos personalizados no Kommo
         const CAMPO_TIPO_REUNIAO_ID = 1026810
+        const CAMPO_ORIGEM_ID = 797344
+        
+        let origem: string | null = null
         
         for (const field of customFields) {
           const value = field.values?.[0]?.value
@@ -284,6 +287,11 @@ export async function POST(request: NextRequest) {
           if (fieldId === CAMPO_TIPO_REUNIAO_ID) {
             // Pode ser enum (select) ou valor direto
             tipoReuniao = field.values?.[0]?.enum || value || null
+          }
+          
+          // Busca origem do lead
+          if (fieldId === CAMPO_ORIGEM_ID) {
+            origem = field.values?.[0]?.enum || value || null
           }
           
           // Se parece com data/hora
@@ -329,6 +337,9 @@ export async function POST(request: NextRequest) {
       equipe: equipe !== "Sem equipe" ? equipe : (body.equipe || "Sem equipe"),
       remarcado: isRemarcado,
       status: body.status || "pending",
+      origem: origem || body.origem || null,
+      venda_fechada: false,
+      retorno: false,
     }
     
     // Validação básica - apenas nome é obrigatório

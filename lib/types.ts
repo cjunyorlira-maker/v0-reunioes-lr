@@ -14,6 +14,9 @@ export interface Lead {
   atendente: string | null
   remarcado: boolean
   status: "pending" | "veio" | "nao"
+  origem: string | null
+  venda_fechada: boolean
+  retorno: boolean
   created_at: string
   updated_at: string
 }

@@ -127,10 +127,12 @@ export async function POST(request: NextRequest) {
     let tipoReuniao = null
     let dataReuniao = null
     let horaReuniao = null
+    let origem = null
     
     const customFields = leadDetails.custom_fields_values || []
     const CAMPO_TIPO_REUNIAO_ID = 1026810
     const CAMPO_DATA_REUNIAO_ID = 1025159
+    const CAMPO_ORIGEM_ID = 797344
     
     for (const field of customFields) {
       const fieldId = field.field_id
@@ -139,6 +141,11 @@ export async function POST(request: NextRequest) {
       // Tipo de reunião (online/presencial)
       if (fieldId === CAMPO_TIPO_REUNIAO_ID) {
         tipoReuniao = field.values?.[0]?.enum || value || null
+      }
+      
+      // Origem do lead
+      if (fieldId === CAMPO_ORIGEM_ID) {
+        origem = field.values?.[0]?.enum || value || null
       }
       
       // Data da reunião - campo específico ID 1025159
@@ -162,6 +169,7 @@ export async function POST(request: NextRequest) {
       equipe: equipe,
       tipo_reuniao: tipoReuniao,
       remarcado: isRemarcado,
+      origem: origem,
     }
     
     // Se for remarcado, reseta o status para pending

@@ -8,6 +8,8 @@ import { DayColumn } from "@/components/quadro/day-column"
 import { NewLeadModal } from "@/components/quadro/new-lead-modal"
 import { EditLeadModal } from "@/components/quadro/edit-lead-modal"
 import { AtendenteModal } from "@/components/quadro/atendente-modal"
+import { NextWeekPreview } from "@/components/quadro/next-week-preview"
+import { AnalyticsDashboard } from "@/components/quadro/analytics-dashboard"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
@@ -23,6 +25,7 @@ export default function QuadroReunioes() {
   const [weekDays, setWeekDays] = useState<WeekDay[]>([])
   const [weekLabel, setWeekLabel] = useState("")
   const [dateRange, setDateRange] = useState({ start: "", end: "" })
+  const [nextWeekRange, setNextWeekRange] = useState({ start: "", end: "" })
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
   const [isAtendenteModalOpen, setIsAtendenteModalOpen] = useState(false)
   const [pendingVeioLead, setPendingVeioLead] = useState<Lead | null>(null)
@@ -36,10 +39,12 @@ export default function QuadroReunioes() {
       setWeekDays(getWeekDays(weekOffset))
       setWeekLabel(getWeekLabel(weekOffset))
       setDateRange(getWeekRange(weekOffset))
+      setNextWeekRange(getWeekRange(weekOffset + 1))
     }
   }, [weekOffset, mounted])
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
+  const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
 
   // Sincronização automática com Kommo a cada 5 minutos
   useEffect(() => {
@@ -329,6 +334,24 @@ export default function QuadroReunioes() {
     }
   }
 
+  const handleVendaFechada = async (id: string) => {
+    try {
+      await updateLead(id, { venda_fechada: true })
+      toast.success("Venda fechada registrada!")
+    } catch {
+      toast.error("Erro ao registrar venda")
+    }
+  }
+
+  const handleRetorno = async (id: string) => {
+    try {
+      await updateLead(id, { retorno: true })
+      toast.success("Cliente marcado como retorno")
+    } catch {
+      toast.error("Erro ao marcar retorno")
+    }
+  }
+
   const handleEdit = (lead: Lead) => {
     setEditingLead(lead)
     setIsEditModalOpen(true)
@@ -432,10 +455,28 @@ export default function QuadroReunioes() {
                 onEdit={handleEdit}
                 onSync={handleSync}
                 onRemoveRemarcado={handleRemoveRemarcado}
+                onVendaFechada={handleVendaFechada}
+                onRetorno={handleRetorno}
               />
             ))}
           </div>
         </div>
+      )}
+
+      {/* Preview da Próxima Semana */}
+      {mounted && !isLoading && (
+        <NextWeekPreview
+          leads={nextWeekLeads}
+          onNavigateToWeek={() => setWeekOffset(w => w + 1)}
+        />
+      )}
+
+      {/* Dashboard de Analytics */}
+      {mounted && !isLoading && (
+        <AnalyticsDashboard
+          leads={leads}
+          weekLabel={weekLabel}
+        />
       )}
 
       <NewLeadModal
