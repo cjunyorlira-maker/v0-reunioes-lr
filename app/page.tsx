@@ -160,6 +160,38 @@ export default function QuadroReunioes() {
     }
   }
 
+  const handleSync = async (id: string) => {
+    const lead = leads.find(l => l.id === id)
+    if (!lead) return
+    
+    toast.loading("Sincronizando com Kommo...", { id: "sync" })
+    
+    try {
+      const response = await fetch("/api/kommo/sync-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lead_id: id,
+          kommo_lead_id: lead.kommo_lead_id,
+          nome: lead.nome,
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast.success(data.message || "Lead sincronizado com sucesso!", { id: "sync" })
+        // Recarrega os leads para mostrar os dados atualizados
+        window.location.reload()
+      } else {
+        toast.error(data.error || "Erro ao sincronizar", { id: "sync" })
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar:", error)
+      toast.error("Erro ao sincronizar com Kommo", { id: "sync" })
+    }
+  }
+
   const handleEdit = (lead: Lead) => {
     setEditingLead(lead)
     setIsEditModalOpen(true)
@@ -285,6 +317,7 @@ export default function QuadroReunioes() {
                 onUpdateStatus={handleUpdateStatus}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                onSync={handleSync}
               />
             ))}
           </div>

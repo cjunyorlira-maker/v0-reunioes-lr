@@ -1,0 +1,213 @@
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+
+// Etapas do Kommo
+const ETAPA_REMARCADOS = 102225923
+const ETAPA_CONFIRMAR_REUNIAO = 67567420
+const ETAPA_REUNIAO_CONFIRMADA = 58498483
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  
+  try {
+    const { lead_id, kommo_lead_id, nome } = await request.json()
+    
+    const token = process.env.KOMMO_ACCESS_TOKEN
+    const subdomain = process.env.KOMMO_SUBDOMAIN
+    
+    if (!token || !subdomain) {
+      return NextResponse.json(
+        { error: "Configuração do Kommo não encontrada" },
+        { status: 500 }
+      )
+    }
+    
+    // Busca o lead no Kommo
+    let kommoLeadData = null
+    let foundLeadId = kommo_lead_id
+    
+    // Se tem kommo_lead_id, busca direto
+    if (kommo_lead_id && !isNaN(Number(kommo_lead_id))) {
+      const response = await fetch(
+        `https://${subdomain}.kommo.com/api/v4/leads/${kommo_lead_id}?with=contacts`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      )
+      
+      if (response.ok) {
+        kommoLeadData = await response.json()
+      }
+    }
+    
+    // Se não encontrou, busca pelo nome
+    if (!kommoLeadData && nome) {
+      const searchResponse = await fetch(
+        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      )
+      
+      if (searchResponse.ok && searchResponse.status !== 204) {
+        const searchText = await searchResponse.text()
+        if (searchText) {
+          const searchData = JSON.parse(searchText)
+          if (searchData._embedded?.leads?.length > 0) {
+            // Pega o lead mais recente
+            const leads = searchData._embedded.leads
+            kommoLeadData = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+              curr.id > prev.id ? curr : prev
+            , leads[0])
+            foundLeadId = kommoLeadData.id
+          }
+        }
+      }
+    }
+    
+    if (!kommoLeadData) {
+      return NextResponse.json(
+        { error: "Lead não encontrado no Kommo" },
+        { status: 404 }
+      )
+    }
+    
+    // Busca dados completos do lead
+    const leadDetailsResponse = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/leads/${foundLeadId}?with=contacts`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    )
+    
+    if (!leadDetailsResponse.ok) {
+      return NextResponse.json(
+        { error: "Erro ao buscar detalhes do lead" },
+        { status: 500 }
+      )
+    }
+    
+    const leadDetails = await leadDetailsResponse.json()
+    
+    // Verifica se é remarcado
+    const isRemarcado = leadDetails.status_id === ETAPA_REMARCADOS
+    
+    // Busca dados do responsável
+    let responsavelNome = "Não informado"
+    let responsavelId = null
+    let fotoResponsavel = null
+    let equipe = "Sem equipe"
+    
+    if (leadDetails.responsible_user_id) {
+      const userResponse = await fetch(
+        `https://${subdomain}.kommo.com/api/v4/users/${leadDetails.responsible_user_id}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      )
+      
+      if (userResponse.ok) {
+        const user = await userResponse.json()
+        responsavelNome = user.name || "Não informado"
+        responsavelId = user.id?.toString() || null
+        fotoResponsavel = user.avatar || null
+        equipe = user._embedded?.groups?.[0]?.name || "Sem equipe"
+      }
+    }
+    
+    // Busca campos personalizados
+    let tipoReuniao = null
+    let dataReuniao = null
+    let horaReuniao = null
+    
+    const customFields = leadDetails.custom_fields_values || []
+    const CAMPO_TIPO_REUNIAO_ID = 1026810
+    
+    for (const field of customFields) {
+      const fieldId = field.field_id
+      const value = field.values?.[0]?.value
+      
+      if (fieldId === CAMPO_TIPO_REUNIAO_ID) {
+        tipoReuniao = field.values?.[0]?.enum || value || null
+      }
+      
+      // Busca campos de data
+      if (value && typeof value === "number") {
+        // Timestamp Unix - converte para data
+        const date = new Date(value * 1000)
+        const dateStr = date.toISOString().split("T")[0]
+        if (!dataReuniao) {
+          dataReuniao = dateStr
+        }
+      } else if (value && typeof value === "string" && value.match(/\d{4}-\d{2}-\d{2}/)) {
+        if (!dataReuniao) {
+          dataReuniao = value.split("T")[0]
+        }
+      }
+    }
+    
+    // Prepara dados para atualizar
+    const updateData: Record<string, unknown> = {
+      kommo_lead_id: foundLeadId?.toString(),
+      responsavel: responsavelNome,
+      responsavel_id: responsavelId,
+      foto_responsavel: fotoResponsavel,
+      equipe: equipe,
+      tipo_reuniao: tipoReuniao,
+      remarcado: isRemarcado,
+    }
+    
+    // Se for remarcado, reseta o status para pending
+    if (isRemarcado) {
+      updateData.status = "pending"
+    }
+    
+    // Se encontrou nova data, atualiza
+    if (dataReuniao) {
+      updateData.data = dataReuniao
+    }
+    
+    if (horaReuniao) {
+      updateData.hora = horaReuniao
+    }
+    
+    // Atualiza o lead no banco
+    const { data, error } = await supabase
+      .from("leads")
+      .update(updateData)
+      .eq("id", lead_id)
+      .select()
+      .single()
+    
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: isRemarcado ? "Lead atualizado como remarcado!" : "Lead sincronizado com Kommo!",
+      lead: data,
+      kommoData: {
+        status_id: leadDetails.status_id,
+        responsavel: responsavelNome,
+        equipe: equipe,
+        isRemarcado,
+      }
+    })
+    
+  } catch (error) {
+    console.error("Erro ao sincronizar lead:", error)
+    return NextResponse.json(
+      { error: "Erro interno ao sincronizar lead" },
+      { status: 500 }
+    )
+  }
+}

@@ -8,6 +8,7 @@ interface LeadCardProps {
   onUpdateStatus: (id: string, status: "veio" | "nao" | "pending" | "remarcou") => void
   onDelete: (id: string) => void
   onEdit: (lead: Lead) => void
+  onSync?: (id: string) => void
 }
 
 function getTipoClass(tipo: string) {
@@ -17,7 +18,7 @@ function getTipoClass(tipo: string) {
   return "bg-[rgba(96,165,250,0.08)] text-[#60a5fa] border-[rgba(96,165,250,0.2)]"
 }
 
-export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardProps) {
+export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync }: LeadCardProps) {
   const stripeClass = 
     lead.status === "veio" 
       ? "bg-gradient-to-r from-[#4ade80] to-[rgba(74,222,128,0.2)]"
@@ -139,6 +140,15 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
           >
             Remarcou
           </button>
+          {onSync && (
+            <button
+              onClick={() => onSync(lead.id)}
+              className="w-[28px] text-[12px] py-1.5 rounded-lg border border-[rgba(96,165,250,0.2)] text-[#60a5fa] bg-transparent hover:bg-[rgba(96,165,250,0.1)] font-semibold transition-all"
+              title="Sincronizar com Kommo"
+            >
+              ↻
+            </button>
+          )}
           <button
             onClick={() => onDelete(lead.id)}
             className="w-[28px] text-[14px] py-1.5 rounded-lg border border-[rgba(212,175,55,0.1)] text-[#8a8070] bg-transparent hover:bg-[rgba(248,113,113,0.1)] hover:text-[#f87171] hover:border-[rgba(248,113,113,0.2)] transition-all"
