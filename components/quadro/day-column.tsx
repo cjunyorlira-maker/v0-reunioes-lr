@@ -32,17 +32,21 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
       }`}
     >
       {/* Day header */}
-      <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[rgba(212,175,55,0.1)]">
+      <div className={`flex items-center justify-between mb-3 p-2.5 rounded-lg -mx-1 ${
+        isToday 
+          ? "bg-gradient-to-r from-[rgba(212,175,55,0.15)] to-[rgba(212,175,55,0.05)]" 
+          : "bg-gradient-to-r from-[rgba(255,255,255,0.06)] to-transparent"
+      }`}>
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[20px] font-extrabold ${
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-[18px] font-extrabold ${
             isToday 
               ? "bg-gradient-to-br from-[#d4af37] to-[#b8960c] text-[#0a0a0a]" 
-              : "bg-[rgba(79,195,247,0.1)] text-[#4fc3f7] border border-[rgba(79,195,247,0.2)]"
+              : "bg-[rgba(255,255,255,0.08)] text-[#f5f0e8]"
           }`}>
             {day.dayNumber}
           </div>
           <div>
-            <p className={`text-[13px] font-bold uppercase tracking-wider ${isToday ? "text-[#d4af37]" : "text-[#4fc3f7]"}`}>
+            <p className={`text-[13px] font-bold uppercase tracking-wider ${isToday ? "text-[#d4af37]" : "text-[#f5f0e8]"}`}>
               {day.dayName}
             </p>
             {isToday && (
@@ -54,8 +58,8 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
         {/* Count */}
         <div className={`px-2.5 py-1 rounded-lg ${
           dayLeads.length > 0 
-            ? "bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)]" 
-            : "bg-[rgba(255,255,255,0.02)]"
+            ? "bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)]" 
+            : "bg-[rgba(255,255,255,0.03)]"
         }`}>
           <span className={`text-[14px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
             {dayLeads.length}

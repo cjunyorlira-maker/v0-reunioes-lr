@@ -183,9 +183,15 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         {onSync && (
           <button
             onClick={() => onSync(lead.id)}
-            className="w-full text-[10px] py-1.5 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] font-medium transition-colors"
+            className="w-7 h-7 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] flex items-center justify-center transition-colors ml-auto"
+            title="Sincronizar com Kommo"
           >
-            Sincronizar com Kommo
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 21h5v-5"/>
+            </svg>
           </button>
         )}
       </div>
