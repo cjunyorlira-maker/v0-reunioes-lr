@@ -15,7 +15,10 @@ const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, kommo_lead_id, status, nome, responsavel_id } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente } = await request.json()
+    
+    // ID do campo "Atendente" no Kommo
+    const CAMPO_ATENDENTE_ID = 1026812
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
@@ -146,13 +149,27 @@ export async function POST(request: NextRequest) {
     const statusId = ETAPAS[status as keyof typeof ETAPAS]
     
     // Prepara os dados para atualizar
-    const updateData: { status_id: number; responsible_user_id?: number } = {
+    const updateData: { 
+      status_id: number
+      responsible_user_id?: number
+      custom_fields_values?: Array<{ field_id: number; values: Array<{ value: string }> }>
+    } = {
       status_id: statusId,
     }
     
     // Se tiver responsible_user_id, adiciona (necessário para etapa "Vieram")
     if (finalResponsibleUserId && !isNaN(Number(finalResponsibleUserId))) {
       updateData.responsible_user_id = Number(finalResponsibleUserId)
+    }
+    
+    // Se for "veio" e tiver atendente, adiciona ao campo personalizado 1026812
+    if (status === "veio" && atendente) {
+      updateData.custom_fields_values = [
+        {
+          field_id: CAMPO_ATENDENTE_ID,
+          values: [{ value: atendente }]
+        }
+      ]
     }
 
     // Faz a requisição PATCH para a API do Kommo

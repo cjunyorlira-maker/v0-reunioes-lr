@@ -99,6 +99,7 @@ export default function QuadroReunioes() {
               kommo_lead_id: lead.kommo_lead_id,
               nome: lead.nome,
               status: status,
+              atendente: lead.atendente || null,
             })
           })
           

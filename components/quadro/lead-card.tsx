@@ -65,6 +65,12 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
               {lead.equipe}
             </p>
           )}
+          {/* Atendente */}
+          {lead.atendente && (
+            <p className="text-[9px] text-[#60a5fa] truncate mt-0.5" title={`Atendente: ${lead.atendente}`}>
+              Atend: {lead.atendente}
+            </p>
+          )}
         </div>
         
         {/* Status indicator */}

@@ -15,6 +15,7 @@ interface EditLeadModalProps {
     tipo: string
     kommo_id?: string
     equipe?: string
+    atendente?: string
   }) => Promise<void>
 }
 
@@ -27,6 +28,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
     tipo: "",
     kommo_id: "",
     equipe: "",
+    atendente: "",
   })
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
         tipo: lead.tipo || "",
         kommo_id: lead.kommo_id || "",
         equipe: lead.equipe || "",
+        atendente: lead.atendente || "",
       })
     }
   }, [open, lead])
@@ -61,6 +64,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
         tipo: formData.tipo,
         kommo_id: formData.kommo_id,
         equipe: formData.equipe,
+        atendente: formData.atendente,
       })
       onClose()
     } finally {
@@ -152,6 +156,20 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
               value={formData.equipe}
               onChange={(e) => setFormData({ ...formData, equipe: e.target.value })}
               placeholder="Ex: Equipe A, Vendas"
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
+          </div>
+          
+          {/* Atendente */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Atendente
+            </label>
+            <input
+              type="text"
+              value={formData.atendente}
+              onChange={(e) => setFormData({ ...formData, atendente: e.target.value })}
+              placeholder="Nome do atendente (enviado ao Kommo no Veio)"
               className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
             />
           </div>
