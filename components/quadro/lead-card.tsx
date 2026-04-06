@@ -29,91 +29,104 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
 
   return (
     <div 
-      className="bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] p-2.5 hover:border-[rgba(212,175,55,0.25)] hover:-translate-y-0.5 transition-all cursor-pointer"
+      className="bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] overflow-hidden hover:border-[rgba(212,175,55,0.25)] hover:-translate-y-0.5 transition-all cursor-pointer"
       onClick={() => onEdit(lead)}
     >
-      {/* Stripe */}
-      <div className={`h-0.5 rounded-sm mb-2 ${stripeClass}`} />
-      
-      {/* Nome do cliente (título) */}
-      <p className="text-[13px] font-semibold text-[#f5f0e8] truncate mb-1.5" title={lead.nome}>
-        {lead.nome}
-      </p>
-      
-      {/* Responsável com foto */}
-      <div className="flex items-center gap-1.5 mb-1">
+      {/* Header com foto maior e tipo de reunião */}
+      <div className="flex items-start gap-2.5 p-2.5 pb-2">
+        {/* Foto do responsável - maior e na lateral */}
         {lead.foto_responsavel ? (
           <img 
             src={lead.foto_responsavel} 
             alt={lead.responsavel}
-            className="w-5 h-5 rounded-full object-cover border border-[rgba(212,175,55,0.2)]"
+            className="w-10 h-10 rounded-full object-cover border-2 border-[rgba(212,175,55,0.3)] flex-shrink-0"
           />
         ) : (
-          <div className="w-5 h-5 rounded-full bg-[#2a2820] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
-            <span className="text-[9px] text-[#d4af37] font-medium">
+          <div className="w-10 h-10 rounded-full bg-[#2a2820] border-2 border-[rgba(212,175,55,0.3)] flex items-center justify-center flex-shrink-0">
+            <span className="text-[14px] text-[#d4af37] font-semibold">
               {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
             </span>
           </div>
         )}
+        
+        {/* Info principal */}
         <div className="flex-1 min-w-0">
+          {/* Nome do cliente */}
+          <p className="text-[13px] font-semibold text-[#f5f0e8] truncate" title={lead.nome}>
+            {lead.nome}
+          </p>
+          
+          {/* Responsável e Equipe */}
           <p className="text-[11px] text-[#d4af37] truncate" title={lead.responsavel}>
             {lead.responsavel}
           </p>
-          {/* Equipe */}
           {lead.equipe && lead.equipe !== "Sem equipe" && (
             <p className="text-[9px] text-[#8a8070] truncate" title={lead.equipe}>
               {lead.equipe}
             </p>
           )}
         </div>
-      </div>
-      
-      {/* Hora + Status icon */}
-      <div className="flex items-center gap-1 text-[10px] text-[#8a8070] mb-1.5">
-        <span>{formatTimeDisplay(lead.hora)}</span>
+        
+        {/* Status indicator */}
         {statusIcon && (
-          <span className="ml-auto text-[10px] opacity-60">{statusIcon}</span>
+          <span className={`text-[12px] font-bold ${lead.status === "veio" ? "text-[#4ade80]" : "text-[#f87171]"}`}>
+            {statusIcon}
+          </span>
         )}
       </div>
       
-      {/* Tipo do bem + Tipo de reunião */}
-      <div className="flex flex-wrap gap-1">
-        {lead.tipo && (
-          <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${getTipoClass(lead.tipo)}`}>
-            {lead.tipo}
+      {/* Stripe de status */}
+      <div className={`h-0.5 ${stripeClass}`} />
+      
+      {/* Conteúdo inferior */}
+      <div className="p-2.5 pt-2">
+        {/* Hora + Tags */}
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          <span className="text-[10px] text-[#8a8070] font-medium">
+            {formatTimeDisplay(lead.hora)}
           </span>
-        )}
-        {lead.tipo_reuniao && (
-          <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${
-            lead.tipo_reuniao.toLowerCase().includes("online") 
-              ? "bg-[rgba(139,92,246,0.08)] text-[#8b5cf6] border-[rgba(139,92,246,0.2)]"
-              : "bg-[rgba(236,72,153,0.08)] text-[#ec4899] border-[rgba(236,72,153,0.2)]"
-          }`}>
-            {lead.tipo_reuniao}
-          </span>
-        )}
-      </div>
+          
+          {/* Tipo de reunião (Online/Presencial) */}
+          {lead.tipo_reuniao && (
+            <span className={`inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${
+              lead.tipo_reuniao.toLowerCase().includes("online") 
+                ? "bg-[rgba(139,92,246,0.08)] text-[#8b5cf6] border-[rgba(139,92,246,0.2)]"
+                : "bg-[rgba(236,72,153,0.08)] text-[#ec4899] border-[rgba(236,72,153,0.2)]"
+            }`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+              {lead.tipo_reuniao}
+            </span>
+          )}
+          
+          {/* Tipo do bem */}
+          {lead.tipo && (
+            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${getTipoClass(lead.tipo)}`}>
+              {lead.tipo}
+            </span>
+          )}
+        </div>
       
       {/* Actions */}
-      <div className="flex gap-1 mt-2 pt-1.5 border-t border-[rgba(212,175,55,0.1)]" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => onUpdateStatus(lead.id, "veio")}
-          className="flex-1 text-[9px] py-1 px-0.5 rounded-md border border-[rgba(74,222,128,0.2)] text-[#4ade80] bg-transparent hover:bg-[rgba(74,222,128,0.08)] font-medium transition-all"
-        >
-          Veio
-        </button>
-        <button
-          onClick={() => onUpdateStatus(lead.id, "nao")}
-          className="flex-1 text-[9px] py-1 px-0.5 rounded-md border border-[rgba(248,113,113,0.2)] text-[#f87171] bg-transparent hover:bg-[rgba(248,113,113,0.08)] font-medium transition-all"
-        >
-          Não veio
-        </button>
-        <button
-          onClick={() => onDelete(lead.id)}
-          className="w-[22px] text-[12px] py-1 rounded-md border border-[rgba(212,175,55,0.1)] text-[#8a8070] bg-transparent hover:bg-[rgba(248,113,113,0.08)] hover:text-[#f87171] hover:border-[rgba(248,113,113,0.2)] transition-all"
-        >
-          ×
-        </button>
+        <div className="flex gap-1 pt-1.5 border-t border-[rgba(212,175,55,0.1)]" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onUpdateStatus(lead.id, "veio")}
+            className="flex-1 text-[9px] py-1 px-0.5 rounded-md border border-[rgba(74,222,128,0.2)] text-[#4ade80] bg-transparent hover:bg-[rgba(74,222,128,0.08)] font-medium transition-all"
+          >
+            Veio
+          </button>
+          <button
+            onClick={() => onUpdateStatus(lead.id, "nao")}
+            className="flex-1 text-[9px] py-1 px-0.5 rounded-md border border-[rgba(248,113,113,0.2)] text-[#f87171] bg-transparent hover:bg-[rgba(248,113,113,0.08)] font-medium transition-all"
+          >
+            Não veio
+          </button>
+          <button
+            onClick={() => onDelete(lead.id)}
+            className="w-[22px] text-[12px] py-1 rounded-md border border-[rgba(212,175,55,0.1)] text-[#8a8070] bg-transparent hover:bg-[rgba(248,113,113,0.08)] hover:text-[#f87171] hover:border-[rgba(248,113,113,0.2)] transition-all"
+          >
+            ×
+          </button>
+        </div>
       </div>
     </div>
   )

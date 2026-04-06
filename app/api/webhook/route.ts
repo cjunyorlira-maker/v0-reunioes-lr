@@ -271,16 +271,17 @@ export async function POST(request: NextRequest) {
         // Busca campos personalizados (data/hora da reunião, tipo de reunião)
         const customFields = leadDetails.custom_fields_values || []
         
+        // ID do campo tipo de reunião no Kommo
+        const CAMPO_TIPO_REUNIAO_ID = 1026810
+        
         for (const field of customFields) {
           const value = field.values?.[0]?.value
-          const fieldName = field.field_name?.toLowerCase() || ""
+          const fieldId = field.field_id
           
-          // Busca tipo de reunião (online/presencial)
-          if (fieldName.includes("tipo") && fieldName.includes("reuni") || 
-              fieldName.includes("modalidade") ||
-              fieldName.includes("online") ||
-              fieldName.includes("presencial")) {
-            tipoReuniao = value || field.values?.[0]?.enum || null
+          // Busca tipo de reunião pelo ID específico do campo
+          if (fieldId === CAMPO_TIPO_REUNIAO_ID) {
+            // Pode ser enum (select) ou valor direto
+            tipoReuniao = field.values?.[0]?.enum || value || null
           }
           
           // Se parece com data/hora
