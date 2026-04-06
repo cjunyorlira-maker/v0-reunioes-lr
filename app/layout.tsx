@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import './globals.css'
 
-const inter = Inter({ 
+const plusJakarta = Plus_Jakarta_Sans({ 
   subsets: ["latin"],
-  variable: '--font-inter'
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800']
 })
 
 const jetbrains = JetBrains_Mono({ 
@@ -34,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} ${jetbrains.variable} font-sans antialiased`}>
+      <body className={`${plusJakarta.variable} ${jetbrains.variable} font-sans antialiased`}>
         <AnimatedBackground />
         <div className="relative z-10">
           {children}

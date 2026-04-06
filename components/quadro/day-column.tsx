@@ -34,19 +34,19 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
       {/* Day header */}
       <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[rgba(212,175,55,0.1)]">
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[20px] font-bold ${
+          <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[20px] font-extrabold ${
             isToday 
               ? "bg-gradient-to-br from-[#d4af37] to-[#b8960c] text-[#0a0a0a]" 
-              : "bg-[rgba(212,175,55,0.08)] text-[#d4af37]"
+              : "bg-[rgba(79,195,247,0.1)] text-[#4fc3f7] border border-[rgba(79,195,247,0.2)]"
           }`}>
             {day.dayNumber}
           </div>
           <div>
-            <p className={`text-[12px] font-semibold uppercase tracking-wide ${isToday ? "text-[#d4af37]" : "text-[#8a8070]"}`}>
+            <p className={`text-[13px] font-bold uppercase tracking-wider ${isToday ? "text-[#d4af37]" : "text-[#4fc3f7]"}`}>
               {day.dayName}
             </p>
             {isToday && (
-              <span className="text-[10px] text-emerald-400 font-semibold">Hoje</span>
+              <span className="text-[10px] text-emerald-400 font-bold">Hoje</span>
             )}
           </div>
         </div>
