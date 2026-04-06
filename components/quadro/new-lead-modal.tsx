@@ -20,8 +20,7 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: "",
-    data: "",
-    hora: "09:00",
+    dataHora: "",
     responsavel: "",
     tipo: "",
     kommo_id: "",
@@ -31,7 +30,7 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
     if (open && defaultDate) {
       setFormData(prev => ({
         ...prev,
-        data: defaultDate,
+        dataHora: `${defaultDate}T09:00`,
       }))
     }
   }, [open, defaultDate])
@@ -39,17 +38,26 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.nome || !formData.data || !formData.hora || !formData.responsavel) {
+    if (!formData.nome || !formData.dataHora || !formData.responsavel) {
       return
     }
 
+    // Separa data e hora do campo combinado
+    const [data, hora] = formData.dataHora.split("T")
+
     setLoading(true)
     try {
-      await onSubmit(formData)
+      await onSubmit({
+        nome: formData.nome,
+        data,
+        hora,
+        responsavel: formData.responsavel,
+        tipo: formData.tipo,
+        kommo_id: formData.kommo_id,
+      })
       setFormData({
         nome: "",
-        data: defaultDate || "",
-        hora: "09:00",
+        dataHora: defaultDate ? `${defaultDate}T09:00` : "",
         responsavel: "",
         tipo: "",
         kommo_id: "",
@@ -91,29 +99,15 @@ export function NewLeadModal({ open, onClose, onSubmit, defaultDate }: NewLeadMo
             />
           </div>
           
-          {/* Data */}
+          {/* Data e Hora */}
           <div className="mb-3">
             <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
-              Data
+              Data e Hora
             </label>
             <input
-              type="date"
-              value={formData.data}
-              onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-              required
-              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
-            />
-          </div>
-          
-          {/* Horário */}
-          <div className="mb-3">
-            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
-              Horário
-            </label>
-            <input
-              type="time"
-              value={formData.hora}
-              onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+              type="datetime-local"
+              value={formData.dataHora}
+              onChange={(e) => setFormData({ ...formData, dataHora: e.target.value })}
               required
               className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors"
             />
