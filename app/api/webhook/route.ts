@@ -165,7 +165,9 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
   try {
+    console.log("[v0] Webhook recebido - Content-Type:", request.headers.get("content-type"))
     const body = await parseBody(request)
+    console.log("[v0] Body recebido no webhook:", JSON.stringify(body, null, 2))
     
     // Suporte para formato nativo do Kommo (leads[status][0][id], etc)
     let kommoLead = null
@@ -438,9 +440,11 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
     
   } catch (error) {
-    console.error("Webhook error:", error)
+    console.error("[v0] Webhook error detalhado:", error)
+    console.error("[v0] Webhook error message:", error instanceof Error ? error.message : String(error))
+    console.error("[v0] Webhook error stack:", error instanceof Error ? error.stack : "No stack")
     return NextResponse.json(
-      { error: "Erro ao processar webhook" },
+      { error: "Erro ao processar webhook", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
