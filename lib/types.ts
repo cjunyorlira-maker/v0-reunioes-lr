@@ -6,6 +6,8 @@ export interface Lead {
   responsavel: string
   tipo: string
   kommo_id: string | null
+  kommo_lead_id: string | null
+  equipe: string | null
   status: "pending" | "veio" | "nao"
   created_at: string
   updated_at: string

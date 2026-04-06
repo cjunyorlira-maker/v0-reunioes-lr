@@ -41,9 +41,16 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
       </p>
       
       {/* Responsável */}
-      <p className="text-[11px] text-[#d4af37] truncate mb-1" title={lead.responsavel}>
+      <p className="text-[11px] text-[#d4af37] truncate mb-0.5" title={lead.responsavel}>
         {lead.responsavel}
       </p>
+      
+      {/* Equipe */}
+      {lead.equipe && (
+        <p className="text-[9px] text-[#8a8070] truncate mb-1" title={lead.equipe}>
+          {lead.equipe}
+        </p>
+      )}
       
       {/* Hora + Status icon */}
       <div className="flex items-center gap-1 text-[10px] text-[#8a8070] mb-1.5">

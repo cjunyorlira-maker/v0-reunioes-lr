@@ -8,7 +8,7 @@ const ETAPAS = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, status, nome } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome } = await request.json()
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
@@ -27,9 +27,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let leadId = kommo_id
+    // Prioriza kommo_lead_id (ID numérico do lead), depois kommo_id
+    let leadId = kommo_lead_id || kommo_id
 
-    // Se kommo_id não é numérico, busca o lead pelo nome no Kommo
+    // Se não tem ID numérico válido, busca o lead pelo nome no Kommo
     if (!leadId || isNaN(Number(leadId))) {
       if (!nome) {
         return NextResponse.json(

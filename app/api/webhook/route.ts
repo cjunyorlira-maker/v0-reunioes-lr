@@ -1,6 +1,94 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
+// Função para buscar dados do usuário no Kommo
+async function getKommoUser(userId: string | number) {
+  const token = process.env.KOMMO_ACCESS_TOKEN
+  const subdomain = process.env.KOMMO_SUBDOMAIN
+  
+  if (!token || !subdomain) return null
+  
+  try {
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/users/${userId}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    )
+    
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (error) {
+    console.error("Erro ao buscar usuário Kommo:", error)
+  }
+  
+  return null
+}
+
+// Função para buscar dados do grupo/equipe no Kommo
+async function getKommoGroups() {
+  const token = process.env.KOMMO_ACCESS_TOKEN
+  const subdomain = process.env.KOMMO_SUBDOMAIN
+  
+  if (!token || !subdomain) return []
+  
+  try {
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/users?with=group`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    )
+    
+    if (response.ok) {
+      const data = await response.json()
+      return data._embedded?.users || []
+    }
+  } catch (error) {
+    console.error("Erro ao buscar grupos Kommo:", error)
+  }
+  
+  return []
+}
+
+// Função para buscar detalhes do lead no Kommo
+async function getKommoLeadDetails(leadId: string | number) {
+  const token = process.env.KOMMO_ACCESS_TOKEN
+  const subdomain = process.env.KOMMO_SUBDOMAIN
+  
+  if (!token || !subdomain) return null
+  
+  try {
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/leads/${leadId}?with=contacts`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    )
+    
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (error) {
+    console.error("Erro ao buscar lead Kommo:", error)
+  }
+  
+  return null
+}
+
+// Função para extrair campo personalizado do Kommo
+function getCustomFieldValue(customFields: Array<{ field_id: number; values: Array<{ value: string }> }>, fieldId: number) {
+  const field = customFields?.find(f => f.field_id === fieldId)
+  return field?.values?.[0]?.value || null
+}
+
 // Função para parsear body dependendo do content-type
 async function parseBody(request: NextRequest) {
   const contentType = request.headers.get("content-type") || ""
@@ -14,7 +102,6 @@ async function parseBody(request: NextRequest) {
     const params = new URLSearchParams(text)
     const obj: Record<string, unknown> = {}
     params.forEach((value, key) => {
-      // Tenta parsear como JSON se possível
       try {
         obj[key] = JSON.parse(value)
       } catch {
@@ -24,7 +111,6 @@ async function parseBody(request: NextRequest) {
     return obj
   }
   
-  // Tenta JSON como fallback
   try {
     return await request.json()
   } catch {
@@ -33,55 +119,100 @@ async function parseBody(request: NextRequest) {
   }
 }
 
-// Webhook endpoint para integração com Make.com / Kommo / Pluga
+// Função para extrair data e hora de um campo combinado
+const parseDateTime = (dateTimeStr: string) => {
+  if (!dateTimeStr) return { data: null, hora: null }
+  
+  const str = dateTimeStr.trim()
+  
+  // Formato ISO: "2025-04-10T14:30:00" ou "2025-04-10 14:30"
+  let match = str.match(/(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/)
+  if (match) {
+    return { data: match[1], hora: match[2] }
+  }
+  
+  // Formato BR: "10/04/2025 14:30"
+  match = str.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2})/)
+  if (match) {
+    return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: match[4] }
+  }
+  
+  // Formato BR sem hora: "10/04/2025"
+  match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+  if (match) {
+    return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: "09:00" }
+  }
+  
+  return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
+}
+
+// Webhook endpoint para integração com Kommo / Make / Pluga
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
   try {
     const body = await parseBody(request)
     
-    // Função para extrair data e hora de um campo combinado (ex: "2025-04-10 14:30" ou "10/04/2025 14:30")
-    const parseDateTime = (dateTimeStr: string) => {
-      if (!dateTimeStr) return { data: null, hora: null }
-      
-      // Remove espaços extras
-      const str = dateTimeStr.trim()
-      
-      // Tenta diferentes formatos
-      // Formato ISO: "2025-04-10T14:30:00" ou "2025-04-10 14:30"
-      let match = str.match(/(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/)
-      if (match) {
-        return { data: match[1], hora: match[2] }
-      }
-      
-      // Formato BR: "10/04/2025 14:30"
-      match = str.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2})/)
-      if (match) {
-        return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: match[4] }
-      }
-      
-      // Formato BR sem hora: "10/04/2025"
-      match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/)
-      if (match) {
-        return { data: `${match[3]}-${match[2]}-${match[1]}`, hora: "09:00" }
-      }
-      
-      // Se não conseguiu parsear, retorna como está
-      return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
-    }
-    
     // Suporte para formato nativo do Kommo (leads[status][0][id], etc)
     let kommoLead = null
+    let kommoLeadId: string | null = null
+    
     if (body.leads) {
-      // Kommo envia em formato: leads[status][0], leads[add][0], leads[update][0]
       const leadsData = body.leads
       kommoLead = leadsData.status?.[0] || leadsData.add?.[0] || leadsData.update?.[0]
+      kommoLeadId = kommoLead?.id?.toString() || null
     }
     
-    // Verifica se veio campo combinado de data/hora
+    // Se veio do Kommo nativo, busca dados completos via API
+    let responsavelNome = "Não informado"
+    let equipe = "Sem equipe"
+    let dataReuniao: string | null = null
+    let horaReuniao: string | null = null
+    
+    if (kommoLeadId && process.env.KOMMO_ACCESS_TOKEN) {
+      // Busca detalhes do lead
+      const leadDetails = await getKommoLeadDetails(kommoLeadId)
+      
+      if (leadDetails) {
+        // Busca usuário responsável
+        const responsibleUserId = leadDetails.responsible_user_id
+        if (responsibleUserId) {
+          // Busca todos os usuários com grupos
+          const users = await getKommoGroups()
+          const user = users.find((u: { id: number }) => u.id === responsibleUserId)
+          
+          if (user) {
+            responsavelNome = user.name || "Não informado"
+            equipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+          }
+        }
+        
+        // Busca campos personalizados (data/hora da reunião)
+        // IDs dos campos personalizados - você pode precisar ajustar esses IDs
+        const customFields = leadDetails.custom_fields_values || []
+        
+        // Tenta encontrar campo de data da reunião (ajuste o ID conforme seu Kommo)
+        for (const field of customFields) {
+          const value = field.values?.[0]?.value
+          if (value && typeof value === "string") {
+            // Se parece com data/hora
+            if (value.match(/\d{4}-\d{2}-\d{2}/) || value.match(/\d{2}\/\d{2}\/\d{4}/)) {
+              const parsed = parseDateTime(value)
+              if (parsed.data) {
+                dataReuniao = parsed.data
+                horaReuniao = parsed.hora
+                break
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Verifica se veio campo combinado de data/hora via Pluga/Make
     const dataHoraCombinada = body.data_hora || body.datetime || body.data_reuniao || body.meeting_datetime
-    let dataFinal = body.data || body.date || body.meeting_date
-    let horaFinal = body.hora || body.time || body.meeting_time
+    let dataFinal = body.data || body.date || body.meeting_date || dataReuniao
+    let horaFinal = body.hora || body.time || body.meeting_time || horaReuniao
     
     if (dataHoraCombinada) {
       const parsed = parseDateTime(dataHoraCombinada)
@@ -89,14 +220,16 @@ export async function POST(request: NextRequest) {
       horaFinal = parsed.hora
     }
     
-    // Suporte para diferentes formatos de payload do Make/Kommo/Pluga
+    // Monta dados do lead
     const leadData = {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
-      data: dataFinal || (kommoLead ? new Date().toISOString().split("T")[0] : null),
+      data: dataFinal || new Date().toISOString().split("T")[0],
       hora: horaFinal || "09:00",
-      responsavel: body.responsavel || body.responsible || body.assigned_to || body.user_name || body.atendente || kommoLead?.responsible_user_id?.toString() || "Não informado",
+      responsavel: body.responsavel || body.responsible || responsavelNome,
       tipo: body.tipo || body.type || "",
-      kommo_id: body.kommo_id || body.lead_id || body.id?.toString() || body.atendente_id || kommoLead?.id?.toString(),
+      kommo_id: body.kommo_id || body.atendente || null,
+      kommo_lead_id: kommoLeadId || body.lead_id || body.id?.toString() || null,
+      equipe: body.equipe || equipe,
       status: body.status || "pending",
     }
     
@@ -112,31 +245,19 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Define valores padrão para campos faltantes
-    if (!leadData.data) {
-      leadData.data = new Date().toISOString().split("T")[0]
-    }
-    if (!leadData.hora) {
-      leadData.hora = "09:00"
-    }
-    if (!leadData.responsavel) {
-      leadData.responsavel = "Não informado"
-    }
-    
-    // Verifica se já existe lead com mesmo kommo_id (evita duplicatas)
-    if (leadData.kommo_id) {
+    // Verifica se já existe lead com mesmo kommo_lead_id (evita duplicatas)
+    if (leadData.kommo_lead_id) {
       const { data: existing } = await supabase
         .from("leads")
         .select("id")
-        .eq("kommo_id", leadData.kommo_id)
+        .eq("kommo_lead_id", leadData.kommo_lead_id)
         .single()
       
       if (existing) {
-        // Atualiza lead existente
         const { data, error } = await supabase
           .from("leads")
           .update(leadData)
-          .eq("kommo_id", leadData.kommo_id)
+          .eq("kommo_lead_id", leadData.kommo_lead_id)
           .select()
           .single()
         
@@ -186,8 +307,8 @@ export async function GET() {
     usage: {
       method: "POST",
       contentType: "application/json",
-      requiredFields: ["nome", "data", "hora", "responsavel"],
-      optionalFields: ["tipo", "kommo_id", "status"]
+      requiredFields: ["nome"],
+      optionalFields: ["data", "hora", "responsavel", "tipo", "kommo_id", "kommo_lead_id", "equipe", "status"]
     }
   })
 }

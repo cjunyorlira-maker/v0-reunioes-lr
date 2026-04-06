@@ -22,6 +22,7 @@ export default function QuadroReunioes() {
   const [weekDays, setWeekDays] = useState<WeekDay[]>([])
   const [weekLabel, setWeekLabel] = useState("")
   const [dateRange, setDateRange] = useState({ start: "", end: "" })
+  const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -37,14 +38,48 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead } = useLeads(dateRange.start, dateRange.end)
 
-  const stats = useMemo(() => {
-    return {
-      total: leads.length,
-      veio: leads.filter((l) => l.status === "veio").length,
-      nao: leads.filter((l) => l.status === "nao").length,
-      pending: leads.filter((l) => l.status === "pending").length,
-    }
+  // Lista de equipes únicas
+  const equipes = useMemo(() => {
+    const equipesSet = new Set<string>()
+    leads.forEach(lead => {
+      if (lead.equipe) equipesSet.add(lead.equipe)
+    })
+    return Array.from(equipesSet).sort()
   }, [leads])
+
+  // Leads filtrados por equipe
+  const filteredLeads = useMemo(() => {
+    if (!selectedEquipe) return leads
+    return leads.filter(lead => lead.equipe === selectedEquipe)
+  }, [leads, selectedEquipe])
+
+  // Estatísticas por equipe
+  const statsByEquipe = useMemo(() => {
+    const stats: Record<string, { total: number; veio: number; nao: number; pending: number }> = {}
+    
+    leads.forEach(lead => {
+      const equipe = lead.equipe || "Sem equipe"
+      if (!stats[equipe]) {
+        stats[equipe] = { total: 0, veio: 0, nao: 0, pending: 0 }
+      }
+      stats[equipe].total++
+      if (lead.status === "veio") stats[equipe].veio++
+      else if (lead.status === "nao") stats[equipe].nao++
+      else stats[equipe].pending++
+    })
+    
+    return stats
+  }, [leads])
+
+  const stats = useMemo(() => {
+    const leadsToCount = selectedEquipe ? filteredLeads : leads
+    return {
+      total: leadsToCount.length,
+      veio: leadsToCount.filter((l) => l.status === "veio").length,
+      nao: leadsToCount.filter((l) => l.status === "nao").length,
+      pending: leadsToCount.filter((l) => l.status === "pending").length,
+    }
+  }, [leads, filteredLeads, selectedEquipe])
 
   const handleUpdateStatus = async (id: string, status: "veio" | "nao" | "pending") => {
     try {
@@ -61,6 +96,7 @@ export default function QuadroReunioes() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               kommo_id: lead.kommo_id,
+              kommo_lead_id: lead.kommo_lead_id,
               nome: lead.nome,
               status: status,
             })
@@ -165,6 +201,62 @@ export default function QuadroReunioes() {
 
       <StatsCards stats={stats} />
 
+      {/* Filtro por Equipe e Estatísticas */}
+      {equipes.length > 0 && (
+        <div className="px-4 md:px-6 mb-4">
+          <div className="bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-[11px] text-[#8a8070] uppercase tracking-wider font-medium">Filtrar por equipe:</span>
+              <button
+                onClick={() => setSelectedEquipe(null)}
+                className={`text-[11px] px-3 py-1.5 rounded-lg border transition-all ${
+                  selectedEquipe === null
+                    ? "bg-[#d4af37] text-[#080808] border-[#d4af37] font-semibold"
+                    : "bg-transparent text-[#f5f0e8] border-[rgba(212,175,55,0.2)] hover:border-[rgba(212,175,55,0.4)]"
+                }`}
+              >
+                Todas
+              </button>
+              {equipes.map(equipe => (
+                <button
+                  key={equipe}
+                  onClick={() => setSelectedEquipe(equipe)}
+                  className={`text-[11px] px-3 py-1.5 rounded-lg border transition-all ${
+                    selectedEquipe === equipe
+                      ? "bg-[#d4af37] text-[#080808] border-[#d4af37] font-semibold"
+                      : "bg-transparent text-[#f5f0e8] border-[rgba(212,175,55,0.2)] hover:border-[rgba(212,175,55,0.4)]"
+                  }`}
+                >
+                  {equipe}
+                </button>
+              ))}
+            </div>
+            
+            {/* Estatísticas por Equipe */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              {Object.entries(statsByEquipe).map(([equipe, estatisticas]) => (
+                <div 
+                  key={equipe}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedEquipe === equipe 
+                      ? "bg-[rgba(212,175,55,0.1)] border-[#d4af37]" 
+                      : "bg-[#0d0d0d] border-[rgba(212,175,55,0.05)] hover:border-[rgba(212,175,55,0.2)]"
+                  }`}
+                  onClick={() => setSelectedEquipe(selectedEquipe === equipe ? null : equipe)}
+                >
+                  <p className="text-[11px] text-[#d4af37] font-semibold truncate mb-1">{equipe}</p>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-[#f5f0e8]">{estatisticas.total} total</span>
+                    <span className="text-[#4ade80]">{estatisticas.veio} veio</span>
+                    <span className="text-[#f87171]">{estatisticas.nao} faltou</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {!mounted || isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Spinner className="h-8 w-8 text-primary" />
@@ -176,7 +268,7 @@ export default function QuadroReunioes() {
               <DayColumn
                 key={day.date.toISOString()}
                 day={day}
-                leads={leads}
+                leads={filteredLeads}
                 onUpdateStatus={handleUpdateStatus}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
