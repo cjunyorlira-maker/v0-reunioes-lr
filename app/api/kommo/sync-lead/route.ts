@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         responsavelNome = user.name || "Não informado"
         responsavelId = user.id?.toString() || null
         fotoResponsavel = user.avatar || null
-        equipe = user._embedded?.groups?.[0]?.name || "Sem equipe"
+        equipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
       }
     }
     
