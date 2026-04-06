@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server"
 
-const KOMMO_TOKEN = process.env.KOMMO_TOKEN
-const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN || "crm2lrmultimarcascom"
-
 // ID do campo Atendente no Kommo
 const CAMPO_ATENDENTE_ID = 1026479
 
 export async function GET() {
   try {
-    if (!KOMMO_TOKEN) {
+    const token = process.env.KOMMO_ACCESS_TOKEN
+    const subdomain = process.env.KOMMO_SUBDOMAIN
+    
+    if (!token || !subdomain) {
       return NextResponse.json(
-        { error: "KOMMO_TOKEN não configurado" },
+        { error: "Configuração do Kommo não encontrada" },
         { status: 500 }
       )
     }
 
     // Busca os campos personalizados do Kommo
     const response = await fetch(
-      `https://${KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads/custom_fields/${CAMPO_ATENDENTE_ID}`,
+      `https://${subdomain}.kommo.com/api/v4/leads/custom_fields/${CAMPO_ATENDENTE_ID}`,
       {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${KOMMO_TOKEN}`,
+          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -38,12 +38,16 @@ export async function GET() {
 
     const data = await response.json()
     
+    console.log("[v0] Campo atendente retornado:", JSON.stringify(data, null, 2))
+    
     // Extrai as opções do campo (enums)
     const atendentes = data.enums?.map((item: { id: number; value: string; sort: number }) => ({
       id: item.id,
       nome: item.value,
       sort: item.sort,
     })) || []
+    
+    console.log("[v0] Atendentes extraídos:", atendentes)
 
     // Ordena por sort
     atendentes.sort((a: { sort: number }, b: { sort: number }) => a.sort - b.sort)

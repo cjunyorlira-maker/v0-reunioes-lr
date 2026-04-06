@@ -39,13 +39,17 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
   const fetchAtendentes = async () => {
     setLoading(true)
     try {
+      console.log("[v0] Buscando atendentes...")
       const response = await fetch("/api/kommo/get-atendentes")
       const data = await response.json()
+      console.log("[v0] Resposta atendentes:", data)
       if (data.success) {
         setAtendentes(data.atendentes)
+      } else {
+        console.error("[v0] Erro na resposta:", data.error)
       }
     } catch (error) {
-      console.error("Erro ao buscar atendentes:", error)
+      console.error("[v0] Erro ao buscar atendentes:", error)
     } finally {
       setLoading(false)
     }
