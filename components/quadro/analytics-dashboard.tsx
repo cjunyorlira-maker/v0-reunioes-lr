@@ -201,35 +201,35 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-[#131313] border border-violet-500/20 rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-violet-500/20 rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Agendei Semana</p>
           <p className="text-[24px] font-bold text-violet-400">{totalAgendeiSemana}</p>
         </div>
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Marcados</p>
           <p className="text-[24px] font-bold text-[#d4af37]">{totals.total}</p>
         </div>
-        <div className="bg-[#131313] border border-emerald-500/20 rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-emerald-500/20 rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vieram</p>
           <p className="text-[24px] font-bold text-emerald-400">{totals.veio}</p>
         </div>
-        <div className="bg-[#131313] border border-red-500/20 rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-red-500/20 rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Faltaram</p>
           <p className="text-[24px] font-bold text-red-400">{totals.nao}</p>
         </div>
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Presenca</p>
           <p className="text-[24px] font-bold text-[#f5f0e8]">{totals.taxaPresenca}%</p>
         </div>
-        <div className="bg-[#131313] border border-emerald-500/20 rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-emerald-500/20 rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vendas</p>
           <p className="text-[24px] font-bold text-emerald-400">{totals.vendas}</p>
         </div>
-        <div className="bg-[#131313] border border-cyan-500/20 rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-cyan-500/20 rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Retornos</p>
           <p className="text-[24px] font-bold text-cyan-400">{totals.retornos}</p>
         </div>
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
           <p className="text-[24px] font-bold text-[#d4af37]">{totals.taxaConversao}%</p>
         </div>
@@ -238,7 +238,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
       {/* Grid com tabelas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Tabela de vendedores */}
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Vendedor</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
@@ -297,7 +297,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         </div>
 
         {/* Tabela de equipes */}
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Equipe</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
@@ -336,7 +336,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         </div>
 
         {/* Tabela de origens */}
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Origem</h3>
           <div className="flex flex-wrap gap-2">
             {origemStats.map(([origem, s]) => (
@@ -356,7 +356,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         </div>
 
         {/* Tabela de atendentes */}
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Atendente</h3>
           {atendenteStats.length === 0 ? (
             <p className="text-[11px] text-[#8a8070]">Nenhum atendimento registrado ainda</p>

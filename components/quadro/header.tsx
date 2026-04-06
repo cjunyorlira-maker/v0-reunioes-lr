@@ -23,15 +23,15 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
   }
   
   return (
-    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-4 p-4 bg-[#0f0f0f] border border-[rgba(212,175,55,0.1)] rounded-xl">
+    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-4 p-4 bg-black/30 backdrop-blur-md border border-[rgba(212,175,55,0.15)] rounded-xl">
       {/* Brand */}
       <div className="flex items-center gap-3">
         <Image
           src="/images/logo-lr.png"
           alt="LR Multimarcas"
-          width={140}
-          height={46}
-          className="h-[42px] w-auto object-contain"
+          width={180}
+          height={60}
+          className="h-[56px] w-auto object-contain"
           priority
         />
         
@@ -51,7 +51,7 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
         </span>
         
         {/* Week navigation */}
-        <div className="flex items-center bg-[rgba(212,175,55,0.05)] border border-[rgba(212,175,55,0.15)] rounded-lg">
+        <div className="flex items-center bg-white/5 backdrop-blur-sm border border-[rgba(212,175,55,0.15)] rounded-lg">
           <button
             onClick={onPrevWeek}
             className="w-9 h-9 flex items-center justify-center text-[#d4af37]/50 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.1)] rounded-l-lg transition-colors"

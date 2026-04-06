@@ -43,7 +43,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className={`flex items-center gap-3 bg-[#0f0f0f] border ${card.border} rounded-xl px-4 py-3 min-w-fit`}
+          className={`flex items-center gap-3 bg-white/[0.04] backdrop-blur-sm border ${card.border} rounded-xl px-4 py-3 min-w-fit`}
         >
           <div className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center`}>
             <span className={`text-[18px] font-bold ${card.color}`}>{card.value}</span>
