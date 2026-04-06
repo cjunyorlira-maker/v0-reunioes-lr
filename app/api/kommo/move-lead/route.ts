@@ -31,11 +31,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prioriza kommo_lead_id (ID numérico do lead), depois kommo_id
-    let leadId = kommo_lead_id || kommo_id
+    // Prioriza kommo_lead_id (ID numérico do lead), depois kommo_id (se for numérico)
+    let leadId: number | null = null
+    
+    if (kommo_lead_id && !isNaN(Number(kommo_lead_id))) {
+      leadId = Number(kommo_lead_id)
+    } else if (kommo_id && !isNaN(Number(kommo_id))) {
+      leadId = Number(kommo_id)
+    }
 
     // Se não tem ID numérico válido, busca o lead pelo nome no Kommo
-    if (!leadId || isNaN(Number(leadId))) {
+    if (!leadId) {
       if (!nome) {
         return NextResponse.json(
           { error: "kommo_id ou nome é obrigatório" },
