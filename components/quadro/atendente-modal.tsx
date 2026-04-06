@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 
 interface Atendente {
@@ -64,9 +65,9 @@ export function AtendenteModal({ open, onClose, onConfirm, leadNome }: Atendente
           <DialogTitle className="text-[#d4af37] text-lg font-semibold">
             Selecionar Atendente
           </DialogTitle>
-          <p className="text-[#8a8070] text-sm mt-1">
+          <DialogDescription className="text-[#8a8070] text-sm mt-1">
             Cliente: <span className="text-[#f5f0e8]">{leadNome}</span>
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 space-y-3">
