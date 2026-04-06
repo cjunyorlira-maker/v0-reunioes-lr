@@ -6,11 +6,13 @@ const ETAPAS = {
   nao: 69799504,       // Etapa "Não vieram"
 }
 
+// Etapa "Confirmar reunião" - onde os leads devem estar antes de mover
+const ETAPA_CONFIRMAR_REUNIAO = 67567420
+const PIPELINE_ID = 7012299
+
 export async function POST(request: NextRequest) {
-  console.log("[v0] move-lead API chamada")
   try {
     const { kommo_id, kommo_lead_id, status, nome } = await request.json()
-    console.log("[v0] Dados recebidos:", { kommo_id, kommo_lead_id, status, nome })
 
     if (!status || !["veio", "nao"].includes(status)) {
       return NextResponse.json(
@@ -41,9 +43,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Busca o lead pelo nome
+      // Busca o lead pelo nome, filtrando pela etapa "Confirmar reunião"
       const searchResponse = await fetch(
-        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}`,
+        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_CONFIRMAR_REUNIAO}`,
         {
           method: "GET",
           headers: {
@@ -53,26 +55,65 @@ export async function POST(request: NextRequest) {
         }
       )
 
-      if (!searchResponse.ok) {
-        const errorText = await searchResponse.text()
-        console.error("[Kommo Search Error]", searchResponse.status, errorText)
-        return NextResponse.json(
-          { error: "Erro ao buscar lead no Kommo", details: errorText },
-          { status: searchResponse.status }
-        )
+      if (searchResponse.ok && searchResponse.status !== 204) {
+        const text = await searchResponse.text()
+        if (text) {
+          const searchData = JSON.parse(text)
+          if (searchData._embedded?.leads?.length > 0) {
+            // Pega o lead mais recente (maior ID) na etapa correta
+            const leads = searchData._embedded.leads
+            const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+              curr.id > prev.id ? curr : prev
+            , leads[0])
+            leadId = latestLead.id
+          }
+        }
       }
-
-      const searchData = await searchResponse.json()
       
-      if (!searchData._embedded?.leads?.length) {
-        return NextResponse.json(
-          { error: `Lead "${nome}" não encontrado no Kommo` },
-          { status: 404 }
+      // Se não encontrou na etapa "Confirmar reunião", busca sem filtro
+      if (!leadId) {
+        const fallbackResponse = await fetch(
+          `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         )
-      }
 
-      // Pega o primeiro lead encontrado
-      leadId = searchData._embedded.leads[0].id
+        if (!fallbackResponse.ok || fallbackResponse.status === 204) {
+          return NextResponse.json(
+            { error: `Lead "${nome}" não encontrado no Kommo` },
+            { status: 404 }
+          )
+        }
+
+        const fallbackText = await fallbackResponse.text()
+        if (!fallbackText) {
+          return NextResponse.json(
+            { error: `Lead "${nome}" não encontrado no Kommo` },
+            { status: 404 }
+          )
+        }
+        
+        const fallbackData = JSON.parse(fallbackText)
+        
+        if (!fallbackData._embedded?.leads?.length) {
+          return NextResponse.json(
+            { error: `Lead "${nome}" não encontrado no Kommo` },
+            { status: 404 }
+          )
+        }
+
+        // Pega o lead mais recente (maior ID)
+        const leads = fallbackData._embedded.leads
+        const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+          curr.id > prev.id ? curr : prev
+        , leads[0])
+        leadId = latestLead.id
+      }
     }
 
     const statusId = ETAPAS[status as keyof typeof ETAPAS]

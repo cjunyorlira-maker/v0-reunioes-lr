@@ -188,8 +188,9 @@ export async function POST(request: NextRequest) {
     
     if (!kommoLeadId && nomeLead && process.env.KOMMO_ACCESS_TOKEN && process.env.KOMMO_SUBDOMAIN) {
       try {
+        // Busca leads com esse nome, filtrando pela etapa "Confirmar reunião"
         const searchResponse = await fetch(
-          `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}`,
+          `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}&filter[statuses][0][pipeline_id]=7012299&filter[statuses][0][status_id]=${ETAPA_CONFIRMAR_REUNIAO}`,
           {
             headers: {
               "Authorization": `Bearer ${process.env.KOMMO_ACCESS_TOKEN}`,
@@ -200,7 +201,35 @@ export async function POST(request: NextRequest) {
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
           if (searchData._embedded?.leads?.length > 0) {
-            kommoLeadId = searchData._embedded.leads[0].id?.toString()
+            // Pega o lead mais recente (maior ID) na etapa correta
+            const leads = searchData._embedded.leads
+            const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+              curr.id > prev.id ? curr : prev
+            , leads[0])
+            kommoLeadId = latestLead.id?.toString()
+          }
+        }
+        
+        // Se não encontrou na etapa, busca sem filtro e pega o mais recente
+        if (!kommoLeadId) {
+          const fallbackResponse = await fetch(
+            `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}`,
+            {
+              headers: {
+                "Authorization": `Bearer ${process.env.KOMMO_ACCESS_TOKEN}`,
+              },
+            }
+          )
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json()
+            if (fallbackData._embedded?.leads?.length > 0) {
+              const leads = fallbackData._embedded.leads
+              const latestLead = leads.reduce((prev: { id: number }, curr: { id: number }) => 
+                curr.id > prev.id ? curr : prev
+              , leads[0])
+              kommoLeadId = latestLead.id?.toString()
+            }
           }
         }
       } catch (error) {
