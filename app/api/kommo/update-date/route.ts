@@ -21,10 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Converte a data de YYYY-MM-DD para DD.MM.YYYY (formato do Kommo)
-    // Exemplo: "2026-04-08" -> "08.04.2026"
-    const [year, month, day] = data_reuniao.split("-")
-    const dataFormatada = `${day}.${month}.${year}`
+    // Converte a data para formato ISO 8601 que o Kommo espera: Y-m-d\TH:i:sP
+    // Exemplo: "2026-04-08" -> "2026-04-08T12:00:00-03:00"
+    const dataFormatada = `${data_reuniao}T12:00:00-03:00`
     
     console.log(`[v0] Atualizando data no Kommo: leadId=${leadId}, data=${data_reuniao} -> ${dataFormatada}, tipo=${tipo}, campo=${campoDataId}`)
 
