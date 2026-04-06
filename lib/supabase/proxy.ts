@@ -37,9 +37,27 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getUser() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      // Se o erro for de refresh token inválido, limpa os cookies de auth
+      if (error.code === 'refresh_token_not_found' || error.message?.includes('Refresh Token')) {
+        // Limpa todos os cookies de auth do Supabase
+        const cookieNames = request.cookies.getAll().map(c => c.name)
+        cookieNames.forEach(name => {
+          if (name.startsWith('sb-') || name.includes('supabase')) {
+            supabaseResponse.cookies.delete(name)
+          }
+        })
+      }
+    } else {
+      user = data.user
+    }
+  } catch {
+    // Em caso de erro, continua sem usuário
+    user = null
+  }
 
   // Rotas públicas que não precisam de autenticação
   const publicRoutes = ['/auth/login', '/auth/error', '/api/webhook']
