@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
     let tipoReuniao: string | null = null
     let dataReuniao: string | null = null
     let horaReuniao: string | null = null
+    let origem: string | null = null
     
     // Se não temos o ID do lead mas temos o nome, busca pelo nome no Kommo
     const nomeLead = body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name
@@ -289,8 +290,6 @@ export async function POST(request: NextRequest) {
         // IDs dos campos personalizados no Kommo
         const CAMPO_TIPO_REUNIAO_ID = 1026810
         const CAMPO_ORIGEM_ID = 797344
-        
-        let origem: string | null = null
         
         for (const field of customFields) {
           const value = field.values?.[0]?.value
