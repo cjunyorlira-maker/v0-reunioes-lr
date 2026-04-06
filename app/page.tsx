@@ -387,13 +387,13 @@ export default function QuadroReunioes() {
       {equipes.length > 0 && (
         <div className="px-4 md:px-6 mb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium mr-1">Equipe:</span>
+            <span className="text-[10px] text-[#8a8070] uppercase tracking-wider font-semibold mr-1">Equipe:</span>
             <button
               onClick={() => setSelectedEquipe(null)}
-              className={`text-[11px] px-3 py-1.5 rounded-md border transition-colors ${
+              className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
                 selectedEquipe === null
-                  ? "bg-[#a78bfa] text-black border-[#a78bfa] font-medium"
-                  : "bg-transparent text-white/50 border-white/[0.08] hover:border-white/20 hover:text-white/70"
+                  ? "bg-[#d4af37] text-[#0a0a0a] border-[#d4af37] font-semibold"
+                  : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
               }`}
             >
               Todas
@@ -402,10 +402,10 @@ export default function QuadroReunioes() {
               <button
                 key={equipe}
                 onClick={() => setSelectedEquipe(equipe)}
-                className={`text-[11px] px-3 py-1.5 rounded-md border transition-colors ${
+                className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
                   selectedEquipe === equipe
-                    ? "bg-[#a78bfa] text-black border-[#a78bfa] font-medium"
-                    : "bg-transparent text-white/50 border-white/[0.08] hover:border-white/20 hover:text-white/70"
+                    ? "bg-[#d4af37] text-[#0a0a0a] border-[#d4af37] font-semibold"
+                    : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
                 }`}
               >
                 {equipe}

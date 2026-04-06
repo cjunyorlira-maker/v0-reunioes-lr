@@ -23,46 +23,48 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
 
   return (
     <div
-      className={`w-[260px] flex-shrink-0 bg-[#111] border rounded-lg p-3 min-h-[400px] ${
+      className={`w-[280px] flex-shrink-0 bg-[#0f0f0f] border rounded-xl p-3.5 min-h-[420px] ${
         isToday 
-          ? "border-[#a78bfa]/40 ring-1 ring-[#a78bfa]/20" 
-          : "border-white/[0.06] hover:border-white/[0.1]"
+          ? "border-[rgba(212,175,55,0.4)] shadow-[0_0_15px_rgba(212,175,55,0.1)]" 
+          : "border-[rgba(212,175,55,0.1)] hover:border-[rgba(212,175,55,0.2)]"
       }`}
     >
       {/* Day header */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-10 h-10 rounded-md flex items-center justify-center text-[18px] font-semibold ${
+      <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[rgba(212,175,55,0.1)]">
+        <div className="flex items-center gap-3">
+          <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[20px] font-bold ${
             isToday 
-              ? "bg-[#a78bfa] text-black" 
-              : "bg-white/[0.04] text-white/70"
+              ? "bg-gradient-to-br from-[#d4af37] to-[#b8960c] text-[#0a0a0a]" 
+              : "bg-[rgba(212,175,55,0.08)] text-[#d4af37]"
           }`}>
             {day.dayNumber}
           </div>
           <div>
-            <p className={`text-[12px] font-medium ${isToday ? "text-[#a78bfa]" : "text-white/50"}`}>
+            <p className={`text-[12px] font-semibold uppercase tracking-wide ${isToday ? "text-[#d4af37]" : "text-[#8a8070]"}`}>
               {day.dayName}
             </p>
             {isToday && (
-              <span className="text-[10px] text-emerald-400 font-medium">Hoje</span>
+              <span className="text-[10px] text-emerald-400 font-semibold">Hoje</span>
             )}
           </div>
         </div>
         
         {/* Count */}
-        <span className={`text-[11px] font-medium px-2 py-1 rounded ${
+        <div className={`px-2.5 py-1 rounded-lg ${
           dayLeads.length > 0 
-            ? "bg-white/[0.06] text-white/70" 
-            : "text-white/20"
+            ? "bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)]" 
+            : "bg-[rgba(255,255,255,0.02)]"
         }`}>
-          {dayLeads.length}
-        </span>
+          <span className={`text-[14px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
+            {dayLeads.length}
+          </span>
+        </div>
       </div>
 
       {/* Leads */}
-      <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
+      <div className="space-y-2.5 max-h-[calc(100vh-300px)] overflow-y-auto pr-1">
         {dayLeads.length === 0 ? (
-          <p className="text-[11px] text-white/20 text-center py-8">
+          <p className="text-[11px] text-[#3a3a3a] text-center py-10">
             Sem reuniões
           </p>
         ) : (
