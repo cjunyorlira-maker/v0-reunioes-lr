@@ -34,7 +34,19 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.25)] transition-all cursor-pointer group"
       onClick={() => onEdit(lead)}
     >
-      <div className="p-3.5">
+      <div className="p-3.5 relative">
+        {/* Botão X para excluir */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(lead.id)
+          }}
+          className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Excluir lead"
+        >
+          x
+        </button>
+        
         {/* Header with photo and info */}
         <div className="flex items-start gap-3 mb-2">
           {/* Photo - Larger */}

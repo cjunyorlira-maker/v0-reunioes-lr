@@ -291,6 +291,7 @@ export async function POST(request: NextRequest) {
           
           // Busca origem do lead
           if (fieldId === CAMPO_ORIGEM_ID) {
+            console.log("[v0] Campo origem encontrado no webhook:", JSON.stringify(field, null, 2))
             origem = field.values?.[0]?.enum || value || null
           }
           

@@ -134,6 +134,8 @@ export async function POST(request: NextRequest) {
     const CAMPO_DATA_REUNIAO_ID = 1025159
     const CAMPO_ORIGEM_ID = 797344
     
+    console.log("[v0] Custom fields do lead:", JSON.stringify(customFields, null, 2))
+    
     for (const field of customFields) {
       const fieldId = field.field_id
       const value = field.values?.[0]?.value
@@ -143,9 +145,10 @@ export async function POST(request: NextRequest) {
         tipoReuniao = field.values?.[0]?.enum || value || null
       }
       
-      // Origem do lead
+      // Origem do lead - campo de seleção
       if (fieldId === CAMPO_ORIGEM_ID) {
-        origem = field.values?.[0]?.enum || value || null
+        console.log("[v0] Campo origem encontrado:", JSON.stringify(field, null, 2))
+        origem = field.values?.[0]?.enum || field.values?.[0]?.value || null
       }
       
       // Data da reunião - campo específico ID 1025159

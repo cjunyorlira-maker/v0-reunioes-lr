@@ -124,6 +124,51 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
   }, [leads])
 
+  // Estatísticas por atendente
+  const atendenteStats = useMemo(() => {
+    const stats: Record<string, { total: number; vendas: number; conversao: number }> = {}
+
+    leads.forEach((lead) => {
+      if (lead.atendente && lead.status === "veio") {
+        if (!stats[lead.atendente]) {
+          stats[lead.atendente] = { total: 0, vendas: 0, conversao: 0 }
+        }
+        stats[lead.atendente].total++
+        if (lead.venda_fechada) stats[lead.atendente].vendas++
+      }
+    })
+
+    Object.values(stats).forEach((s) => {
+      s.conversao = s.total > 0 ? Math.round((s.vendas / s.total) * 100) : 0
+    })
+
+    return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
+  }, [leads])
+
+  // Agendei do dia (leads criados por dia da semana)
+  const agendeiPorDia = useMemo(() => {
+    const stats: Record<string, Record<string, number>> = {} // vendedor -> data -> quantidade
+    const totalPorDia: Record<string, number> = {}
+
+    leads.forEach((lead) => {
+      const createdDate = lead.created_at?.split("T")[0]
+      if (!createdDate) return
+      
+      const vendedor = lead.responsavel || "Não informado"
+      
+      if (!stats[vendedor]) stats[vendedor] = {}
+      stats[vendedor][createdDate] = (stats[vendedor][createdDate] || 0) + 1
+      totalPorDia[createdDate] = (totalPorDia[createdDate] || 0) + 1
+    })
+
+    return { porVendedor: stats, totalPorDia }
+  }, [leads])
+
+  // Total agendei da semana
+  const totalAgendeiSemana = useMemo(() => {
+    return Object.values(agendeiPorDia.totalPorDia).reduce((acc, val) => acc + val, 0)
+  }, [agendeiPorDia])
+
   // Totais gerais
   const totals = useMemo(() => {
     const veioCount = leads.filter(l => l.status === "veio").length
@@ -155,7 +200,11 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="bg-[#131313] border border-violet-500/20 rounded-xl p-3">
+          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Agendei Semana</p>
+          <p className="text-[24px] font-bold text-violet-400">{totalAgendeiSemana}</p>
+        </div>
         <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
           <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Marcados</p>
           <p className="text-[24px] font-bold text-[#d4af37]">{totals.total}</p>
@@ -196,7 +245,8 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
               <thead>
                 <tr className="border-b border-[rgba(212,175,55,0.1)]">
                   <th className="text-left py-2 text-[#8a8070] font-medium">Vendedor</th>
-                  <th className="text-center py-2 text-[#8a8070] font-medium">Total</th>
+                  <th className="text-center py-2 text-violet-400 font-medium">Agendei</th>
+                  <th className="text-center py-2 text-[#8a8070] font-medium">Marcados</th>
                   <th className="text-center py-2 text-[#8a8070] font-medium">Veio</th>
                   <th className="text-center py-2 text-[#8a8070] font-medium">Faltou</th>
                   <th className="text-center py-2 text-[#8a8070] font-medium">Vendas</th>
@@ -204,7 +254,9 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
                 </tr>
               </thead>
               <tbody>
-                {vendedorStats.map((v) => (
+                {vendedorStats.map((v) => {
+                  const agendeiTotal = Object.values(v.agendeiDia).reduce((acc, val) => acc + val, 0)
+                  return (
                   <tr key={v.nome} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.02)]">
                     <td className="py-2">
                       <div className="flex items-center gap-2">
@@ -223,6 +275,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
                         </div>
                       </div>
                     </td>
+                    <td className="text-center text-violet-400 font-semibold">{agendeiTotal}</td>
                     <td className="text-center text-[#f5f0e8]">{v.total}</td>
                     <td className="text-center text-emerald-400">{v.veio}</td>
                     <td className="text-center text-red-400">{v.nao}</td>
@@ -237,7 +290,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
                       </span>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -283,7 +336,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         </div>
 
         {/* Tabela de origens */}
-        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4 lg:col-span-2">
+        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Origem</h3>
           <div className="flex flex-wrap gap-2">
             {origemStats.map(([origem, s]) => (
@@ -300,6 +353,45 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Tabela de atendentes */}
+        <div className="bg-[#131313] border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+          <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Atendente</h3>
+          {atendenteStats.length === 0 ? (
+            <p className="text-[11px] text-[#8a8070]">Nenhum atendimento registrado ainda</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b border-[rgba(212,175,55,0.1)]">
+                    <th className="text-left py-2 text-[#8a8070] font-medium">Atendente</th>
+                    <th className="text-center py-2 text-[#8a8070] font-medium">Atendimentos</th>
+                    <th className="text-center py-2 text-[#8a8070] font-medium">Vendas</th>
+                    <th className="text-center py-2 text-[#8a8070] font-medium">Conv.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {atendenteStats.map(([atendente, s]) => (
+                    <tr key={atendente} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.02)]">
+                      <td className="py-2 text-[#f5f0e8] font-medium">{atendente}</td>
+                      <td className="text-center text-sky-400">{s.total}</td>
+                      <td className="text-center text-emerald-400 font-semibold">{s.vendas}</td>
+                      <td className="text-center">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          s.conversao >= 50 ? "bg-emerald-500/15 text-emerald-400" :
+                          s.conversao >= 25 ? "bg-amber-500/15 text-amber-400" :
+                          "bg-red-500/15 text-red-400"
+                        }`}>
+                          {s.conversao}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
