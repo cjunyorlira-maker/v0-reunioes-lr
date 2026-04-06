@@ -2,17 +2,15 @@
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getWeekLabel } from "@/lib/date-utils"
 
 interface HeaderProps {
-  weekOffset: number
+  weekLabel: string
   onPrevWeek: () => void
   onNextWeek: () => void
   onNewLead: () => void
 }
 
-export function Header({ weekOffset, onPrevWeek, onNextWeek, onNewLead }: HeaderProps) {
-  const weekLabel = getWeekLabel(weekOffset)
+export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderProps) {
   
   return (
     <header className="flex items-center justify-between py-6 px-4 md:px-8 border-b border-border/50">
@@ -40,7 +38,7 @@ export function Header({ weekOffset, onPrevWeek, onNextWeek, onNewLead }: Header
         </Button>
         
         <div className="px-4 py-2 bg-secondary rounded-lg min-w-[140px] text-center">
-          <span className="text-sm font-medium text-foreground">{weekLabel}</span>
+          <span className="text-sm font-medium text-foreground">{weekLabel || "Carregando..."}</span>
         </div>
         
         <Button

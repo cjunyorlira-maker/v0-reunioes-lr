@@ -1,22 +1,37 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { toast } from "sonner"
 import { Header } from "@/components/quadro/header"
 import { StatsCards } from "@/components/quadro/stats-cards"
 import { DayColumn } from "@/components/quadro/day-column"
 import { NewLeadModal } from "@/components/quadro/new-lead-modal"
 import { useLeads } from "@/hooks/use-leads"
-import { getWeekDays, getWeekRange } from "@/lib/date-utils"
+import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
+import type { WeekDay } from "@/lib/types"
 
 export default function QuadroReunioes() {
   const [weekOffset, setWeekOffset] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [weekDays, setWeekDays] = useState<WeekDay[]>([])
+  const [weekLabel, setWeekLabel] = useState("")
+  const [dateRange, setDateRange] = useState({ start: "", end: "" })
 
-  const { start, end } = getWeekRange(weekOffset)
-  const { leads, isLoading, createLead, updateLead, deleteLead } = useLeads(start, end)
-  const weekDays = getWeekDays(weekOffset)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      setWeekDays(getWeekDays(weekOffset))
+      setWeekLabel(getWeekLabel(weekOffset))
+      setDateRange(getWeekRange(weekOffset))
+    }
+  }, [weekOffset, mounted])
+
+  const { leads, isLoading, createLead, updateLead, deleteLead } = useLeads(dateRange.start, dateRange.end)
 
   const stats = useMemo(() => {
     return {
@@ -75,7 +90,7 @@ export default function QuadroReunioes() {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        weekOffset={weekOffset}
+        weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
         onNextWeek={() => setWeekOffset((w) => w + 1)}
         onNewLead={() => setIsModalOpen(true)}
@@ -83,7 +98,7 @@ export default function QuadroReunioes() {
 
       <StatsCards stats={stats} />
 
-      {isLoading ? (
+      {!mounted || isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Spinner className="h-8 w-8 text-primary" />
         </div>
