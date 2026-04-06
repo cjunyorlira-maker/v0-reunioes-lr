@@ -272,15 +272,18 @@ export async function POST(request: NextRequest) {
           
           if (user) {
             console.log("[v0] Usuário encontrado:", user.name, "Groups:", JSON.stringify(user._embedded?.groups || user.group || "sem grupo"))
-            responsavelNome = user.name || "Não informado"
-            responsavelId = user.id?.toString() || null
-            fotoResponsavel = user.avatar || null // URL da foto do avatar
-            // Tenta várias formas de pegar a equipe
-            equipe = user._embedded?.groups?.[0]?.name || 
-                     user.group?.name ||
-                     user.rights?.group_name ||
-                     (user.group_id ? `Equipe ${user.group_id}` : null) ||
-                     "Sem equipe"
+            // Só usa dados do Kommo se o Pluga não enviou responsável
+            const plugaResponsavel = body.responsavel || body.responsible || body.vendedor || body.seller
+            if (!plugaResponsavel) {
+              responsavelNome = user.name || "Não informado"
+              responsavelId = user.id?.toString() || null
+              fotoResponsavel = user.avatar || null
+              equipe = user._embedded?.groups?.[0]?.name || 
+                       user.group?.name ||
+                       user.rights?.group_name ||
+                       (user.group_id ? `Equipe ${user.group_id}` : null) ||
+                       "Sem equipe"
+            }
           }
         }
         
@@ -340,14 +343,16 @@ export async function POST(request: NextRequest) {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
       data: dataFinal || new Date().toISOString().split("T")[0],
       hora: horaFinal || "09:00",
-      responsavel: responsavelNome !== "Não informado" ? responsavelNome : (body.responsavel || body.responsible || "Não informado"),
+      // PRIORIZA dados do Pluga sobre dados do Kommo
+      responsavel: body.responsavel || body.responsible || body.vendedor || body.seller || responsavelNome || "Não informado",
       responsavel_id: responsavelId,
       foto_responsavel: fotoResponsavel,
       tipo: body.tipo || body.type || "",
       tipo_reuniao: tipoReuniao || body.tipo_reuniao || body.modalidade || null,
       kommo_id: body.kommo_id || body.atendente || null,
       kommo_lead_id: kommoLeadId || body.lead_id || body.id?.toString() || null,
-      equipe: equipe !== "Sem equipe" ? equipe : (body.equipe || "Sem equipe"),
+      // PRIORIZA equipe do Pluga se disponível
+      equipe: body.equipe || (equipe !== "Sem equipe" ? equipe : "Sem equipe"),
       remarcado: isRemarcado,
       status: body.status || "pending",
       origem: (typeof origem !== 'undefined' ? origem : null) || body.origem || null,
