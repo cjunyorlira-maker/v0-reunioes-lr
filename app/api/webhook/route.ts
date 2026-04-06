@@ -183,7 +183,10 @@ export async function POST(request: NextRequest) {
     
     // Busca dados completos via API do Kommo
     let responsavelNome = "Não informado"
+    let responsavelId: string | null = null
+    let fotoResponsavel: string | null = null
     let equipe = "Sem equipe"
+    let tipoReuniao: string | null = null
     let dataReuniao: string | null = null
     let horaReuniao: string | null = null
     
@@ -259,25 +262,34 @@ export async function POST(request: NextRequest) {
           
           if (user) {
             responsavelNome = user.name || "Não informado"
+            responsavelId = user.id?.toString() || null
+            fotoResponsavel = user.avatar || null // URL da foto do avatar
             equipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
           }
         }
         
-        // Busca campos personalizados (data/hora da reunião)
-        // IDs dos campos personalizados - você pode precisar ajustar esses IDs
+        // Busca campos personalizados (data/hora da reunião, tipo de reunião)
         const customFields = leadDetails.custom_fields_values || []
         
-        // Tenta encontrar campo de data da reunião (ajuste o ID conforme seu Kommo)
         for (const field of customFields) {
           const value = field.values?.[0]?.value
+          const fieldName = field.field_name?.toLowerCase() || ""
+          
+          // Busca tipo de reunião (online/presencial)
+          if (fieldName.includes("tipo") && fieldName.includes("reuni") || 
+              fieldName.includes("modalidade") ||
+              fieldName.includes("online") ||
+              fieldName.includes("presencial")) {
+            tipoReuniao = value || field.values?.[0]?.enum || null
+          }
+          
+          // Se parece com data/hora
           if (value && typeof value === "string") {
-            // Se parece com data/hora
             if (value.match(/\d{4}-\d{2}-\d{2}/) || value.match(/\d{2}\/\d{2}\/\d{4}/)) {
               const parsed = parseDateTime(value)
               if (parsed.data) {
                 dataReuniao = parsed.data
                 horaReuniao = parsed.hora
-                break
               }
             }
           }
@@ -301,11 +313,14 @@ export async function POST(request: NextRequest) {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
       data: dataFinal || new Date().toISOString().split("T")[0],
       hora: horaFinal || "09:00",
-      responsavel: body.responsavel || body.responsible || responsavelNome,
+      responsavel: responsavelNome !== "Não informado" ? responsavelNome : (body.responsavel || body.responsible || "Não informado"),
+      responsavel_id: responsavelId,
+      foto_responsavel: fotoResponsavel,
       tipo: body.tipo || body.type || "",
+      tipo_reuniao: tipoReuniao || body.tipo_reuniao || body.modalidade || null,
       kommo_id: body.kommo_id || body.atendente || null,
       kommo_lead_id: kommoLeadId || body.lead_id || body.id?.toString() || null,
-      equipe: body.equipe || equipe,
+      equipe: equipe !== "Sem equipe" ? equipe : (body.equipe || "Sem equipe"),
       status: body.status || "pending",
     }
     

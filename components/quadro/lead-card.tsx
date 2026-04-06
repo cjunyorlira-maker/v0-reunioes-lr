@@ -36,21 +36,37 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
       <div className={`h-0.5 rounded-sm mb-2 ${stripeClass}`} />
       
       {/* Nome do cliente (título) */}
-      <p className="text-[13px] font-semibold text-[#f5f0e8] truncate mb-1" title={lead.nome}>
+      <p className="text-[13px] font-semibold text-[#f5f0e8] truncate mb-1.5" title={lead.nome}>
         {lead.nome}
       </p>
       
-      {/* Responsável */}
-      <p className="text-[11px] text-[#d4af37] truncate mb-0.5" title={lead.responsavel}>
-        {lead.responsavel}
-      </p>
-      
-      {/* Equipe */}
-      {lead.equipe && (
-        <p className="text-[9px] text-[#8a8070] truncate mb-1" title={lead.equipe}>
-          {lead.equipe}
-        </p>
-      )}
+      {/* Responsável com foto */}
+      <div className="flex items-center gap-1.5 mb-1">
+        {lead.foto_responsavel ? (
+          <img 
+            src={lead.foto_responsavel} 
+            alt={lead.responsavel}
+            className="w-5 h-5 rounded-full object-cover border border-[rgba(212,175,55,0.2)]"
+          />
+        ) : (
+          <div className="w-5 h-5 rounded-full bg-[#2a2820] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
+            <span className="text-[9px] text-[#d4af37] font-medium">
+              {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
+            </span>
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-[#d4af37] truncate" title={lead.responsavel}>
+            {lead.responsavel}
+          </p>
+          {/* Equipe */}
+          {lead.equipe && lead.equipe !== "Sem equipe" && (
+            <p className="text-[9px] text-[#8a8070] truncate" title={lead.equipe}>
+              {lead.equipe}
+            </p>
+          )}
+        </div>
+      </div>
       
       {/* Hora + Status icon */}
       <div className="flex items-center gap-1 text-[10px] text-[#8a8070] mb-1.5">
@@ -60,10 +76,23 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit }: LeadCardPro
         )}
       </div>
       
-      {/* Tipo pill */}
-      <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${getTipoClass(lead.tipo)}`}>
-        {lead.tipo}
-      </span>
+      {/* Tipo do bem + Tipo de reunião */}
+      <div className="flex flex-wrap gap-1">
+        {lead.tipo && (
+          <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${getTipoClass(lead.tipo)}`}>
+            {lead.tipo}
+          </span>
+        )}
+        {lead.tipo_reuniao && (
+          <span className={`inline-block text-[9px] font-medium px-2 py-0.5 rounded-full border tracking-wide ${
+            lead.tipo_reuniao.toLowerCase().includes("online") 
+              ? "bg-[rgba(139,92,246,0.08)] text-[#8b5cf6] border-[rgba(139,92,246,0.2)]"
+              : "bg-[rgba(236,72,153,0.08)] text-[#ec4899] border-[rgba(236,72,153,0.2)]"
+          }`}>
+            {lead.tipo_reuniao}
+          </span>
+        )}
+      </div>
       
       {/* Actions */}
       <div className="flex gap-1 mt-2 pt-1.5 border-t border-[rgba(212,175,55,0.1)]" onClick={(e) => e.stopPropagation()}>
