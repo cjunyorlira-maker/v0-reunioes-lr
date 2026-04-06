@@ -7,7 +7,7 @@ import { formatDateForDB } from "@/lib/date-utils"
 interface DayColumnProps {
   day: WeekDay
   leads: Lead[]
-  onUpdateStatus: (id: string, status: "veio" | "nao" | "pending") => void
+  onUpdateStatus: (id: string, status: "veio" | "nao" | "pending" | "remarcou") => void
   onDelete: (id: string) => void
   onEdit: (lead: Lead) => void
 }

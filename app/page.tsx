@@ -81,9 +81,14 @@ export default function QuadroReunioes() {
     }
   }, [leads, filteredLeads, selectedEquipe])
 
-  const handleUpdateStatus = async (id: string, status: "veio" | "nao" | "pending") => {
+  const handleUpdateStatus = async (id: string, status: "veio" | "nao" | "pending" | "remarcou") => {
     try {
-      await updateLead(id, { status })
+      // Se for remarcou, atualiza o campo remarcado para true e mantém status pending
+      const updateData = status === "remarcou" 
+        ? { remarcado: true, status: "pending" as const }
+        : { status: status as "veio" | "nao" | "pending" }
+      
+      await updateLead(id, updateData)
       
       // Encontra o lead para pegar o kommo_id
       const lead = leads.find(l => l.id === id)
@@ -103,17 +108,21 @@ export default function QuadroReunioes() {
             })
           })
           
+          const toastMessages = {
+            veio: "Cliente marcado como presente e movido no Kommo!",
+            nao: "Cliente marcado como ausente e movido no Kommo!",
+            remarcou: "Cliente remarcado e movido no Kommo!"
+          }
+          
           if (response.ok) {
-            toast.success(
-              status === "veio" 
-                ? "Cliente marcado como presente e movido no Kommo!" 
-                : "Cliente marcado como ausente e movido no Kommo!"
-            )
+            toast.success(toastMessages[status as keyof typeof toastMessages])
           } else {
             toast.success(
               status === "veio" 
                 ? "Cliente marcado como presente!" 
-                : "Cliente marcado como ausente"
+                : status === "nao"
+                  ? "Cliente marcado como ausente"
+                  : "Cliente remarcado!"
             )
             console.error("Erro ao mover no Kommo")
           }
@@ -122,7 +131,9 @@ export default function QuadroReunioes() {
           toast.success(
             status === "veio" 
               ? "Cliente marcado como presente!" 
-              : "Cliente marcado como ausente"
+              : status === "nao"
+                ? "Cliente marcado como ausente"
+                : "Cliente remarcado!"
           )
         }
       } else {

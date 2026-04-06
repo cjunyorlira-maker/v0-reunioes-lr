@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 
 // IDs das etapas no Kommo
 const ETAPAS = {
-  veio: 69799508,      // Etapa "Vieram"
-  nao: 69799504,       // Etapa "Não vieram"
+  veio: 69799508,       // Etapa "Vieram"
+  nao: 69799504,        // Etapa "Não vieram"
+  remarcou: 102225923,  // Etapa "Remarcados"
 }
 
 // Etapas permitidas para mover leads
@@ -21,9 +22,9 @@ export async function POST(request: NextRequest) {
     // ID do campo "Atendente" no Kommo
     const CAMPO_ATENDENTE_ID = 1026812
 
-    if (!status || !["veio", "nao"].includes(status)) {
+    if (!status || !["veio", "nao", "remarcou"].includes(status)) {
       return NextResponse.json(
-        { error: "status deve ser 'veio' ou 'nao'" },
+        { error: "status deve ser 'veio', 'nao' ou 'remarcou'" },
         { status: 400 }
       )
     }
@@ -197,9 +198,15 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json()
 
+    const etapaNomes = {
+      veio: "Vieram",
+      nao: "Não vieram",
+      remarcou: "Remarcados"
+    }
+    
     return NextResponse.json({
       success: true,
-      message: `Lead movido para etapa "${status === "veio" ? "Vieram" : "Não vieram"}"`,
+      message: `Lead movido para etapa "${etapaNomes[status as keyof typeof etapaNomes]}"`,
       leadId,
       data,
     })
