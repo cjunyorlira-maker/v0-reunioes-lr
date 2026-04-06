@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from "next/server"
+
+// IDs das etapas no Kommo
+const ETAPAS = {
+  veio: 69799508,      // Etapa "Vieram"
+  nao: 69799504,       // Etapa "Não vieram"
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { kommo_id, status } = await request.json()
+
+    if (!kommo_id) {
+      return NextResponse.json(
+        { error: "kommo_id é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    if (!status || !["veio", "nao"].includes(status)) {
+      return NextResponse.json(
+        { error: "status deve ser 'veio' ou 'nao'" },
+        { status: 400 }
+      )
+    }
+
+    const token = process.env.KOMMO_ACCESS_TOKEN
+    const subdomain = process.env.KOMMO_SUBDOMAIN
+
+    if (!token || !subdomain) {
+      return NextResponse.json(
+        { error: "Configuração do Kommo não encontrada" },
+        { status: 500 }
+      )
+    }
+
+    const statusId = ETAPAS[status as keyof typeof ETAPAS]
+
+    // Faz a requisição PATCH para a API do Kommo
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/leads/${kommo_id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status_id: statusId,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[Kommo API Error]", response.status, errorText)
+      return NextResponse.json(
+        { error: "Erro ao atualizar lead no Kommo", details: errorText },
+        { status: response.status }
+      )
+    }
+
+    const data = await response.json()
+
+    return NextResponse.json({
+      success: true,
+      message: `Lead movido para etapa "${status === "veio" ? "Vieram" : "Não vieram"}"`,
+      data,
+    })
+  } catch (error) {
+    console.error("[Kommo API Error]", error)
+    return NextResponse.json(
+      { error: "Erro interno ao processar requisição" },
+      { status: 500 }
+    )
+  }
+}

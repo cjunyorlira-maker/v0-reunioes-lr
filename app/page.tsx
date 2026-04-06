@@ -53,31 +53,49 @@ export default function QuadroReunioes() {
       // Encontra o lead para pegar o kommo_id
       const lead = leads.find(l => l.id === id)
       
-      // Envia webhook para Pluga mover no Kommo (apenas se tiver kommo_id e não for "pending")
+      // Move o lead no Kommo (apenas se tiver kommo_id e não for "pending")
       if (lead?.kommo_id && status !== "pending") {
         try {
-          await fetch("https://hooks.pluga.co/v2/webhooks/MTcxMDcyNjIwODA2OTkzMDQ4NTlUMTc3NTQ1MDc0NA", {
+          const response = await fetch("/api/kommo/move-lead", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               kommo_id: lead.kommo_id,
               status: status,
-              nome: lead.nome,
-              responsavel: lead.responsavel
             })
           })
-        } catch (webhookError) {
-          console.error("Erro ao enviar webhook para Pluga:", webhookError)
+          
+          if (response.ok) {
+            toast.success(
+              status === "veio" 
+                ? "Cliente marcado como presente e movido no Kommo!" 
+                : "Cliente marcado como ausente e movido no Kommo!"
+            )
+          } else {
+            toast.success(
+              status === "veio" 
+                ? "Cliente marcado como presente!" 
+                : "Cliente marcado como ausente"
+            )
+            console.error("Erro ao mover no Kommo")
+          }
+        } catch (kommoError) {
+          console.error("Erro ao mover no Kommo:", kommoError)
+          toast.success(
+            status === "veio" 
+              ? "Cliente marcado como presente!" 
+              : "Cliente marcado como ausente"
+          )
         }
+      } else {
+        toast.success(
+          status === "veio" 
+            ? "Cliente marcado como presente!" 
+            : status === "nao" 
+              ? "Cliente marcado como ausente" 
+              : "Status resetado"
+        )
       }
-      
-      toast.success(
-        status === "veio" 
-          ? "Cliente marcado como presente!" 
-          : status === "nao" 
-            ? "Cliente marcado como ausente" 
-            : "Status resetado"
-      )
     } catch {
       toast.error("Erro ao atualizar status")
     }
