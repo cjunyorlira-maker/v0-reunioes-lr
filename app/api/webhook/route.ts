@@ -146,8 +146,12 @@ const parseDateTime = (dateTimeStr: string) => {
   return { data: str.split(/[\sT]/)[0], hora: str.split(/[\sT]/)[1] || "09:00" }
 }
 
-// ID da etapa "Confirmar reunião" no Kommo
-const ETAPA_CONFIRMAR_REUNIAO = 67567420
+// Etapas permitidas no Kommo
+const ETAPAS_PERMITIDAS = [
+  67567420,  // Confirmar reunião
+  58498483,  // Reunião confirmada
+]
+const PIPELINE_ID = 7012299
 
 // Webhook endpoint para integração com Kommo / Make / Pluga
 export async function POST(request: NextRequest) {
@@ -167,12 +171,12 @@ export async function POST(request: NextRequest) {
       kommoLeadId = kommoLead?.id?.toString() || null
       statusId = kommoLead?.status_id || null
       
-      // Se veio do Kommo nativo, só processa se for da etapa "Confirmar reunião"
-      if (statusId && statusId !== ETAPA_CONFIRMAR_REUNIAO) {
+      // Se veio do Kommo nativo, só processa se for de uma etapa permitida
+      if (statusId && !ETAPAS_PERMITIDAS.includes(statusId)) {
         return NextResponse.json({ 
           success: true, 
           action: "ignored",
-          reason: `Lead não está na etapa 'Confirmar reunião' (status_id: ${statusId})` 
+          reason: `Lead não está em uma etapa permitida (status_id: ${statusId})` 
         })
       }
     }
@@ -188,9 +192,13 @@ export async function POST(request: NextRequest) {
     
     if (!kommoLeadId && nomeLead && process.env.KOMMO_ACCESS_TOKEN && process.env.KOMMO_SUBDOMAIN) {
       try {
-        // Busca leads com esse nome, filtrando pela etapa "Confirmar reunião"
+        // Busca leads com esse nome, filtrando pelas etapas permitidas
+        const statusFilters = ETAPAS_PERMITIDAS.map((statusId, i) => 
+          `filter[statuses][${i}][pipeline_id]=${PIPELINE_ID}&filter[statuses][${i}][status_id]=${statusId}`
+        ).join("&")
+        
         const searchResponse = await fetch(
-          `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}&filter[statuses][0][pipeline_id]=7012299&filter[statuses][0][status_id]=${ETAPA_CONFIRMAR_REUNIAO}`,
+          `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${encodeURIComponent(nomeLead)}&${statusFilters}`,
           {
             headers: {
               "Authorization": `Bearer ${process.env.KOMMO_ACCESS_TOKEN}`,

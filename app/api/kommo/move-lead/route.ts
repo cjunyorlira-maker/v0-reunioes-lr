@@ -6,8 +6,11 @@ const ETAPAS = {
   nao: 69799504,       // Etapa "Não vieram"
 }
 
-// Etapa "Confirmar reunião" - onde os leads devem estar antes de mover
-const ETAPA_CONFIRMAR_REUNIAO = 67567420
+// Etapas permitidas para mover leads
+const ETAPAS_PERMITIDAS = [
+  67567420,  // Confirmar reunião
+  58498483,  // Reunião confirmada
+]
 const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
@@ -50,9 +53,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Busca o lead pelo nome, filtrando pela etapa "Confirmar reunião"
+      // Busca o lead pelo nome, filtrando pelas etapas permitidas
+      const statusFilters = ETAPAS_PERMITIDAS.map((statusId, i) => 
+        `filter[statuses][${i}][pipeline_id]=${PIPELINE_ID}&filter[statuses][${i}][status_id]=${statusId}`
+      ).join("&")
+      
       const searchResponse = await fetch(
-        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_CONFIRMAR_REUNIAO}`,
+        `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(nome)}&${statusFilters}`,
         {
           method: "GET",
           headers: {
