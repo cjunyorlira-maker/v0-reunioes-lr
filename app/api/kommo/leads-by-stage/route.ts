@@ -43,18 +43,32 @@ export async function GET(req: NextRequest) {
     const data = await response.json()
     const leads = data._embedded?.leads || []
 
+    // ID do campo customizado de data de qualificação no Kommo
+    const CAMPO_DATA_QUALIFICACAO = 1026046
+
     // Formata os dados retornados
-    const formatted = leads.map((lead: any) => ({
-      id: lead.id,
-      nome: lead.name,
-      responsavel_id: lead.responsible_user_id,
-      responsavel: lead._embedded?.responsible_user?.name || null,
-      pipeline_id: lead.pipeline_id,
-      status_id: lead.status_id,
-      criado_em: new Date(lead.created_at * 1000).toISOString(),
-      atualizado_em: new Date(lead.updated_at * 1000).toISOString(),
-      custom_fields: lead.custom_fields_values || [],
-    }))
+    const formatted = leads.map((lead: any) => {
+      const customFields: any[] = lead.custom_fields_values || []
+
+      // Extrai a data de qualificação do campo customizado
+      const campoQualificacao = customFields.find((f: any) => f.field_id === CAMPO_DATA_QUALIFICACAO)
+      const dataQualificacaoTimestamp = campoQualificacao?.values?.[0]?.value
+      const dataQualificacao = dataQualificacaoTimestamp
+        ? new Date(dataQualificacaoTimestamp * 1000).toISOString().split("T")[0]
+        : null
+
+      return {
+        id: lead.id,
+        nome: lead.name,
+        responsavel_id: lead.responsible_user_id,
+        responsavel: lead._embedded?.responsible_user?.name || null,
+        pipeline_id: lead.pipeline_id,
+        status_id: lead.status_id,
+        criado_em: new Date(lead.created_at * 1000).toISOString(),
+        atualizado_em: new Date(lead.updated_at * 1000).toISOString(),
+        data_qualificacao: dataQualificacao,
+      }
+    })
 
     return NextResponse.json({
       total: formatted.length,

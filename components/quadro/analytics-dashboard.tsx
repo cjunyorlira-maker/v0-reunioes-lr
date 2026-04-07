@@ -33,23 +33,30 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const [stageInputId, setStageInputId] = useState(VENDENDO_REUNIAO_STATUS_ID)
   const [stageIdApplied, setStageIdApplied] = useState(VENDENDO_REUNIAO_STATUS_ID)
 
-  const { qualificados, total: totalQualificados, isLoading: loadingQualificados } = useQualificados(
+  const {
+    qualificados,
+    qualificadosSemana,
+    total: totalQualificados,
+    totalSemana: totalQualificadosSemana,
+    isLoading: loadingQualificados
+  } = useQualificados(
     stageIdApplied ? PIPELINE_ID : undefined,
-    stageIdApplied || undefined
+    stageIdApplied || undefined,
+    dateRange
   )
 
-  // Leads qualificados que já entraram no agendei (têm kommo_lead_id nos nossos leads)
+  // Leads qualificados nesta semana que já entraram no agendei (cruzando kommo_lead_id)
   const kommoIdsNoAgendei = useMemo(() => {
     const ids = new Set(leads.map(l => l.kommo_lead_id).filter(Boolean))
     return ids
   }, [leads])
 
-  const qualificadosNoAgendei = useMemo(() => {
-    return qualificados.filter(q => kommoIdsNoAgendei.has(String(q.id)))
-  }, [qualificados, kommoIdsNoAgendei])
+  const qualificadosSemanaNOAgendei = useMemo(() => {
+    return qualificadosSemana.filter(q => kommoIdsNoAgendei.has(String(q.id)))
+  }, [qualificadosSemana, kommoIdsNoAgendei])
 
-  const taxaConversaoQualificados = totalQualificados > 0
-    ? Math.round((qualificadosNoAgendei.length / totalQualificados) * 100)
+  const taxaConversaoQualificados = totalQualificadosSemana > 0
+    ? Math.round((qualificadosSemanaNOAgendei.length / totalQualificadosSemana) * 100)
     : 0
   // Estatísticas por vendedor
   const vendedorStats = useMemo(() => {
@@ -271,21 +278,26 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         )}
 
         {stageIdApplied && !loadingQualificados && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados</p>
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Total na Etapa</p>
               <p className="text-[28px] font-bold text-cyan-400">{totalQualificados}</p>
-              <p className="text-[10px] text-[#8a8070]">na etapa agora</p>
+              <p className="text-[10px] text-[#8a8070]">acumulado</p>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3 border border-cyan-500/20">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
+              <p className="text-[28px] font-bold text-cyan-300">{totalQualificadosSemana}</p>
+              <p className="text-[10px] text-[#8a8070]">nesta semana</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3">
               <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
-              <p className="text-[28px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
+              <p className="text-[28px] font-bold text-emerald-400">{qualificadosSemanaNOAgendei.length}</p>
               <p className="text-[10px] text-[#8a8070]">reunião marcada</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Aguardando</p>
-              <p className="text-[28px] font-bold text-amber-400">{totalQualificados - qualificadosNoAgendei.length}</p>
-              <p className="text-[10px] text-[#8a8070]">sem reunião</p>
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reunião</p>
+              <p className="text-[28px] font-bold text-amber-400">{totalQualificadosSemana - qualificadosSemanaNOAgendei.length}</p>
+              <p className="text-[10px] text-[#8a8070]">aguardando</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3">
               <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
