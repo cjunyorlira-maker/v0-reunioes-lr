@@ -1,8 +1,9 @@
 "use client"
 
 import { Lead } from "@/lib/types"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useQualificados } from "@/hooks/use-qualificados"
+import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 
 interface AnalyticsDashboardProps {
   leads: Lead[]
@@ -26,12 +27,29 @@ interface VendedorStats {
 }
 
 export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDashboardProps) {
-  // Busca leads qualificados da semana automaticamente pelo campo 1026046
+  // Filtro por dia — null = semana toda
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  // Dias da semana para os botões do filtro
+  const weekDays = useMemo(() => getWeekDays(), [])
+
+  // Range efetivo: dia selecionado ou semana toda
+  const activeRange = useMemo(() => {
+    if (!selectedDay) return dateRange
+    return { start: selectedDay, end: selectedDay }
+  }, [selectedDay, dateRange])
+
+  // Leads filtrados pelo range ativo (dia ou semana)
+  const leadsAtivos = useMemo(() => {
+    return leads.filter(l => l.data >= activeRange.start && l.data <= activeRange.end)
+  }, [leads, activeRange])
+
+  // Busca leads qualificados automaticamente pelo campo 1026046 — filtra pelo range ativo
   const {
     qualificadosSemana,
     totalSemana: totalQualificadosSemana,
     isLoading: loadingQualificados
-  } = useQualificados(dateRange)
+  } = useQualificados(activeRange)
 
   // Kommo IDs que já têm reunião marcada no nosso sistema
   const kommoIdsNoAgendei = useMemo(() => {
@@ -51,11 +69,11 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const taxaConversaoQualificados = totalQualificadosSemana > 0
     ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
     : 0
-  // Estatísticas por vendedor
+  // Estatísticas por vendedor — usa leadsAtivos (dia ou semana)
   const vendedorStats = useMemo(() => {
     const stats: Record<string, VendedorStats> = {}
 
-    leads.forEach((lead) => {
+    leadsAtivos.forEach((lead) => {
       const vendedor = lead.responsavel || "Não informado"
 
       if (!stats[vendedor]) {
@@ -89,11 +107,10 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       if (lead.venda_fechada) stats[vendedor].vendas++
       if (lead.retorno) stats[vendedor].retornos++
 
-      // "Agendei" - leads CRIADOS nesta semana (produtividade)
+      // "Agendei" - leads CRIADOS dentro do range ativo (dia ou semana)
       if (lead.created_at) {
         const createdDate = lead.created_at.split("T")[0]
-        // Só conta se foi criado dentro do range da semana
-        if (createdDate >= dateRange.start && createdDate <= dateRange.end) {
+        if (createdDate >= activeRange.start && createdDate <= activeRange.end) {
           stats[vendedor].agendeiDia[createdDate] = (stats[vendedor].agendeiDia[createdDate] || 0) + 1
         }
       }
@@ -110,13 +127,13 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return Object.values(stats).sort((a, b) => b.total - a.total)
-  }, [leads, dateRange])
+  }, [leadsAtivos, activeRange])
 
   // Estatísticas por equipe
   const equipeStats = useMemo(() => {
     const stats: Record<string, { total: number; veio: number; nao: number; vendas: number; conversao: number }> = {}
 
-    leads.forEach((lead) => {
+    leadsAtivos.forEach((lead) => {
       const equipe = lead.equipe || "Sem equipe"
 
       if (!stats[equipe]) {
@@ -134,13 +151,13 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
-  }, [leads])
+  }, [leadsAtivos])
 
   // Estatísticas de origem
   const origemStats = useMemo(() => {
     const stats: Record<string, { total: number; veio: number; nao: number }> = {}
 
-    leads.forEach((lead) => {
+    leadsAtivos.forEach((lead) => {
       const origem = lead.origem || "Não informada"
 
       if (!stats[origem]) {
@@ -153,13 +170,13 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
-  }, [leads])
+  }, [leadsAtivos])
 
   // Estatísticas por atendente
   const atendenteStats = useMemo(() => {
     const stats: Record<string, { total: number; vendas: number; conversao: number }> = {}
 
-    leads.forEach((lead) => {
+    leadsAtivos.forEach((lead) => {
       if (lead.atendente && lead.status === "veio") {
         if (!stats[lead.atendente]) {
           stats[lead.atendente] = { total: 0, vendas: 0, conversao: 0 }
@@ -174,21 +191,18 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
-  }, [leads])
+  }, [leadsAtivos])
 
-  // Agendei do dia (leads CRIADOS na semana atual - para medir produtividade)
-  // Diferente de "Marcados" que são leads agendados PARA a semana
+  // Agendei (leads CRIADOS dentro do range ativo - para medir produtividade)
   const agendeiPorDia = useMemo(() => {
-    const stats: Record<string, Record<string, number>> = {} // vendedor -> data -> quantidade
+    const stats: Record<string, Record<string, number>> = {}
     const totalPorDia: Record<string, number> = {}
     const porEquipe: Record<string, number> = {}
 
     leads.forEach((lead) => {
       const createdDate = lead.created_at?.split("T")[0]
       if (!createdDate) return
-      
-      // Filtra apenas leads criados dentro do range da semana atual
-      if (createdDate < dateRange.start || createdDate > dateRange.end) return
+      if (createdDate < activeRange.start || createdDate > activeRange.end) return
       
       const vendedor = lead.responsavel || "Não informado"
       const equipe = lead.equipe || "Sem equipe"
@@ -200,22 +214,22 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return { porVendedor: stats, totalPorDia, porEquipe }
-  }, [leads, dateRange])
+  }, [leads, activeRange])
 
   // Total agendei da semana
   const totalAgendeiSemana = useMemo(() => {
     return Object.values(agendeiPorDia.totalPorDia).reduce((acc, val) => acc + val, 0)
   }, [agendeiPorDia])
 
-  // Totais gerais
+  // Totais gerais — usa leadsAtivos
   const totals = useMemo(() => {
-    const veioCount = leads.filter(l => l.status === "veio").length
-    const naoCount = leads.filter(l => l.status === "nao").length
-    const vendasCount = leads.filter(l => l.venda_fechada).length
-    const retornosCount = leads.filter(l => l.retorno).length
+    const veioCount = leadsAtivos.filter(l => l.status === "veio").length
+    const naoCount = leadsAtivos.filter(l => l.status === "nao").length
+    const vendasCount = leadsAtivos.filter(l => l.venda_fechada).length
+    const retornosCount = leadsAtivos.filter(l => l.retorno).length
 
     return {
-      total: leads.length,
+      total: leadsAtivos.length,
       veio: veioCount,
       nao: naoCount,
       vendas: vendasCount,
@@ -223,18 +237,52 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       taxaPresenca: leads.length > 0 ? Math.round((veioCount / (veioCount + naoCount || 1)) * 100) : 0,
       taxaConversao: veioCount > 0 ? Math.round((vendasCount / veioCount) * 100) : 0,
     }
-  }, [leads])
+  }, [leadsAtivos])
 
   if (leads.length === 0) return null
 
   return (
     <div className="mx-4 md:mx-6 mb-6 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-[#f5f0e8]">
-          Relatório Semanal
-        </h2>
-        <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
+      {/* Header com filtro por dia */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[16px] font-bold text-[#f5f0e8]">
+            Relatório — {selectedDay ? weekDays.find(d => formatDateForDB(d.date) === selectedDay)?.dayName ?? selectedDay : "Semana Toda"}
+          </h2>
+          <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
+        </div>
+        {/* Botões de filtro por dia */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedDay(null)}
+            className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors font-medium ${
+              selectedDay === null
+                ? "bg-[#d4af37] text-black border-[#d4af37]"
+                : "bg-transparent text-[#8a8070] border-[rgba(255,255,255,0.08)] hover:border-[#d4af37]/40 hover:text-[#d4af37]"
+            }`}
+          >
+            Semana Toda
+          </button>
+          {weekDays.map((day) => {
+            const dayStr = formatDateForDB(day.date)
+            const isActive = selectedDay === dayStr
+            return (
+              <button
+                key={dayStr}
+                onClick={() => setSelectedDay(dayStr)}
+                className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+                  isActive
+                    ? "bg-violet-500 text-white border-violet-500"
+                    : day.isToday
+                    ? "bg-transparent text-violet-400 border-violet-500/40 hover:border-violet-400"
+                    : "bg-transparent text-[#8a8070] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] hover:text-[#f5f0e8]"
+                }`}
+              >
+                {day.dayName} {day.dayNumber}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Painel LEADS QUALIFICADOS DA SEMANA — automático pelo campo 1026046 */}
