@@ -11,10 +11,10 @@ export function getWeekDays(weekOffset: number = 0): WeekDay[] {
   monday.setDate(today.getDate() - daysUntilMonday + (weekOffset * 7))
   
   const days: WeekDay[] = []
-  const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+  const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
   const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
   
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     const date = new Date(monday)
     date.setDate(monday.getDate() + i)
     
@@ -39,7 +39,11 @@ export function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 export function formatDateForDB(date: Date): string {
-  return date.toISOString().split("T")[0]
+  // Usa horário local em vez de UTC para evitar bug de "voltou um dia" em fusos negativos (Brasil -3/-4)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 export function formatDateDisplay(dateStr: string): string {
