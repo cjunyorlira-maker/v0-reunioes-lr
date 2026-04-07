@@ -6,6 +6,7 @@ import { useMemo } from "react"
 interface AnalyticsDashboardProps {
   leads: Lead[]
   weekLabel: string
+  dateRange: { start: string; end: string }
 }
 
 interface VendedorStats {
@@ -23,7 +24,7 @@ interface VendedorStats {
   conversao: number
 }
 
-export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDashboardProps) {
   // Estatísticas por vendedor
   const vendedorStats = useMemo(() => {
     const stats: Record<string, VendedorStats> = {}
@@ -48,6 +49,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         }
       }
 
+      // "Marcados" - leads agendados para esta semana (total sempre conta)
       stats[vendedor].total++
       
       if (lead.status === "veio") {
@@ -61,10 +63,13 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
       if (lead.venda_fechada) stats[vendedor].vendas++
       if (lead.retorno) stats[vendedor].retornos++
 
-      // Agendei do dia (baseado em created_at)
+      // "Agendei" - leads CRIADOS nesta semana (produtividade)
       if (lead.created_at) {
         const createdDate = lead.created_at.split("T")[0]
-        stats[vendedor].agendeiDia[createdDate] = (stats[vendedor].agendeiDia[createdDate] || 0) + 1
+        // Só conta se foi criado dentro do range da semana
+        if (createdDate >= dateRange.start && createdDate <= dateRange.end) {
+          stats[vendedor].agendeiDia[createdDate] = (stats[vendedor].agendeiDia[createdDate] || 0) + 1
+        }
       }
 
       // Origens
@@ -79,7 +84,7 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
     })
 
     return Object.values(stats).sort((a, b) => b.total - a.total)
-  }, [leads])
+  }, [leads, dateRange])
 
   // Estatísticas por equipe
   const equipeStats = useMemo(() => {
@@ -145,24 +150,31 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
   }, [leads])
 
-  // Agendei do dia (leads criados por dia da semana)
+  // Agendei do dia (leads CRIADOS na semana atual - para medir produtividade)
+  // Diferente de "Marcados" que são leads agendados PARA a semana
   const agendeiPorDia = useMemo(() => {
     const stats: Record<string, Record<string, number>> = {} // vendedor -> data -> quantidade
     const totalPorDia: Record<string, number> = {}
+    const porEquipe: Record<string, number> = {}
 
     leads.forEach((lead) => {
       const createdDate = lead.created_at?.split("T")[0]
       if (!createdDate) return
       
+      // Filtra apenas leads criados dentro do range da semana atual
+      if (createdDate < dateRange.start || createdDate > dateRange.end) return
+      
       const vendedor = lead.responsavel || "Não informado"
+      const equipe = lead.equipe || "Sem equipe"
       
       if (!stats[vendedor]) stats[vendedor] = {}
       stats[vendedor][createdDate] = (stats[vendedor][createdDate] || 0) + 1
       totalPorDia[createdDate] = (totalPorDia[createdDate] || 0) + 1
+      porEquipe[equipe] = (porEquipe[equipe] || 0) + 1
     })
 
-    return { porVendedor: stats, totalPorDia }
-  }, [leads])
+    return { porVendedor: stats, totalPorDia, porEquipe }
+  }, [leads, dateRange])
 
   // Total agendei da semana
   const totalAgendeiSemana = useMemo(() => {
@@ -199,39 +211,65 @@ export function AnalyticsDashboard({ leads, weekLabel }: AnalyticsDashboardProps
         <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
       </div>
 
-      {/* Cards de resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-violet-500/20 rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Agendei Semana</p>
-          <p className="text-[24px] font-bold text-violet-400">{totalAgendeiSemana}</p>
+      {/* Painel AGENDEI DA SEMANA (leads criados na semana - produtividade) */}
+      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[14px] font-bold text-violet-400">Agendei da Semana (Produtividade)</h3>
+          <span className="text-[11px] text-[#8a8070]">Leads criados nesta semana</span>
         </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Marcados</p>
-          <p className="text-[24px] font-bold text-[#d4af37]">{totals.total}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Total Agendei</p>
+            <p className="text-[28px] font-bold text-violet-400">{totalAgendeiSemana}</p>
+          </div>
+          {Object.entries(agendeiPorDia.porEquipe).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([equipe, total]) => (
+            <div key={equipe} className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1 truncate" title={equipe}>{equipe}</p>
+              <p className="text-[24px] font-bold text-violet-300">{total}</p>
+            </div>
+          ))}
         </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-emerald-500/20 rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vieram</p>
-          <p className="text-[24px] font-bold text-emerald-400">{totals.veio}</p>
+      </div>
+
+      {/* Painel MARCADOS DA SEMANA (leads agendados para a semana - resultados) */}
+      <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-[rgba(212,175,55,0.2)] rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[14px] font-bold text-[#d4af37]">Marcados da Semana (Resultados)</h3>
+          <span className="text-[11px] text-[#8a8070]">Leads agendados para esta semana</span>
         </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-red-500/20 rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Faltaram</p>
-          <p className="text-[24px] font-bold text-red-400">{totals.nao}</p>
-        </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Presenca</p>
-          <p className="text-[24px] font-bold text-[#f5f0e8]">{totals.taxaPresenca}%</p>
-        </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-emerald-500/20 rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vendas</p>
-          <p className="text-[24px] font-bold text-emerald-400">{totals.vendas}</p>
-        </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-cyan-500/20 rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Retornos</p>
-          <p className="text-[24px] font-bold text-cyan-400">{totals.retornos}</p>
-        </div>
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-3">
-          <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
-          <p className="text-[24px] font-bold text-[#d4af37]">{totals.taxaConversao}%</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Total</p>
+            <p className="text-[24px] font-bold text-[#d4af37]">{totals.total}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vieram</p>
+            <p className="text-[24px] font-bold text-emerald-400">{totals.veio}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Faltaram</p>
+            <p className="text-[24px] font-bold text-red-400">{totals.nao}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Pendentes</p>
+            <p className="text-[24px] font-bold text-[#8a8070]">{totals.total - totals.veio - totals.nao}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Presenca</p>
+            <p className="text-[24px] font-bold text-[#f5f0e8]">{totals.taxaPresenca}%</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Vendas</p>
+            <p className="text-[24px] font-bold text-emerald-400">{totals.vendas}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Retornos</p>
+            <p className="text-[24px] font-bold text-cyan-400">{totals.retornos}</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
+            <p className="text-[24px] font-bold text-[#d4af37]">{totals.taxaConversao}%</p>
+          </div>
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
+import { Confetti } from "@/components/ui/confetti"
 import type { WeekDay } from "@/lib/types"
 
 export default function QuadroReunioes() {
@@ -29,6 +30,7 @@ export default function QuadroReunioes() {
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
   const [isAtendenteModalOpen, setIsAtendenteModalOpen] = useState(false)
   const [pendingVeioLead, setPendingVeioLead] = useState<Lead | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -312,6 +314,7 @@ export default function QuadroReunioes() {
   const handleVendaFechada = async (id: string) => {
     try {
       await updateLead(id, { venda_fechada: true })
+      setShowConfetti(true)
       toast.success("Venda fechada registrada!")
     } catch {
       toast.error("Erro ao registrar venda")
@@ -372,6 +375,8 @@ export default function QuadroReunioes() {
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] z-[1]">
+      {/* Efeito de fogos quando fecha venda */}
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
@@ -451,6 +456,7 @@ export default function QuadroReunioes() {
         <AnalyticsDashboard
           leads={leads}
           weekLabel={weekLabel}
+          dateRange={dateRange}
         />
       )}
 
