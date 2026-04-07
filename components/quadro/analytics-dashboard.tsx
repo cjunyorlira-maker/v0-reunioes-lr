@@ -1,7 +1,8 @@
 "use client"
 
 import { Lead } from "@/lib/types"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
+import { useQualificados } from "@/hooks/use-qualificados"
 
 interface AnalyticsDashboardProps {
   leads: Lead[]
@@ -25,6 +26,31 @@ interface VendedorStats {
 }
 
 export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDashboardProps) {
+  // IDs da etapa "Vendendo Reunião" no Kommo
+  const PIPELINE_ID = process.env.NEXT_PUBLIC_KOMMO_PIPELINE_ID || "7012299"
+  const VENDENDO_REUNIAO_STATUS_ID = process.env.NEXT_PUBLIC_KOMMO_VENDENDO_REUNIAO_ID || ""
+
+  const [stageInputId, setStageInputId] = useState(VENDENDO_REUNIAO_STATUS_ID)
+  const [stageIdApplied, setStageIdApplied] = useState(VENDENDO_REUNIAO_STATUS_ID)
+
+  const { qualificados, total: totalQualificados, isLoading: loadingQualificados } = useQualificados(
+    stageIdApplied ? PIPELINE_ID : undefined,
+    stageIdApplied || undefined
+  )
+
+  // Leads qualificados que já entraram no agendei (têm kommo_lead_id nos nossos leads)
+  const kommoIdsNoAgendei = useMemo(() => {
+    const ids = new Set(leads.map(l => l.kommo_lead_id).filter(Boolean))
+    return ids
+  }, [leads])
+
+  const qualificadosNoAgendei = useMemo(() => {
+    return qualificados.filter(q => kommoIdsNoAgendei.has(String(q.id)))
+  }, [qualificados, kommoIdsNoAgendei])
+
+  const taxaConversaoQualificados = totalQualificados > 0
+    ? Math.round((qualificadosNoAgendei.length / totalQualificados) * 100)
+    : 0
   // Estatísticas por vendedor
   const vendedorStats = useMemo(() => {
     const stats: Record<string, VendedorStats> = {}
@@ -209,6 +235,65 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
           Relatório Semanal
         </h2>
         <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
+      </div>
+
+      {/* Painel LEADS QUALIFICADOS (etapa Vendendo Reunião no Kommo) */}
+      <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div>
+            <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados — Vendendo Reunião</h3>
+            <p className="text-[11px] text-[#8a8070] mt-0.5">Leads que chegaram na etapa e quantos entraram no agendei</p>
+          </div>
+          {/* Input do ID da etapa */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={stageInputId}
+              onChange={e => setStageInputId(e.target.value)}
+              placeholder="ID da etapa no Kommo"
+              className="bg-black/40 border border-cyan-500/20 text-[#f5f0e8] text-[11px] rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:border-cyan-400"
+            />
+            <button
+              onClick={() => setStageIdApplied(stageInputId)}
+              className="text-[11px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg px-3 py-1.5 transition-colors"
+            >
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        {!stageIdApplied && (
+          <p className="text-[12px] text-[#5a5040] italic">Insira o ID da etapa &quot;Vendendo Reunião&quot; do Kommo para ver os dados.</p>
+        )}
+
+        {stageIdApplied && loadingQualificados && (
+          <p className="text-[12px] text-[#8a8070]">Carregando...</p>
+        )}
+
+        {stageIdApplied && !loadingQualificados && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados</p>
+              <p className="text-[28px] font-bold text-cyan-400">{totalQualificados}</p>
+              <p className="text-[10px] text-[#8a8070]">na etapa agora</p>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
+              <p className="text-[28px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
+              <p className="text-[10px] text-[#8a8070]">reunião marcada</p>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Aguardando</p>
+              <p className="text-[28px] font-bold text-amber-400">{totalQualificados - qualificadosNoAgendei.length}</p>
+              <p className="text-[10px] text-[#8a8070]">sem reunião</p>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
+              <p className="text-[28px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
+              <p className="text-[10px] text-[#8a8070]">qualif. → agendei</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Painel AGENDEI DA SEMANA (leads criados na semana - produtividade) */}
