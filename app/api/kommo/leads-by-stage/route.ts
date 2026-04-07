@@ -40,7 +40,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Erro na API do Kommo", detail: err }, { status: response.status })
     }
 
-    const data = await response.json()
+    // Kommo retorna 204 ou corpo vazio quando não há leads na etapa
+    const text = await response.text()
+    if (!text || text.trim() === "") {
+      return NextResponse.json({ total: 0, leads: [] })
+    }
+
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch {
+      console.error("[v0] Resposta inválida do Kommo:", text.substring(0, 200))
+      return NextResponse.json({ total: 0, leads: [] })
+    }
+
     const leads = data._embedded?.leads || []
 
     // ID do campo customizado de data de qualificação no Kommo
