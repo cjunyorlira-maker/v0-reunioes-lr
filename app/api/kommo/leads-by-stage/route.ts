@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// API para buscar leads de uma etapa específica do Kommo
-// Uso: GET /api/kommo/leads-by-stage?pipeline_id=7012299&status_id=12345678
+// ID do campo customizado de data de qualificação no Kommo
+const CAMPO_DATA_QUALIFICACAO = 1026046
+
+// API para buscar leads qualificados da semana pelo campo 1026046
+// O campo é preenchido automaticamente quando o lead chega na etapa "Vendendo Reunião"
+// Uso: GET /api/kommo/leads-by-stage?startDate=2026-04-06&endDate=2026-04-12
 export async function GET(req: NextRequest) {
   const token = process.env.KOMMO_ACCESS_TOKEN
   const subdomain = process.env.KOMMO_SUBDOMAIN
@@ -11,25 +15,22 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url)
-  const pipelineId = searchParams.get("pipeline_id")
-  const statusId = searchParams.get("status_id")
-
-  if (!statusId) {
-    return NextResponse.json({ error: "status_id é obrigatório" }, { status: 400 })
-  }
+  const startDate = searchParams.get("startDate")
+  const endDate = searchParams.get("endDate")
 
   try {
-    // Monta o filtro por etapa (pipeline + status)
-    let filterQuery = ""
-    if (pipelineId) {
-      filterQuery = `filter[statuses][0][pipeline_id]=${pipelineId}&filter[statuses][0][status_id]=${statusId}`
-    } else {
-      filterQuery = `filter[statuses][0][status_id]=${statusId}`
-    }
+    // Converte as datas para timestamps Unix (início e fim do dia)
+    const startTs = startDate ? Math.floor(new Date(startDate + "T00:00:00-03:00").getTime() / 1000) : null
+    const endTs = endDate ? Math.floor(new Date(endDate + "T23:59:59-03:00").getTime() / 1000) : null
 
-    // Busca leads com dados do contato e usuário responsável
-    const url = `https://${subdomain}.kommo.com/api/v4/leads?${filterQuery}&with=contacts,responsible_user&limit=250`
-    
+    // Filtra por pipeline e pelo campo customizado de data de qualificação
+    // filter[custom_fields][1026046][from] e [to] filtram pelo valor do campo
+    let filterQuery = `filter[pipeline_id]=7012299&with=responsible_user&limit=250`
+    if (startTs) filterQuery += `&filter[custom_fields_values][${CAMPO_DATA_QUALIFICACAO}][from]=${startTs}`
+    if (endTs) filterQuery += `&filter[custom_fields_values][${CAMPO_DATA_QUALIFICACAO}][to]=${endTs}`
+
+    const url = `https://${subdomain}.kommo.com/api/v4/leads?${filterQuery}`
+
     const response = await fetch(url, {
       headers: { "Authorization": `Bearer ${token}` },
       cache: "no-store",

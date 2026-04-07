@@ -1,7 +1,7 @@
 "use client"
 
 import { Lead } from "@/lib/types"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useQualificados } from "@/hooks/use-qualificados"
 
 interface AnalyticsDashboardProps {
@@ -26,23 +26,12 @@ interface VendedorStats {
 }
 
 export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDashboardProps) {
-  // IDs da etapa "Vendendo Reunião" no Kommo
-  const PIPELINE_ID = process.env.NEXT_PUBLIC_KOMMO_PIPELINE_ID || "7012299"
-  const VENDENDO_REUNIAO_STATUS_ID = process.env.NEXT_PUBLIC_KOMMO_VENDENDO_REUNIAO_ID || ""
-
-  const [stageInputId, setStageInputId] = useState(VENDENDO_REUNIAO_STATUS_ID)
-  const [stageIdApplied, setStageIdApplied] = useState(VENDENDO_REUNIAO_STATUS_ID)
-
-  // Busca TODOS os leads da etapa e filtra pelo campo 1026046 (data de qualificação) dentro da semana
+  // Busca leads qualificados da semana automaticamente pelo campo 1026046
   const {
     qualificadosSemana,
     totalSemana: totalQualificadosSemana,
     isLoading: loadingQualificados
-  } = useQualificados(
-    stageIdApplied ? PIPELINE_ID : undefined,
-    stageIdApplied || undefined,
-    dateRange // passa o range da semana atual para filtrar pelo campo 1026046
-  )
+  } = useQualificados(dateRange)
 
   // Kommo IDs que já têm reunião marcada no nosso sistema
   const kommoIdsNoAgendei = useMemo(() => {
@@ -248,81 +237,53 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
       </div>
 
-      {/* Painel LEADS QUALIFICADOS DA SEMANA */}
+      {/* Painel LEADS QUALIFICADOS DA SEMANA — automático pelo campo 1026046 */}
       <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados da Semana — Vendendo Reunião</h3>
-            <p className="text-[11px] text-[#8a8070] mt-0.5">
-              Filtrado pelo campo de data de qualificação (1026046) — {weekLabel}
-            </p>
+            <p className="text-[11px] text-[#8a8070] mt-0.5">{weekLabel}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={stageInputId}
-              onChange={e => setStageInputId(e.target.value)}
-              placeholder="ID da etapa no Kommo"
-              className="bg-black/40 border border-cyan-500/20 text-[#f5f0e8] text-[11px] rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:border-cyan-400"
-            />
-            <button
-              onClick={() => setStageIdApplied(stageInputId)}
-              className="text-[11px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg px-3 py-1.5 transition-colors"
-            >
-              Buscar
-            </button>
+          {loadingQualificados && (
+            <span className="text-[11px] text-[#8a8070]">Carregando...</span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
+            <p className="text-[32px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
+            <p className="text-[10px] text-[#8a8070]">qualificados nesta semana</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
+            <p className="text-[32px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
+            <p className="text-[10px] text-[#8a8070]">reuniao marcada</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reuniao</p>
+            <p className="text-[32px] font-bold text-amber-400">{qualificadosSemReuniao.length}</p>
+            <p className="text-[10px] text-[#8a8070]">aguardando marcar</p>
+          </div>
+          <div className="bg-black/20 rounded-lg p-3">
+            <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
+            <p className="text-[32px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
+            <p className="text-[10px] text-[#8a8070]">qualif. entrou no agendei</p>
           </div>
         </div>
 
-        {!stageIdApplied && (
-          <p className="text-[12px] text-[#5a5040] italic">
-            Insira o ID da etapa &quot;Vendendo Reunião&quot; no Kommo para ver os dados da semana.
-          </p>
-        )}
-
-        {stageIdApplied && loadingQualificados && (
-          <p className="text-[12px] text-[#8a8070]">Carregando...</p>
-        )}
-
-        {stageIdApplied && !loadingQualificados && (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-black/20 rounded-lg p-3">
-                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
-                <p className="text-[32px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
-                <p className="text-[10px] text-[#8a8070]">qualificados nesta semana</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-3">
-                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
-                <p className="text-[32px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
-                <p className="text-[10px] text-[#8a8070]">reuniao marcada</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-3">
-                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reuniao</p>
-                <p className="text-[32px] font-bold text-amber-400">{qualificadosSemReuniao.length}</p>
-                <p className="text-[10px] text-[#8a8070]">aguardando marcar</p>
-              </div>
-              <div className="bg-black/20 rounded-lg p-3">
-                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
-                <p className="text-[32px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
-                <p className="text-[10px] text-[#8a8070]">qualif. entrou no agendei</p>
-              </div>
+        {/* Lista dos que ainda não marcaram reunião */}
+        {qualificadosSemReuniao.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[11px] text-amber-400 font-medium mb-2">Sem reuniao marcada:</p>
+            <div className="flex flex-wrap gap-2">
+              {qualificadosSemReuniao.map(q => (
+                <span key={q.id} className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1">
+                  {q.nome}{q.responsavel ? ` · ${q.responsavel}` : ""}
+                </span>
+              ))}
             </div>
-
-            {/* Lista dos que ainda não marcaram reunião */}
-            {qualificadosSemReuniao.length > 0 && (
-              <div className="mt-3">
-                <p className="text-[11px] text-amber-400 font-medium mb-2">Sem reuniao marcada:</p>
-                <div className="flex flex-wrap gap-2">
-                  {qualificadosSemReuniao.map(q => (
-                    <span key={q.id} className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1">
-                      {q.nome} {q.responsavel ? `· ${q.responsavel}` : ""}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
 
