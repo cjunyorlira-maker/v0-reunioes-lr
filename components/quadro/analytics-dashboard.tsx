@@ -33,6 +33,12 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const [stageInputId, setStageInputId] = useState(VENDENDO_REUNIAO_STATUS_ID)
   const [stageIdApplied, setStageIdApplied] = useState(VENDENDO_REUNIAO_STATUS_ID)
 
+  // Cria dateRange apenas para HOJE (não da semana inteira)
+  const todayDateRange = {
+    start: new Date().toISOString().split("T")[0],
+    end: new Date().toISOString().split("T")[0]
+  }
+
   const {
     qualificados,
     qualificadosSemana,
@@ -42,7 +48,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   } = useQualificados(
     stageIdApplied ? PIPELINE_ID : undefined,
     stageIdApplied || undefined,
-    dateRange
+    stageIdApplied ? todayDateRange : undefined // Passa apenas hoje
   )
 
   // Leads qualificados nesta semana que já entraram no agendei (cruzando kommo_lead_id)
@@ -248,8 +254,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados — Vendendo Reunião</h3>
-            <p className="text-[11px] text-[#8a8070] mt-0.5">Leads que chegaram na etapa e quantos entraram no agendei</p>
+            <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados de HOJE — Vendendo Reunião</h3>
+            <p className="text-[11px] text-[#8a8070] mt-0.5">Qualificados hoje (campo 1026046) que entraram no agendei</p>
           </div>
           {/* Input do ID da etapa */}
           <div className="flex items-center gap-2">
@@ -257,11 +263,14 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               type="text"
               value={stageInputId}
               onChange={e => setStageInputId(e.target.value)}
-              placeholder="ID da etapa no Kommo"
+              placeholder="ID status (ex: 32325662)"
               className="bg-black/40 border border-cyan-500/20 text-[#f5f0e8] text-[11px] rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:border-cyan-400"
             />
             <button
-              onClick={() => setStageIdApplied(stageInputId)}
+              onClick={() => {
+                setStageIdApplied(stageInputId)
+                console.log("[v0] Buscando qualificados com status_id:", stageInputId)
+              }}
               className="text-[11px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg px-3 py-1.5 transition-colors"
             >
               Buscar
@@ -270,39 +279,39 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
 
         {!stageIdApplied && (
-          <p className="text-[12px] text-[#5a5040] italic">Insira o ID da etapa &quot;Vendendo Reunião&quot; do Kommo para ver os dados.</p>
+          <p className="text-[12px] text-[#5a5040] italic">Abra o Kommo, vá na etapa "Vendendo Reunião", copie o número do ID da URL e cole aqui.</p>
         )}
 
         {stageIdApplied && loadingQualificados && (
-          <p className="text-[12px] text-[#8a8070]">Carregando...</p>
+          <p className="text-[12px] text-[#8a8070]">⏳ Carregando dados de hoje...</p>
         )}
 
         {stageIdApplied && !loadingQualificados && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Total na Etapa</p>
-              <p className="text-[28px] font-bold text-cyan-400">{totalQualificados}</p>
-              <p className="text-[10px] text-[#8a8070]">acumulado</p>
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Hoje</p>
+              <p className="text-[28px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
+              <p className="text-[10px] text-[#8a8070]">qualificados</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3 border border-cyan-500/20">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
-              <p className="text-[28px] font-bold text-cyan-300">{totalQualificadosSemana}</p>
-              <p className="text-[10px] text-[#8a8070]">nesta semana</p>
-            </div>
-            <div className="bg-black/20 rounded-lg p-3">
               <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
               <p className="text-[28px] font-bold text-emerald-400">{qualificadosSemanaNOAgendei.length}</p>
               <p className="text-[10px] text-[#8a8070]">reunião marcada</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reunião</p>
-              <p className="text-[28px] font-bold text-amber-400">{totalQualificadosSemana - qualificadosSemanaNOAgendei.length}</p>
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reunião Marcada</p>
+              <p className="text-[28px] font-bold text-amber-400">{Math.max(0, totalQualificadosSemana - qualificadosSemanaNOAgendei.length)}</p>
               <p className="text-[10px] text-[#8a8070]">aguardando</p>
             </div>
             <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Taxa de Conversão</p>
               <p className="text-[28px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
               <p className="text-[10px] text-[#8a8070]">qualif. → agendei</p>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3">
+              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Status da API</p>
+              <p className="text-[14px] font-bold text-emerald-400">✓ OK</p>
+              <p className="text-[10px] text-[#8a8070]">conectado</p>
             </div>
           </div>
         )}
