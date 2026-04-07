@@ -33,36 +33,34 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const [stageInputId, setStageInputId] = useState(VENDENDO_REUNIAO_STATUS_ID)
   const [stageIdApplied, setStageIdApplied] = useState(VENDENDO_REUNIAO_STATUS_ID)
 
-  // Cria dateRange apenas para HOJE (não da semana inteira)
-  const todayDateRange = {
-    start: new Date().toISOString().split("T")[0],
-    end: new Date().toISOString().split("T")[0]
-  }
-
+  // Busca TODOS os leads da etapa e filtra pelo campo 1026046 (data de qualificação) dentro da semana
   const {
-    qualificados,
     qualificadosSemana,
-    total: totalQualificados,
     totalSemana: totalQualificadosSemana,
     isLoading: loadingQualificados
   } = useQualificados(
     stageIdApplied ? PIPELINE_ID : undefined,
     stageIdApplied || undefined,
-    stageIdApplied ? todayDateRange : undefined // Passa apenas hoje
+    dateRange // passa o range da semana atual para filtrar pelo campo 1026046
   )
 
-  // Leads qualificados nesta semana que já entraram no agendei (cruzando kommo_lead_id)
+  // Kommo IDs que já têm reunião marcada no nosso sistema
   const kommoIdsNoAgendei = useMemo(() => {
-    const ids = new Set(leads.map(l => l.kommo_lead_id).filter(Boolean))
-    return ids
+    return new Set(leads.map(l => l.kommo_lead_id).filter(Boolean))
   }, [leads])
 
-  const qualificadosSemanaNOAgendei = useMemo(() => {
+  // Qualificados desta semana que já entraram no agendei
+  const qualificadosNoAgendei = useMemo(() => {
     return qualificadosSemana.filter(q => kommoIdsNoAgendei.has(String(q.id)))
   }, [qualificadosSemana, kommoIdsNoAgendei])
 
+  // Qualificados desta semana que ainda não têm reunião marcada
+  const qualificadosSemReuniao = useMemo(() => {
+    return qualificadosSemana.filter(q => !kommoIdsNoAgendei.has(String(q.id)))
+  }, [qualificadosSemana, kommoIdsNoAgendei])
+
   const taxaConversaoQualificados = totalQualificadosSemana > 0
-    ? Math.round((qualificadosSemanaNOAgendei.length / totalQualificadosSemana) * 100)
+    ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
     : 0
   // Estatísticas por vendedor
   const vendedorStats = useMemo(() => {
@@ -250,27 +248,25 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
       </div>
 
-      {/* Painel LEADS QUALIFICADOS (etapa Vendendo Reunião no Kommo) */}
+      {/* Painel LEADS QUALIFICADOS DA SEMANA */}
       <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados de HOJE — Vendendo Reunião</h3>
-            <p className="text-[11px] text-[#8a8070] mt-0.5">Qualificados hoje (campo 1026046) que entraram no agendei</p>
+            <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados da Semana — Vendendo Reunião</h3>
+            <p className="text-[11px] text-[#8a8070] mt-0.5">
+              Filtrado pelo campo de data de qualificação (1026046) — {weekLabel}
+            </p>
           </div>
-          {/* Input do ID da etapa */}
           <div className="flex items-center gap-2">
             <input
               type="text"
               value={stageInputId}
               onChange={e => setStageInputId(e.target.value)}
-              placeholder="ID status (ex: 32325662)"
+              placeholder="ID da etapa no Kommo"
               className="bg-black/40 border border-cyan-500/20 text-[#f5f0e8] text-[11px] rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:border-cyan-400"
             />
             <button
-              onClick={() => {
-                setStageIdApplied(stageInputId)
-                console.log("[v0] Buscando qualificados com status_id:", stageInputId)
-              }}
+              onClick={() => setStageIdApplied(stageInputId)}
               className="text-[11px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 rounded-lg px-3 py-1.5 transition-colors"
             >
               Buscar
@@ -279,41 +275,54 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
 
         {!stageIdApplied && (
-          <p className="text-[12px] text-[#5a5040] italic">Abra o Kommo, vá na etapa "Vendendo Reunião", copie o número do ID da URL e cole aqui.</p>
+          <p className="text-[12px] text-[#5a5040] italic">
+            Insira o ID da etapa &quot;Vendendo Reunião&quot; no Kommo para ver os dados da semana.
+          </p>
         )}
 
         {stageIdApplied && loadingQualificados && (
-          <p className="text-[12px] text-[#8a8070]">⏳ Carregando dados de hoje...</p>
+          <p className="text-[12px] text-[#8a8070]">Carregando...</p>
         )}
 
         {stageIdApplied && !loadingQualificados && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Hoje</p>
-              <p className="text-[28px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
-              <p className="text-[10px] text-[#8a8070]">qualificados</p>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/20 rounded-lg p-3">
+                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
+                <p className="text-[32px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
+                <p className="text-[10px] text-[#8a8070]">qualificados nesta semana</p>
+              </div>
+              <div className="bg-black/20 rounded-lg p-3">
+                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
+                <p className="text-[32px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
+                <p className="text-[10px] text-[#8a8070]">reuniao marcada</p>
+              </div>
+              <div className="bg-black/20 rounded-lg p-3">
+                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reuniao</p>
+                <p className="text-[32px] font-bold text-amber-400">{qualificadosSemReuniao.length}</p>
+                <p className="text-[10px] text-[#8a8070]">aguardando marcar</p>
+              </div>
+              <div className="bg-black/20 rounded-lg p-3">
+                <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Conversao</p>
+                <p className="text-[32px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
+                <p className="text-[10px] text-[#8a8070]">qualif. entrou no agendei</p>
+              </div>
             </div>
-            <div className="bg-black/20 rounded-lg p-3 border border-cyan-500/20">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
-              <p className="text-[28px] font-bold text-emerald-400">{qualificadosSemanaNOAgendei.length}</p>
-              <p className="text-[10px] text-[#8a8070]">reunião marcada</p>
-            </div>
-            <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Sem Reunião Marcada</p>
-              <p className="text-[28px] font-bold text-amber-400">{Math.max(0, totalQualificadosSemana - qualificadosSemanaNOAgendei.length)}</p>
-              <p className="text-[10px] text-[#8a8070]">aguardando</p>
-            </div>
-            <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Taxa de Conversão</p>
-              <p className="text-[28px] font-bold text-cyan-300">{taxaConversaoQualificados}%</p>
-              <p className="text-[10px] text-[#8a8070]">qualif. → agendei</p>
-            </div>
-            <div className="bg-black/20 rounded-lg p-3">
-              <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Status da API</p>
-              <p className="text-[14px] font-bold text-emerald-400">✓ OK</p>
-              <p className="text-[10px] text-[#8a8070]">conectado</p>
-            </div>
-          </div>
+
+            {/* Lista dos que ainda não marcaram reunião */}
+            {qualificadosSemReuniao.length > 0 && (
+              <div className="mt-3">
+                <p className="text-[11px] text-amber-400 font-medium mb-2">Sem reuniao marcada:</p>
+                <div className="flex flex-wrap gap-2">
+                  {qualificadosSemReuniao.map(q => (
+                    <span key={q.id} className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1">
+                      {q.nome} {q.responsavel ? `· ${q.responsavel}` : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
