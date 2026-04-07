@@ -57,9 +57,6 @@ export async function GET(req: NextRequest) {
 
     const leads = data._embedded?.leads || []
 
-    // ID do campo customizado de data de qualificação no Kommo
-    const CAMPO_DATA_QUALIFICACAO = 1026046
-
     // Formata os dados retornados
     const formatted = leads.map((lead: any) => {
       const customFields: any[] = lead.custom_fields_values || []
