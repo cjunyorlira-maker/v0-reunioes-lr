@@ -1,7 +1,15 @@
 import { WeekDay } from "./types"
 
+// Retorna a data atual no fuso horário de São Paulo (Brasil)
+function getTodayInBrazil(): Date {
+  const now = new Date()
+  // Converte para string no fuso de São Paulo e depois volta para Date
+  const brazilTime = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+  return new Date(brazilTime)
+}
+
 export function getWeekDays(weekOffset: number = 0): WeekDay[] {
-  const today = new Date()
+  const today = getTodayInBrazil()
   const currentDay = today.getDay()
   
   // Calcular o início da semana (segunda-feira)
