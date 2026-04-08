@@ -1,30 +1,71 @@
 // Mapa de fotos dos vendedores — chave é o nome exato como aparece no Kommo/sistema
 // As fotos são referenciadas pelo blob URL público
 export const VENDEDOR_FOTOS: Record<string, string> = {
-  "Marcos Vinicius":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Marcos-Vinicius-sfP2DTzp9TP0TygU7oQRZIX4gfIWyI.jpeg",
-  "Marcos Vinícius":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Marcos-Vinicius-sfP2DTzp9TP0TygU7oQRZIX4gfIWyI.jpeg",
-  "Nathan Caue":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nathan-Caue-h5uUDirfMWwFdZoABYfwOhURbwNdcD.jpeg",
-  "Nathan Cauê":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nathan-Caue-h5uUDirfMWwFdZoABYfwOhURbwNdcD.jpeg",
-  "Nicolas Moraes":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nicolas-Moraes-bEYeG5CvaAyPZt1kc6JgqBsBhqtUoj.jpeg",
-  "Edna Ragasini":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Edna-Ragasini-KEdZXLbyaOVxgbVz0u29S5DaPjFpVk.jpeg",
-  "Lidiane Fonseca":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lidiane-Fonseca-xfuzHuUb4JiMOhw1bx2jT6oIcf83lP.jpeg",
-  "Rogerio Martins":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rogerio-Martins-yw9buDU6JmITLaEwv7vN19zy73NtRK.jpeg",
-  "Rogério Martins":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rogerio-Martins-yw9buDU6JmITLaEwv7vN19zy73NtRK.jpeg",
-  "Amanda Souza":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-ZDIcakfsri2LlyS6IiGiYlKvzME9O0.jpeg",
-  "Yuri Pereira":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Yuri-Pereira-QmxrzUEH3LWZdBiPk0Hop1hS7DhZoX.jpeg",
-  "Livia Rafaela":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Livia-Rafaela-CP3L3LNVHkJnq5NiuvwIKtp4gJtIwm.jpeg",
-  "Lívia Rafaela":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Livia-Rafaela-CP3L3LNVHkJnq5NiuvwIKtp4gJtIwm.jpeg",
-  "Bianca Simoes":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-iqNAYrQx1g8AZyENQW6JJmlshDPA2h.jpeg",
-  "Bianca Simões":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-iqNAYrQx1g8AZyENQW6JJmlshDPA2h.jpeg",
-  "Emily Machado":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emily-Machado-ppVeZamDWpFyFz52PDG3H78S4Iuppt.jpeg",
-  "Gisely Leal":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gisely-Leal-iPx7gpuxUWKBoYl8dYHw6V5rRax2ec.jpeg",
-  "Rafaella Antunes":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rafaella-Antunes-GYWme90HgI9UeAxGZfDnelownFBTiG.jpeg",
-  "Brayan Bertolai":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-Bertolai-ehQRcY6c2xAZkR28ok2TSM15aQJGZZ.jpeg",
-  "Emylly Lira":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emylly-Lira-hTLxm5kwcMdAPJu2X9a25nHZuo7wLt.jpeg",
-  "Alexia Cunha":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia-Cunha-dx5Vwl5ZlVh1sHpubgj3ukgvRCBmdI.jpeg",
-  "Leonardo Freitas":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Leonardo-Freitas-5mrjqBA87bowXvfQcWO6oac4OMZdUW.jpeg",
-  "Janaina Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-7vuHiBH0blXb31pWTJmcOpjRbSKkKU.jpeg",
-  "Janaína Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-7vuHiBH0blXb31pWTJmcOpjRbSKkKU.jpeg",
+  // Luis Henrique
+  "Luis Henrique":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Luis-Henrique-r9vpDqJDGutJsK9HS89B4ucV0yGVKD.jpeg",
+  "Luís Henrique":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Luis-Henrique-r9vpDqJDGutJsK9HS89B4ucV0yGVKD.jpeg",
+  
+  // Leonardo Freitas
+  "Leonardo Freitas":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Leonardo-Freitas-w1qU7SbMjNYHLHqGc66c8oAFmYDRlC.jpeg",
+  
+  // Alex Negreiros
+  "Alex Negreiros":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alex-Negreiros-j089DeDxr4GcRwXJHWk3eVVDD97TDV.jpeg",
+  
+  // Bianca Simoes
+  "Bianca Simoes":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-PNhWqPH7wEmgmhRFV3nnN9mjHS1X1G.jpeg",
+  "Bianca Simões":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-PNhWqPH7wEmgmhRFV3nnN9mjHS1X1G.jpeg",
+  
+  // Yuri Pereira
+  "Yuri Pereira":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Yuri-Pereira-DjE5KadXSFgcLiTFQ7ascxSpCiw39Z.jpeg",
+  
+  // Lucas Dionisio
+  "Lucas Dionisio":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lucas-Dionisio-Kluj5V4vJBSVou4FWPddzY37jKkHqS.jpeg",
+  "Lucas Dionísio":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lucas-Dionisio-Kluj5V4vJBSVou4FWPddzY37jKkHqS.jpeg",
+  
+  // Kleinver Seabra
+  "Kleinver Seabra":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Kleinver-Seabra-NhjTvka9YuEyRCahYJPzEKoXO9KijM.jpeg",
+  
+  // Rogerio Martins
+  "Rogerio Martins":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rogerio-Martins-Vra3t5o5qB7DyS8F9Kwiq3T6xCgpA8.jpeg",
+  "Rogério Martins":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rogerio-Martins-Vra3t5o5qB7DyS8F9Kwiq3T6xCgpA8.jpeg",
+  
+  // Nathan Caue
+  "Nathan Caue":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nathan-Caue-9Mp8yQMlehkE5CT59n8pF2qlms1LaU.jpeg",
+  "Nathan Cauê":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nathan-Caue-9Mp8yQMlehkE5CT59n8pF2qlms1LaU.jpeg",
+  
+  // Amanda Souza
+  "Amanda Souza":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-9Csu6tKWbtzEMt7nkHj7uGTu3K4ed6.jpeg",
+  
+  // Emily Machado
+  "Emily Machado":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emily%20Machado-D4i7BojDN5YdDB6nkiVqjYlEIMmAWS.jpeg",
+  
+  // Nicolas Moraes
+  "Nicolas Moraes":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nicolas-Moraes-FcFICPMQ1AH0ZiDhQM6w2kirOEKvAz.jpeg",
+  
+  // Emilaine Lins
+  "Emilaine Lins":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emilaine-Lins-IHtg6XUZW8tutcxCcFiSHcHIIpizhF.jpeg",
+  
+  // Rafaella (Antunes)
+  "Rafaella":          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rafaella-Pe494UGelm3bperG5WhPLX05KVljd4.jpeg",
+  "Rafaella Antunes":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rafaella-Pe494UGelm3bperG5WhPLX05KVljd4.jpeg",
+  
+  // Gisely Leal
+  "Gisely Leal":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gisely-Leal-5wTy6ksudttiNXcDuBDxCpdHsOymvc.jpeg",
+  
+  // Lidiane (Fonseca)
+  "Lidiane":           "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lidiane-qKbhEkmCjgITPygHkG2KADsq0kBgSm.jpeg",
+  "Lidiane Fonseca":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lidiane-qKbhEkmCjgITPygHkG2KADsq0kBgSm.jpeg",
+  
+  // Brayan Bertolai
+  "Brayan Bertolai":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-Bertolai-iQkh1Fk7JH76kgAGhY2pFFVOONIiEs.jpeg",
+  
+  // Alexia Cunha
+  "Alexia Cunha":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
+  "Aléxia Cunha":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
+  
+  // Janaina Dantas
+  "Janaina Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
+  "Janaína Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
 }
 
 // Função auxiliar — busca a foto pelo nome, com fallback por primeiro nome
