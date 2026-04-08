@@ -4,6 +4,7 @@ import { Lead } from "@/lib/types"
 import { useMemo, useState } from "react"
 import { useQualificados } from "@/hooks/use-qualificados"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
+import { getFotoVendedor } from "@/lib/vendedor-fotos"
 
 interface AnalyticsDashboardProps {
   leads: Lead[]
@@ -76,10 +77,10 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     leadsAtivos.forEach((lead) => {
       const vendedor = lead.responsavel || "Não informado"
 
-      if (!stats[vendedor]) {
-        stats[vendedor] = {
-          nome: vendedor,
-          foto: lead.foto_responsavel,
+        if (!stats[vendedor]) {
+          stats[vendedor] = {
+            nome: vendedor,
+            foto: lead.foto_responsavel || getFotoVendedor(vendedor),
           equipe: lead.equipe || "Sem equipe",
           total: 0,
           veio: 0,
@@ -423,10 +424,10 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
                     <td className="py-2">
                       <div className="flex items-center gap-2">
                         {v.foto ? (
-                          <img src={v.foto} alt={v.nome} className="w-6 h-6 rounded-full object-cover" />
+                          <img src={v.foto} alt={v.nome} className="w-8 h-8 rounded-full object-cover object-top flex-shrink-0 border border-[rgba(212,175,55,0.2)]" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-[rgba(212,175,55,0.15)] flex items-center justify-center">
-                            <span className="text-[9px] text-[#d4af37] font-semibold">
+                          <div className="w-8 h-8 rounded-full bg-[rgba(212,175,55,0.15)] flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] text-[#d4af37] font-semibold">
                               {v.nome.charAt(0).toUpperCase()}
                             </span>
                           </div>
