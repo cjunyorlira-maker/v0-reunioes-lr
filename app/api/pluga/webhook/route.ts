@@ -31,75 +31,88 @@ export async function OPTIONS() {
 }
 
 // Webhook para receber eventos do Pluga
-// Pluga envia: { tipo, lead_id, data_evento, lead_nome?, vendedor?, equipe?, origem? }
-// Se faltar dados, a API busca no Kommo
+// Pluga envia: { lead_id, nome, origem, Qualifiquei (data), tipo? }
+// A API busca vendedor e equipe no Kommo
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     console.log("[v0] Pluga webhook recebido:", JSON.stringify(body))
     
-    const { tipo, lead_id, data_evento, lead_nome, vendedor, equipe, origem } = body
+    // Aceita diferentes formatos de campos do Pluga
+    const lead_id = body.lead_id || body.id
+    const lead_nome = body.nome || body.lead_nome || body.name
+    const origem = body.origem || body.origin
+    const data_evento = body.Qualifiquei || body.qualifiquei || body.data_evento || body.data_qualificacao
+    const tipo = body.tipo || "qualificado" // Default para qualificado se não vier
 
-    if (!tipo || !lead_id) {
-      return NextResponse.json({ error: "Faltam campos obrigatórios: tipo e lead_id" }, { status: 400 })
+    if (!lead_id) {
+      return NextResponse.json({ error: "Campo obrigatório: lead_id" }, { status: 400 })
     }
 
-    // Usa dados do Pluga se vieram completos, senão busca no Kommo
+    // Dados que vêm do Pluga
     let finalLeadNome = lead_nome || null
-    let finalVendedor = vendedor || null
-    let finalEquipe = equipe || null
     let finalOrigem = origem || null
+    
+    // Vendedor e equipe sempre buscamos no Kommo
+    let finalVendedor: string | null = null
+    let finalEquipe: string | null = null
 
-    // Se faltam dados, busca no Kommo
-    if (!finalLeadNome || !finalVendedor) {
-      const token = process.env.KOMMO_ACCESS_TOKEN
-      const subdomain = process.env.KOMMO_SUBDOMAIN
+    // Busca vendedor e equipe no Kommo (sempre)
+    const token = process.env.KOMMO_ACCESS_TOKEN
+    const subdomain = process.env.KOMMO_SUBDOMAIN
 
-      if (token && subdomain) {
-        try {
-          // Busca os dados do lead na API do Kommo
-          const leadResponse = await fetch(
-            `https://${subdomain}.kommo.com/api/v4/leads/${lead_id}?with=contacts`,
-            {
-              headers: { "Authorization": `Bearer ${token}` },
-            }
-          )
+    if (token && subdomain) {
+      try {
+        // Busca os dados do lead na API do Kommo
+        const leadResponse = await fetch(
+          `https://${subdomain}.kommo.com/api/v4/leads/${lead_id}?with=contacts`,
+          {
+            headers: { "Authorization": `Bearer ${token}` },
+          }
+        )
 
-          if (leadResponse.ok) {
-            const leadData = await leadResponse.json()
-            finalLeadNome = finalLeadNome || leadData.name || "Sem nome"
+        if (leadResponse.ok) {
+          const leadData = await leadResponse.json()
+          
+          // Se não veio nome do Pluga, pega do Kommo
+          if (!finalLeadNome) {
+            finalLeadNome = leadData.name || "Sem nome"
+          }
 
-            // Busca dados do responsável (vendedor)
-            if (!finalVendedor && leadData.responsible_user_id) {
-              const userResponse = await fetch(
-                `https://${subdomain}.kommo.com/api/v4/users/${leadData.responsible_user_id}?with=group`,
-                {
-                  headers: { "Authorization": `Bearer ${token}` },
-                }
-              )
-
-              if (userResponse.ok) {
-                const user = await userResponse.json()
-                finalVendedor = user.name || "Não informado"
-                finalEquipe = finalEquipe || user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+          // Busca dados do responsável (vendedor e equipe)
+          if (leadData.responsible_user_id) {
+            const userResponse = await fetch(
+              `https://${subdomain}.kommo.com/api/v4/users/${leadData.responsible_user_id}?with=group`,
+              {
+                headers: { "Authorization": `Bearer ${token}` },
               }
-            }
+            )
 
-            // Extrai origem se não veio
-            if (!finalOrigem) {
-              const customFields = leadData.custom_fields_values || []
-              for (const field of customFields) {
-                if (field.field_id === CAMPO_ORIGEM_ID) {
-                  finalOrigem = field.values?.[0]?.enum || field.values?.[0]?.value || null
-                  break
-                }
+            if (userResponse.ok) {
+              const user = await userResponse.json()
+              finalVendedor = user.name || "Não informado"
+              finalEquipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+            }
+          }
+
+          // Extrai origem do Kommo se não veio do Pluga
+          if (!finalOrigem) {
+            const customFields = leadData.custom_fields_values || []
+            for (const field of customFields) {
+              if (field.field_id === CAMPO_ORIGEM_ID) {
+                finalOrigem = field.values?.[0]?.enum || field.values?.[0]?.value || null
+                break
               }
             }
           }
-        } catch (kommoError) {
-          console.error("[v0] Erro ao buscar dados no Kommo:", kommoError)
+        } else {
+          console.error("[v0] Lead não encontrado no Kommo:", lead_id, await leadResponse.text())
         }
+      } catch (kommoError) {
+        console.error("[v0] Erro ao buscar dados no Kommo:", kommoError)
       }
+    } else {
+      console.error("[v0] Kommo não configurado - faltam KOMMO_ACCESS_TOKEN ou KOMMO_SUBDOMAIN")
     }
 
     // Usa a data_evento que vem do Pluga ou data atual
