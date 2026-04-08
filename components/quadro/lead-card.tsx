@@ -163,15 +163,31 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             Remarcar
           </button>
         </div>
-        {/* Botões de Venda Fechada e Retorno - só aparecem quando veio */}
+        {/* Botões de Venda Fechada e Retorno - sempre disponíveis se status for "veio" */}
         {lead.status === "veio" && (
           <div className="flex gap-1.5 mb-1.5">
+            {lead.venda_fechada && onVendaFechada && (
+              <button
+                onClick={() => onVendaFechada(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 font-semibold transition-colors"
+              >
+                ✓ Venda Fechada
+              </button>
+            )}
             {!lead.venda_fechada && onVendaFechada && (
               <button
                 onClick={() => onVendaFechada(lead.id)}
                 className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
               >
                 Venda Fechada
+              </button>
+            )}
+            {lead.retorno && onRetorno && (
+              <button
+                onClick={() => onRetorno(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/15 hover:bg-cyan-500/25 font-semibold transition-colors"
+              >
+                ✓ Retorno
               </button>
             )}
             {!lead.retorno && onRetorno && (

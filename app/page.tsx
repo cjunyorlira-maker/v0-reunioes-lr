@@ -313,20 +313,24 @@ export default function QuadroReunioes() {
 
   const handleVendaFechada = async (id: string) => {
     try {
-      await updateLead(id, { venda_fechada: true })
-      setShowConfetti(true)
-      toast.success("Venda fechada registrada!")
+      const lead = leads.find(l => l.id === id)
+      const newValue = !lead?.venda_fechada
+      await updateLead(id, { venda_fechada: newValue })
+      setShowConfetti(newValue)
+      toast.success(newValue ? "Venda fechada registrada!" : "Venda fechada removida")
     } catch {
-      toast.error("Erro ao registrar venda")
+      toast.error("Erro ao atualizar venda fechada")
     }
   }
 
   const handleRetorno = async (id: string) => {
     try {
-      await updateLead(id, { retorno: true })
-      toast.success("Cliente marcado como retorno")
+      const lead = leads.find(l => l.id === id)
+      const newValue = !lead?.retorno
+      await updateLead(id, { retorno: newValue })
+      toast.success(newValue ? "Cliente marcado como retorno" : "Retorno removido")
     } catch {
-      toast.error("Erro ao marcar retorno")
+      toast.error("Erro ao atualizar retorno")
     }
   }
 
