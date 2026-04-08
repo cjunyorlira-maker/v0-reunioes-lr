@@ -59,13 +59,30 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   // Brayan Bertolai
   "Brayan Bertolai":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-Bertolai-iQkh1Fk7JH76kgAGhY2pFFVOONIiEs.jpeg",
   
-  // Alexia Cunha
+  // Alexia Cunha (variações)
+  "Alexia":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
+  "Aléxia":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
   "Alexia Cunha":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
   "Aléxia Cunha":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
   
   // Janaina Dantas
   "Janaina Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
   "Janaína Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
+}
+
+// Mapa de nomes que devem ser unificados (nome curto -> nome completo)
+const VENDEDOR_ALIAS: Record<string, string> = {
+  "Alexia": "Alexia Cunha",
+  "Aléxia": "Alexia Cunha",
+  "Lidiane": "Lidiane Fonseca",
+  "Rafaella": "Rafaella Antunes",
+}
+
+// Função para normalizar nome de vendedor (unifica variações)
+export function normalizeVendedorNome(nome: string): string {
+  if (!nome) return nome
+  const trimmed = nome.trim()
+  return VENDEDOR_ALIAS[trimmed] || trimmed
 }
 
 // Função auxiliar — busca a foto pelo nome, com fallback por primeiro nome

@@ -4,7 +4,7 @@ import { Lead } from "@/lib/types"
 import { useMemo, useState } from "react"
 import { useQualificados } from "@/hooks/use-qualificados"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
-import { getFotoVendedor } from "@/lib/vendedor-fotos"
+import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
 
 interface AnalyticsDashboardProps {
   leads: Lead[]
@@ -45,12 +45,12 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return leads.filter(l => l.data >= activeRange.start && l.data <= activeRange.end)
   }, [leads, activeRange])
 
-  // Busca leads qualificados automaticamente pelo campo 1026046 — filtra pelo range ativo
+  // Busca leads qualificados automaticamente pelo campo 1026046 — sempre semana toda
   const {
     qualificadosSemana,
     totalSemana: totalQualificadosSemana,
     isLoading: loadingQualificados
-  } = useQualificados(activeRange)
+  } = useQualificados(dateRange)
 
   // Kommo IDs que já têm reunião marcada no nosso sistema
   const kommoIdsNoAgendei = useMemo(() => {
@@ -70,12 +70,29 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const taxaConversaoQualificados = totalQualificadosSemana > 0
     ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
     : 0
-  // Estatísticas por vendedor — usa leadsAtivos (dia ou semana)
+  // Calcula "Agendei" separadamente usando TODOS os leads (criados no range ativo)
+  const agendeiPorVendedor = useMemo(() => {
+    const stats: Record<string, number> = {}
+    
+    leads.forEach((lead) => {
+      const createdDate = lead.created_at?.split("T")[0]
+      if (!createdDate) return
+      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+      
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
+      stats[vendedor] = (stats[vendedor] || 0) + 1
+    })
+    
+    return stats
+  }, [leads, activeRange])
+
+  // Estatísticas por vendedor — usa leadsAtivos (dia ou semana) para marcados
   const vendedorStats = useMemo(() => {
     const stats: Record<string, VendedorStats> = {}
 
+    // Primeiro passa pelos leadsAtivos para marcados/resultados
     leadsAtivos.forEach((lead) => {
-      const vendedor = lead.responsavel || "Não informado"
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
 
         if (!stats[vendedor]) {
           stats[vendedor] = {
@@ -94,7 +111,6 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         }
       }
 
-      // "Marcados" - leads agendados para esta semana (total sempre conta)
       stats[vendedor].total++
       
       if (lead.status === "veio") {
@@ -108,18 +124,31 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       if (lead.venda_fechada) stats[vendedor].vendas++
       if (lead.retorno) stats[vendedor].retornos++
 
-      // "Agendei" - leads CRIADOS dentro do range ativo (dia ou semana)
-      if (lead.created_at) {
-        const createdDate = lead.created_at.split("T")[0]
-        if (createdDate >= activeRange.start && createdDate <= activeRange.end) {
-          stats[vendedor].agendeiDia[createdDate] = (stats[vendedor].agendeiDia[createdDate] || 0) + 1
-        }
-      }
-
-      // Origens
       if (lead.origem) {
         stats[vendedor].origens[lead.origem] = (stats[vendedor].origens[lead.origem] || 0) + 1
       }
+    })
+
+    // Adiciona vendedores que têm Agendei mas não têm leads marcados no período
+    Object.entries(agendeiPorVendedor).forEach(([vendedor, count]) => {
+      if (!stats[vendedor]) {
+        stats[vendedor] = {
+          nome: vendedor,
+          foto: getFotoVendedor(vendedor) || null,
+          equipe: "Sem equipe",
+          total: 0,
+          veio: 0,
+          nao: 0,
+          pending: 0,
+          vendas: 0,
+          retornos: 0,
+          agendeiDia: {},
+          origens: {},
+          conversao: 0,
+        }
+      }
+      // Armazena o total de agendei no objeto agendeiDia
+      stats[vendedor].agendeiDia["total"] = count
     })
 
     // Calcula conversão
@@ -127,8 +156,14 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       s.conversao = s.veio > 0 ? Math.round((s.vendas / s.veio) * 100) : 0
     })
 
-    return Object.values(stats).sort((a, b) => b.total - a.total)
-  }, [leadsAtivos, activeRange])
+    // Ordena por Agendei (produtividade) primeiro, depois por total de marcados
+    return Object.values(stats).sort((a, b) => {
+      const agendeiA = a.agendeiDia["total"] || 0
+      const agendeiB = b.agendeiDia["total"] || 0
+      if (agendeiB !== agendeiA) return agendeiB - agendeiA
+      return b.total - a.total
+    })
+  }, [leadsAtivos, agendeiPorVendedor])
 
   // Estatísticas por equipe
   const equipeStats = useMemo(() => {
@@ -205,7 +240,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       if (!createdDate) return
       if (createdDate < activeRange.start || createdDate > activeRange.end) return
       
-      const vendedor = lead.responsavel || "Não informado"
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       const equipe = lead.equipe || "Sem equipe"
       
       if (!stats[vendedor]) stats[vendedor] = {}
@@ -418,7 +453,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               </thead>
               <tbody>
                 {vendedorStats.map((v) => {
-                  const agendeiTotal = Object.values(v.agendeiDia).reduce((acc, val) => acc + val, 0)
+                  const agendeiTotal = v.agendeiDia["total"] || 0
                   return (
                   <tr key={v.nome} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.02)]">
                     <td className="py-2">
