@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
 
     if (token && subdomain) {
       try {
-        // Busca leads pelo nome
+        // Busca leads pelo nome com limite maior para encontrar o correto
         const searchResponse = await fetch(
-          `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(lead_nome)}&limit=1`,
+          `https://${subdomain}.kommo.com/api/v4/leads?query=${encodeURIComponent(lead_nome)}&limit=20`,
           {
             headers: { "Authorization": `Bearer ${token}` },
           }
@@ -75,8 +75,15 @@ export async function POST(req: NextRequest) {
           const leads = searchData._embedded?.leads || []
           
           if (leads.length > 0) {
-            const leadData = leads[0]
-            console.log("[v0] Lead encontrado:", leadData.name, "ID:", leadData.id, "Responsible:", leadData.responsible_user_id)
+            // Se houver múltiplos leads, pega o mais recente (criado recentemente)
+            // Isso aumenta a chance de pegar o lead correto
+            const leadData = leads.sort((a: any, b: any) => {
+              const dateA = new Date(a.created_at).getTime()
+              const dateB = new Date(b.created_at).getTime()
+              return dateB - dateA
+            })[0]
+            
+            console.log("[v0] Lead encontrado:", leadData.name, "ID:", leadData.id, "Responsible:", leadData.responsible_user_id, "Criado em:", leadData.created_at)
             finalLeadId = leadData.id?.toString() || null
 
             // Busca dados do responsável (vendedor e equipe)
