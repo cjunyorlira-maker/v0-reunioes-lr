@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     // Prepara campos personalizados para atendente (envia junto com o status)
     const customFieldsImediato: Array<{ field_id: number; values: Array<{ value?: string | number; enum_id?: number }> }> = []
     
-    // Atendente vai junto com a mudança de status (sem delay)
+    // Atendente e data vai junto com a mudança de status (sem delay)
     if (status === "veio") {
       // Se tiver ID do atendente (do campo de seleção), usa o enum_id
       if (atendenteId) {
@@ -186,6 +186,26 @@ export async function POST(request: NextRequest) {
           values: [{ value: atendente }]
         })
       }
+      // Preenche a data de "Vieram" com a data da reunião ou data atual
+      if (data_reuniao) {
+        // Converte a data para timestamp Unix (em segundos)
+        const dataReuniao = new Date(data_reuniao)
+        const timestamp = Math.floor(dataReuniao.getTime() / 1000)
+        customFieldsImediato.push({
+          field_id: CAMPO_DATA_VIERAM_ID,
+          values: [{ value: timestamp }]
+        })
+      }
+    }
+    
+    // Se for "não veio", preenche a data de "Não vieram"
+    if (status === "nao" && data_reuniao) {
+      const dataReuniao = new Date(data_reuniao)
+      const timestamp = Math.floor(dataReuniao.getTime() / 1000)
+      customFieldsImediato.push({
+        field_id: CAMPO_DATA_NAO_VIERAM_ID,
+        values: [{ value: timestamp }]
+      })
     }
     
     // Adiciona campos personalizados imediatos se houver
