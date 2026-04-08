@@ -86,10 +86,8 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
           href="/dashboard"
           className="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-[12px] font-bold px-4 py-2.5 rounded-lg transition-all shadow-lg shadow-cyan-500/20"
         >
-          <span>📊</span>
           <span className="hidden sm:inline">Dashboard</span>
         </Link>
-        </button>
         
         {/* Logout */}
         <button

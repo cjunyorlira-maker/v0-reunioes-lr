@@ -73,22 +73,3 @@ export function useQualificados(dateRange?: { start: string; end: string }) {
     mutate: plugaMutate,
   }
 }
-  
-  // Depois adiciona do Kommo (só se não existir)
-  for (const lead of kommoLeads) {
-    const key = lead.nome?.toLowerCase().trim() || lead.id.toString()
-    if (!combinedMap.has(key)) {
-      combinedMap.set(key, lead)
-    }
-  }
-
-  const qualificadosSemana = Array.from(combinedMap.values())
-
-  return {
-    qualificadosSemana,
-    totalSemana: qualificadosSemana.length,
-    isLoading: plugaLoading || kommoLoading,
-    error: plugaError || kommoError,
-    mutate: plugaMutate,
-  }
-}
