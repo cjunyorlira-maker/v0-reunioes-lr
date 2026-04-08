@@ -1,496 +1,693 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Link from "next/link"
 import Image from "next/image"
 import useSWR from "swr"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
+import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState<"day" | "week" | "month">("week")
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
-  const [sendingReport, setSendingReport] = useState(false)
+type TabType = "produtividade" | "resultados" | "funil"
 
-  // Função para enviar relatório via WhatsApp
-  const handleSendWhatsAppReport = async () => {
-    setSendingReport(true)
-    try {
-      const today = new Date().toISOString().split("T")[0]
-      const response = await fetch(`/api/relatorio/whatsapp?date=${selectedDay || today}`)
-      const data = await response.json()
-      
-      if (data.whatsappLink) {
-        window.open(data.whatsappLink, "_blank")
-      }
-    } catch (error) {
-      console.error("Erro ao gerar relatório:", error)
-    } finally {
-      setSendingReport(false)
-    }
-  }
+export default function DashboardPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("produtividade")
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [copying, setCopying] = useState(false)
 
   // Dias da semana
   const weekDays = useMemo(() => getWeekDays(), [])
+  const dateRange = useMemo(() => ({
+    start: formatDateForDB(weekDays[0].date),
+    end: formatDateForDB(weekDays[weekDays.length - 1].date),
+  }), [weekDays])
 
-  // Date range baseado no filtro
-  const dateRange = useMemo(() => {
-    const today = new Date()
+  const activeRange = useMemo(() => {
+    if (!selectedDay) return dateRange
+    return { start: selectedDay, end: selectedDay }
+  }, [selectedDay, dateRange])
 
-    if (timeRange === "day" && selectedDay) {
-      return { start: selectedDay, end: selectedDay }
-    }
-
-    if (timeRange === "week") {
-      return {
-        start: formatDateForDB(weekDays[0].date),
-        end: formatDateForDB(weekDays[weekDays.length - 1].date),
-      }
-    }
-
-    // month
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-    return {
-      start: formatDateForDB(firstDay),
-      end: formatDateForDB(lastDay),
-    }
-  }, [selectedDay, timeRange, weekDays])
-
-  // Busca leads (reuniões marcadas)
+  // Busca dados
   const { data: leadsData } = useSWR(
     `/api/leads?startDate=${dateRange.start}&endDate=${dateRange.end}`,
     fetcher,
-    { refreshInterval: 30 * 1000 }
+    { refreshInterval: 30000 }
   )
 
-  // Busca eventos qualificados do Pluga
-  const { data: plugaData } = useSWR(
-    `/api/pluga/eventos?tipo=qualificado&startDate=${dateRange.start}&endDate=${dateRange.end}`,
+  const { data: qualificadosData } = useSWR(
+    `/api/pluga/eventos?tipo=qualificado&startDate=${activeRange.start}&endDate=${activeRange.end}`,
     fetcher,
-    { refreshInterval: 30 * 1000 }
+    { refreshInterval: 30000 }
   )
 
-  const leads = leadsData?.leads || []
-  const qualificados = plugaData?.leads || []
+  const leads = leadsData || []
+  const qualificados = qualificadosData?.leads || []
 
-  // Estatísticas por vendedor
-  const vendedorStats = useMemo(() => {
-    const stats: Record<string, any> = {}
+  // Leads filtrados pelo range ativo
+  const leadsAtivos = useMemo(() => {
+    return leads.filter((l: any) => l.data >= activeRange.start && l.data <= activeRange.end)
+  }, [leads, activeRange])
 
-    // Processa leads (Marcados, Veio, Faltou, Vendas)
+  // Estatisticas gerais
+  const stats = useMemo(() => {
+    const veio = leadsAtivos.filter((l: any) => l.status === "veio").length
+    const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
+    const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
+    const retornos = leadsAtivos.filter((l: any) => l.retorno).length
+
+    return {
+      total: leadsAtivos.length,
+      veio,
+      nao,
+      vendas,
+      retornos,
+      pendentes: leadsAtivos.length - veio - nao,
+      taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
+      taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
+    }
+  }, [leadsAtivos])
+
+  // Agendei por vendedor (leads criados no periodo)
+  const agendeiPorVendedor = useMemo(() => {
+    const map: Record<string, { nome: string; foto: string | null; equipe: string; agendei: number }> = {}
+
     leads.forEach((lead: any) => {
-      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
-      if (!stats[vendedor]) {
-        stats[vendedor] = {
+      const createdDate = lead.created_at?.split("T")[0]
+      if (!createdDate) return
+      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = {
           nome: vendedor,
-          foto: lead.foto_responsavel || getFotoVendedor(vendedor),
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
           equipe: lead.equipe || "Sem equipe",
-          qualificados: 0,
-          agendados: 0,
-          marcados: 0,
-          veio: 0,
-          faltou: 0,
-          vendas: 0,
-          retornos: 0,
+          agendei: 0,
         }
       }
-      
-      stats[vendedor].marcados++
-      
-      if (lead.status === "veio") {
-        stats[vendedor].veio++
-      } else if (lead.status === "nao") {
-        stats[vendedor].faltou++
-      }
-
-      if (lead.venda_fechada) stats[vendedor].vendas++
-      if (lead.retorno) stats[vendedor].retornos++
-
-      // Agendei = leads criados no período
-      if (lead.created_at) {
-        const createdDate = lead.created_at.split("T")[0]
-        if (createdDate >= dateRange.start && createdDate <= dateRange.end) {
-          stats[vendedor].agendados++
-        }
-      }
+      map[vendedor].agendei++
     })
 
-    // Processa qualificados
-    qualificados.forEach((evt: any) => {
-      const vendedor = normalizeVendedorNome(evt.vendedor || evt.responsavel || "Não informado")
-      if (!stats[vendedor]) {
-        stats[vendedor] = {
+    return Object.values(map).sort((a, b) => b.agendei - a.agendei)
+  }, [leads, activeRange])
+
+  // Qualifiquei por vendedor
+  const qualifiqueiPorVendedor = useMemo(() => {
+    const map: Record<string, { nome: string; foto: string | null; equipe: string; qualificados: number }> = {}
+
+    qualificados.forEach((q: any) => {
+      const vendedor = normalizeVendedorNome(q.responsavel || q.vendedor || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = {
           nome: vendedor,
-          foto: getFotoVendedor(vendedor),
-          equipe: evt.equipe || "Sem equipe",
+          foto: getFotoVendedor(vendedor) || null,
+          equipe: q.equipe || "Sem equipe",
           qualificados: 0,
-          agendados: 0,
+        }
+      }
+      map[vendedor].qualificados++
+    })
+
+    return Object.values(map).sort((a, b) => b.qualificados - a.qualificados)
+  }, [qualificados])
+
+  // Resultados por vendedor (marcados, veio, faltou, vendas)
+  const resultadosPorVendedor = useMemo(() => {
+    const map: Record<string, any> = {}
+
+    leadsAtivos.forEach((lead: any) => {
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = {
+          nome: vendedor,
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
+          equipe: lead.equipe || "Sem equipe",
           marcados: 0,
           veio: 0,
-          faltou: 0,
+          nao: 0,
           vendas: 0,
           retornos: 0,
         }
       }
-      stats[vendedor].qualificados++
+      map[vendedor].marcados++
+      if (lead.status === "veio") map[vendedor].veio++
+      if (lead.status === "nao") map[vendedor].nao++
+      if (lead.venda_fechada) map[vendedor].vendas++
+      if (lead.retorno) map[vendedor].retornos++
     })
 
-    return Object.values(stats).sort((a: any, b: any) => {
-      const scoreA = a.qualificados + a.agendados + a.vendas
-      const scoreB = b.qualificados + b.agendados + b.vendas
-      return scoreB - scoreA
+    return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
+  }, [leadsAtivos])
+
+  // Funil por equipe
+  const funilPorEquipe = useMemo(() => {
+    const map: Record<string, any> = {}
+
+    // Qualificados por equipe
+    qualificados.forEach((q: any) => {
+      const equipe = q.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+      }
+      map[equipe].qualificados++
     })
-  }, [leads, qualificados, dateRange])
 
-  // Totais
-  const totals = useMemo(() => {
-    return vendedorStats.reduce((acc: any, v: any) => ({
-      qualificados: acc.qualificados + v.qualificados,
-      agendados: acc.agendados + v.agendados,
-      marcados: acc.marcados + v.marcados,
-      veio: acc.veio + v.veio,
-      faltou: acc.faltou + v.faltou,
-      vendas: acc.vendas + v.vendas,
-      retornos: acc.retornos + v.retornos,
-    }), { qualificados: 0, agendados: 0, marcados: 0, veio: 0, faltou: 0, vendas: 0, retornos: 0 })
-  }, [vendedorStats])
+    // Agendei por equipe
+    leads.forEach((lead: any) => {
+      const createdDate = lead.created_at?.split("T")[0]
+      if (!createdDate) return
+      if (createdDate < activeRange.start || createdDate > activeRange.end) return
 
-  // Dados para gráficos
-  const chartData = useMemo(() => {
-    return vendedorStats.slice(0, 8).map((v: any) => ({
-      name: v.nome.split(" ")[0],
-      Qualif: v.qualificados,
-      Agendei: v.agendados,
-      Vendas: v.vendas,
-    }))
-  }, [vendedorStats])
+      const equipe = lead.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+      }
+      map[equipe].agendei++
+    })
 
-  // Dados para pie chart de atendimento
-  const pieData = [
-    { name: "Veio", value: totals.veio, color: "#10b981" },
-    { name: "Faltou", value: totals.faltou, color: "#ef4444" },
-    { name: "Pendente", value: Math.max(0, totals.marcados - totals.veio - totals.faltou), color: "#6b7280" },
-  ]
+    // Resultados por equipe
+    leadsAtivos.forEach((lead: any) => {
+      const equipe = lead.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+      }
+      map[equipe].marcados++
+      if (lead.status === "veio") map[equipe].veio++
+      if (lead.status === "nao") map[equipe].nao++
+      if (lead.venda_fechada) map[equipe].vendas++
+    })
 
-  // Conversão
-  const taxaConversao = totals.veio > 0 ? Math.round((totals.vendas / totals.veio) * 100) : 0
-  const taxaComparecimento = totals.marcados > 0 ? Math.round((totals.veio / totals.marcados) * 100) : 0
+    return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
+  }, [qualificados, leads, leadsAtivos, activeRange])
+
+  // Atendentes
+  const atendenteStats = useMemo(() => {
+    const map: Record<string, { nome: string; atendidos: number; vendas: number }> = {}
+
+    leadsAtivos.forEach((lead: any) => {
+      if (lead.atendente && lead.status === "veio") {
+        if (!map[lead.atendente]) {
+          map[lead.atendente] = { nome: lead.atendente, atendidos: 0, vendas: 0 }
+        }
+        map[lead.atendente].atendidos++
+        if (lead.venda_fechada) map[lead.atendente].vendas++
+      }
+    })
+
+    return Object.values(map).sort((a, b) => b.atendidos - a.atendidos)
+  }, [leadsAtivos])
+
+  // Origem dos leads
+  const origemData = useMemo(() => {
+    const map: Record<string, number> = {}
+    leadsAtivos.forEach((lead: any) => {
+      const origem = lead.origem || "Nao informada"
+      map[origem] = (map[origem] || 0) + 1
+    })
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }, [leadsAtivos])
+
+  const COLORS = ["#06b6d4", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#6366f1"]
+
+  // Copiar relatorio para clipboard
+  const handleCopyReport = async () => {
+    setCopying(true)
+    try {
+      const dayLabel = selectedDay 
+        ? weekDays.find(d => formatDateForDB(d.date) === selectedDay)?.dayName || selectedDay
+        : "Semana Toda"
+
+      let report = `*LR MULTIMARCAS - RELATORIO ${dayLabel.toUpperCase()}*\n`
+      report += `_${new Date().toLocaleDateString("pt-BR")}_\n\n`
+
+      report += `*RESUMO GERAL*\n`
+      report += `Qualificados: ${qualificados.length}\n`
+      report += `Agendei: ${agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0)}\n`
+      report += `Marcados: ${stats.total}\n`
+      report += `Veio: ${stats.veio} | Faltou: ${stats.nao}\n`
+      report += `Vendas: ${stats.vendas} | Retornos: ${stats.retornos}\n`
+      report += `Taxa Presenca: ${stats.taxaPresenca}% | Conversao: ${stats.taxaConversao}%\n\n`
+
+      report += `*QUALIFIQUEI POR VENDEDOR*\n`
+      qualifiqueiPorVendedor.forEach(v => {
+        report += `${v.nome}: ${v.qualificados}\n`
+      })
+      report += `\n`
+
+      report += `*AGENDEI POR VENDEDOR*\n`
+      agendeiPorVendedor.forEach(v => {
+        report += `${v.nome}: ${v.agendei}\n`
+      })
+      report += `\n`
+
+      report += `*RESULTADOS POR VENDEDOR*\n`
+      resultadosPorVendedor.forEach((v: any) => {
+        const conv = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
+        report += `${v.nome}: M${v.marcados} V${v.veio} F${v.nao} $${v.vendas} (${conv}%)\n`
+      })
+
+      await navigator.clipboard.writeText(report)
+      alert("Relatorio copiado! Cole no WhatsApp.")
+    } catch (error) {
+      console.error("Erro ao copiar:", error)
+      alert("Erro ao copiar. Tente novamente.")
+    } finally {
+      setCopying(false)
+    }
+  }
+
+  const weekLabel = `${weekDays[0].dayNumber}/${weekDays[0].date.getMonth() + 1} - ${weekDays[weekDays.length - 1].dayNumber}/${weekDays[weekDays.length - 1].date.getMonth() + 1}`
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#050a15] text-white overflow-x-hidden">
       {/* Fundo animado */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/2 right-1/4 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl animate-pulse"></div>
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-emerald-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
       </div>
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-white/5 backdrop-blur-xl sticky top-0 z-40">
+        <header className="border-b border-white/5 backdrop-blur-xl bg-black/20 sticky top-0 z-40">
           <div className="flex items-center justify-between px-6 py-4 max-w-[1600px] mx-auto">
             <div className="flex items-center gap-4">
-              <Image 
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO%20LR%20DOURADA-uCybcklIGJqbgpXIb5c8M32rOJfZ8e.png"
+              <Image
+                src="/images/logo-lr.png"
                 alt="LR Multimarcas"
-                width={48}
-                height={48}
-                className="rounded-lg"
+                width={160}
+                height={52}
+                className="h-[48px] w-auto object-contain"
               />
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                   Dashboard Executivo
                 </h1>
-                <p className="text-xs text-white/40">LR Multimarcas - Performance em Tempo Real</p>
+                <p className="text-xs text-white/40">{weekLabel}</p>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
               <button
-                onClick={handleSendWhatsAppReport}
-                disabled={sendingReport}
-                className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50"
+                onClick={handleCopyReport}
+                disabled={copying}
+                className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-sm font-medium transition-all disabled:opacity-50"
               >
-                {sendingReport ? "Gerando..." : "Enviar WhatsApp"}
+                {copying ? "Copiando..." : "Copiar Relatorio"}
               </button>
-              <a 
-                href="/quadro" 
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all hover:border-cyan-500/50 flex items-center gap-2"
+              <Link
+                href="/"
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
               >
-                <span>&#8592;</span> Voltar ao Quadro
-              </a>
+                Voltar ao Quadro
+              </Link>
             </div>
           </div>
         </header>
 
-        {/* Conteúdo */}
-        <main className="max-w-[1600px] mx-auto px-6 py-6">
-          {/* Filtros */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <div className="flex gap-2">
-              {(["day", "week", "month"] as const).map((range) => (
+        {/* Filtros */}
+        <div className="px-6 py-4 max-w-[1600px] mx-auto">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <button
+              onClick={() => setSelectedDay(null)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                selectedDay === null
+                  ? "bg-[#d4af37] text-black"
+                  : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Semana Toda
+            </button>
+            {weekDays.map((day) => {
+              const dayStr = formatDateForDB(day.date)
+              return (
                 <button
-                  key={range}
-                  onClick={() => {
-                    setTimeRange(range)
-                    if (range !== "day") setSelectedDay(null)
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-                    timeRange === range
-                      ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/30"
-                      : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
+                  key={dayStr}
+                  onClick={() => setSelectedDay(dayStr)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedDay === dayStr
+                      ? "bg-violet-500 text-white"
+                      : day.isToday
+                      ? "bg-violet-500/20 border border-violet-500/30 text-violet-400"
+                      : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
                   }`}
                 >
-                  {range === "day" ? "Por Dia" : range === "week" ? "Semana" : "Mês"}
+                  {day.dayName} {day.dayNumber}
                 </button>
-              ))}
-            </div>
-
-            {/* Seletor de dia */}
-            {timeRange === "day" && (
-              <div className="flex flex-wrap gap-2">
-                {weekDays.map((day) => {
-                  const dayStr = formatDateForDB(day.date)
-                  return (
-                    <button
-                      key={dayStr}
-                      onClick={() => setSelectedDay(dayStr)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        selectedDay === dayStr
-                          ? "bg-violet-500 text-white"
-                          : day.isToday
-                          ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-                          : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
-                      }`}
-                    >
-                      {day.dayName} {day.dayNumber}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Horário atual */}
-            <div className="ml-auto text-right">
-              <p className="text-2xl font-mono text-cyan-400">
-                {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-              </p>
-              <p className="text-xs text-white/40">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
-            </div>
+              )
+            })}
           </div>
 
-          {/* Cards de Métricas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-            <MetricCard label="Qualificados" value={totals.qualificados} color="cyan" icon="Q" />
-            <MetricCard label="Agendei" value={totals.agendados} color="violet" icon="A" />
-            <MetricCard label="Marcados" value={totals.marcados} color="amber" icon="M" />
-            <MetricCard label="Veio" value={totals.veio} color="emerald" icon="V" />
-            <MetricCard label="Faltou" value={totals.faltou} color="red" icon="F" />
-            <MetricCard label="Vendas" value={totals.vendas} color="emerald" icon="$" />
-            <MetricCard label="Retornos" value={totals.retornos} color="blue" icon="R" />
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-white/10 mb-6">
+            {[
+              { id: "produtividade", label: "Qualifiquei & Agendei" },
+              { id: "resultados", label: "Marcados & Resultados" },
+              { id: "funil", label: "Funil por Equipe" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as TabType)}
+                className={`px-5 py-3 text-sm font-medium transition-all border-b-2 -mb-[2px] ${
+                  activeTab === tab.id
+                    ? "border-cyan-400 text-cyan-400"
+                    : "border-transparent text-white/50 hover:text-white/80"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Taxas de Conversão */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/50 text-sm">Taxa de Comparecimento</p>
-                  <p className="text-4xl font-bold text-emerald-400 mt-1">{taxaComparecimento}%</p>
+        {/* Conteudo das Tabs */}
+        <div className="px-6 pb-8 max-w-[1600px] mx-auto">
+          {/* Tab: Produtividade (Qualifiquei & Agendei) */}
+          {activeTab === "produtividade" && (
+            <div className="space-y-6">
+              {/* Cards resumo */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 border border-cyan-500/20 rounded-2xl p-5">
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Qualificados</p>
+                  <p className="text-4xl font-bold text-cyan-400">{qualificados.length}</p>
                 </div>
-                <div className="w-20 h-20">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} innerRadius={25} outerRadius={35} dataKey="value" strokeWidth={0}>
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="bg-gradient-to-br from-violet-500/15 to-violet-600/5 border border-violet-500/20 rounded-2xl p-5">
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Agendei</p>
+                  <p className="text-4xl font-bold text-violet-400">{agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0)}</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-5">
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Top Vendedor</p>
+                  <p className="text-lg font-bold text-emerald-400 truncate">{agendeiPorVendedor[0]?.nome || "-"}</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/15 to-amber-600/5 border border-amber-500/20 rounded-2xl p-5">
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Top Equipe</p>
+                  <p className="text-lg font-bold text-amber-400 truncate">{agendeiPorVendedor[0]?.equipe || "-"}</p>
                 </div>
               </div>
-              <p className="text-white/30 text-xs mt-2">{totals.veio} compareceram de {totals.marcados} marcados</p>
-            </div>
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/50 text-sm">Taxa de Conversão</p>
-                  <p className="text-4xl font-bold text-cyan-400 mt-1">{taxaConversao}%</p>
-                </div>
-                <div className="w-16 h-16 rounded-full border-4 border-cyan-500/30 flex items-center justify-center">
-                  <span className="text-cyan-400 text-lg font-bold">{totals.vendas}</span>
-                </div>
-              </div>
-              <p className="text-white/30 text-xs mt-2">{totals.vendas} vendas de {totals.veio} atendimentos</p>
-            </div>
-          </div>
-
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            {/* Gráfico de Barras */}
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 backdrop-blur-sm">
-              <h2 className="text-white font-semibold mb-4 text-sm">Performance por Vendedor</h2>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" style={{ fontSize: "11px" }} />
-                  <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: "11px" }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", border: "1px solid rgba(6,182,212,0.3)", borderRadius: "8px", fontSize: "12px" }} 
-                  />
-                  <Bar dataKey="Qualif" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Agendei" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Vendas" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Legenda e resumo */}
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 backdrop-blur-sm">
-              <h2 className="text-white font-semibold mb-4 text-sm">Resumo do Período</h2>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-cyan-500"></div>
-                    <span className="text-white/70 text-sm">Qualificados</span>
-                  </div>
-                  <span className="text-cyan-400 font-semibold">{totals.qualificados}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-violet-500"></div>
-                    <span className="text-white/70 text-sm">Agendamentos</span>
-                  </div>
-                  <span className="text-violet-400 font-semibold">{totals.agendados}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-amber-500"></div>
-                    <span className="text-white/70 text-sm">Reuniões Marcadas</span>
-                  </div>
-                  <span className="text-amber-400 font-semibold">{totals.marcados}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-emerald-500"></div>
-                    <span className="text-white/70 text-sm">Atendimentos</span>
-                  </div>
-                  <span className="text-emerald-400 font-semibold">{totals.veio}</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-emerald-500"></div>
-                    <span className="text-white/70 text-sm">Vendas Fechadas</span>
-                  </div>
-                  <span className="text-emerald-400 font-semibold">{totals.vendas}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabela de Vendedores */}
-          <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 backdrop-blur-sm overflow-x-auto">
-            <h2 className="text-white font-semibold mb-4 text-sm">Detalhamento por Vendedor</h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-3 text-white/50 font-medium">Vendedor</th>
-                  <th className="text-center py-3 px-2 text-cyan-400/80 font-medium">Qualif.</th>
-                  <th className="text-center py-3 px-2 text-violet-400/80 font-medium">Agendei</th>
-                  <th className="text-center py-3 px-2 text-amber-400/80 font-medium">Marcados</th>
-                  <th className="text-center py-3 px-2 text-emerald-400/80 font-medium">Veio</th>
-                  <th className="text-center py-3 px-2 text-red-400/80 font-medium">Faltou</th>
-                  <th className="text-center py-3 px-2 text-emerald-400/80 font-medium">Vendas</th>
-                  <th className="text-center py-3 px-2 text-white/50 font-medium">Conv.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vendedorStats.map((v: any) => {
-                  const conv = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
-                  return (
-                    <tr key={v.nome} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-3">
+              {/* Tabelas lado a lado */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Qualifiquei por Vendedor */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-cyan-400 mb-4">Qualifiquei por Vendedor</h3>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {qualifiqueiPorVendedor.length === 0 ? (
+                      <p className="text-white/40 text-sm">Nenhum lead qualificado no periodo</p>
+                    ) : (
+                      qualifiqueiPorVendedor.map((v, idx) => (
+                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
                           {v.foto ? (
-                            <img src={v.foto} alt={v.nome} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-cyan-500/30" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white/50">
+                            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">
                               {v.nome.charAt(0)}
                             </div>
                           )}
-                          <div>
-                            <p className="text-white font-medium text-sm">{v.nome}</p>
-                            <p className="text-white/40 text-xs">{v.equipe}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">{v.nome}</p>
+                            <p className="text-xs text-white/40">{v.equipe}</p>
                           </div>
+                          <span className="text-2xl font-bold text-cyan-400">{v.qualificados}</span>
                         </div>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.qualificados}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.agendados}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.marcados}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.veio}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.faltou}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span className="inline-block bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-xs font-semibold min-w-[28px]">
-                          {v.vendas}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center text-white/60 text-xs">{conv}%</td>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Agendei por Vendedor */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-violet-400 mb-4">Agendei por Vendedor</h3>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {agendeiPorVendedor.length === 0 ? (
+                      <p className="text-white/40 text-sm">Nenhum lead agendado no periodo</p>
+                    ) : (
+                      agendeiPorVendedor.map((v, idx) => (
+                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
+                          {v.foto ? (
+                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-violet-500/30" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
+                              {v.nome.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">{v.nome}</p>
+                            <p className="text-xs text-white/40">{v.equipe}</p>
+                          </div>
+                          <span className="text-2xl font-bold text-violet-400">{v.agendei}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Grafico de barras comparativo */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                <h3 className="text-lg font-semibold text-white mb-4">Comparativo Qualifiquei vs Agendei</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={agendeiPorVendedor.slice(0, 10).map(v => ({
+                      name: v.nome.split(" ")[0],
+                      Agendei: v.agendei,
+                      Qualificados: qualifiqueiPorVendedor.find(q => q.nome === v.nome)?.qualificados || 0,
+                    }))}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" style={{ fontSize: "12px" }} />
+                    <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: "12px" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "rgba(0,0,0,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }} />
+                    <Legend />
+                    <Bar dataKey="Qualificados" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Agendei" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Resultados (Marcados, Veio, Faltou) */}
+          {activeTab === "resultados" && (
+            <div className="space-y-6">
+              {/* Cards resumo */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div className="bg-gradient-to-br from-[#d4af37]/15 to-[#d4af37]/5 border border-[#d4af37]/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Marcados</p>
+                  <p className="text-3xl font-bold text-[#d4af37]">{stats.total}</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Veio</p>
+                  <p className="text-3xl font-bold text-emerald-400">{stats.veio}</p>
+                </div>
+                <div className="bg-gradient-to-br from-red-500/15 to-red-500/5 border border-red-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Faltou</p>
+                  <p className="text-3xl font-bold text-red-400">{stats.nao}</p>
+                </div>
+                <div className="bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Pendentes</p>
+                  <p className="text-3xl font-bold text-white/70">{stats.pendentes}</p>
+                </div>
+                <div className="bg-gradient-to-br from-blue-500/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Presenca</p>
+                  <p className="text-3xl font-bold text-blue-400">{stats.taxaPresenca}%</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Vendas</p>
+                  <p className="text-3xl font-bold text-emerald-400">{stats.vendas}</p>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 border border-cyan-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Retornos</p>
+                  <p className="text-3xl font-bold text-cyan-400">{stats.retornos}</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                  <p className="text-[10px] text-white/50 uppercase">Conversao</p>
+                  <p className="text-3xl font-bold text-amber-400">{stats.taxaConversao}%</p>
+                </div>
+              </div>
+
+              {/* Tabela de resultados por vendedor */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 overflow-x-auto">
+                <h3 className="text-lg font-semibold text-[#d4af37] mb-4">Resultados por Vendedor</h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-2 text-white/50 font-medium">Vendedor</th>
+                      <th className="text-center py-3 px-2 text-[#d4af37] font-medium">Marcados</th>
+                      <th className="text-center py-3 px-2 text-emerald-400 font-medium">Veio</th>
+                      <th className="text-center py-3 px-2 text-red-400 font-medium">Faltou</th>
+                      <th className="text-center py-3 px-2 text-emerald-400 font-medium">Vendas</th>
+                      <th className="text-center py-3 px-2 text-cyan-400 font-medium">Retornos</th>
+                      <th className="text-center py-3 px-2 text-white/50 font-medium">Conv.</th>
                     </tr>
+                  </thead>
+                  <tbody>
+                    {resultadosPorVendedor.map((v: any) => {
+                      const conv = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
+                      return (
+                        <tr key={v.nome} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-3">
+                              {v.foto ? (
+                                <img src={v.foto} alt={v.nome} className="w-8 h-8 rounded-full object-cover object-top" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] text-sm font-bold">
+                                  {v.nome.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-white">{v.nome}</p>
+                                <p className="text-xs text-white/40">{v.equipe}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-center py-3 px-2 text-[#d4af37] font-semibold">{v.marcados}</td>
+                          <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{v.veio}</td>
+                          <td className="text-center py-3 px-2 text-red-400 font-semibold">{v.nao}</td>
+                          <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{v.vendas}</td>
+                          <td className="text-center py-3 px-2 text-cyan-400 font-semibold">{v.retornos}</td>
+                          <td className="text-center py-3 px-2 text-white/70 font-semibold">{conv}%</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Atendentes e Origem */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Atendentes */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-emerald-400 mb-4">Atendentes (Conversao)</h3>
+                  <div className="space-y-3">
+                    {atendenteStats.length === 0 ? (
+                      <p className="text-white/40 text-sm">Nenhum atendimento registrado</p>
+                    ) : (
+                      atendenteStats.map((a) => {
+                        const conv = a.atendidos > 0 ? Math.round((a.vendas / a.atendidos) * 100) : 0
+                        return (
+                          <div key={a.nome} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02]">
+                            <span className="font-medium text-white">{a.nome}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-white/50 text-sm">Atendeu: {a.atendidos}</span>
+                              <span className="text-emerald-400 font-bold">Vendas: {a.vendas}</span>
+                              <span className="text-amber-400 font-bold">{conv}%</span>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Origem */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-violet-400 mb-4">Origem dos Leads</h3>
+                  {origemData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={origemData.slice(0, 6)}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name.substring(0, 10)} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {origemData.slice(0, 6).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-white/40 text-sm">Sem dados de origem</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Funil por Equipe */}
+          {activeTab === "funil" && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold text-white">Funil de Conversao por Equipe</h3>
+
+              {funilPorEquipe.length === 0 ? (
+                <p className="text-white/40">Nenhum dado disponivel</p>
+              ) : (
+                funilPorEquipe.map((equipe: any) => {
+                  const taxaQualAgendei = equipe.qualificados > 0 ? Math.round((equipe.agendei / equipe.qualificados) * 100) : 0
+                  const taxaPresenca = (equipe.veio + equipe.nao) > 0 ? Math.round((equipe.veio / (equipe.veio + equipe.nao)) * 100) : 0
+                  const taxaConversao = equipe.veio > 0 ? Math.round((equipe.vendas / equipe.veio) * 100) : 0
+
+                  return (
+                    <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+                      <h4 className="text-lg font-bold text-[#d4af37] mb-6">{equipe.equipe}</h4>
+
+                      {/* Funil visual */}
+                      <div className="flex items-end justify-center gap-4 mb-6">
+                        <div className="text-center">
+                          <div className="w-28 h-24 bg-gradient-to-b from-cyan-500/30 to-cyan-500/10 rounded-t-3xl flex items-center justify-center border-t-4 border-cyan-500">
+                            <span className="text-3xl font-bold text-cyan-400">{equipe.qualificados}</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2">Qualificados</p>
+                        </div>
+                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
+                        <div className="text-center">
+                          <div className="w-24 h-20 bg-gradient-to-b from-violet-500/30 to-violet-500/10 rounded-t-2xl flex items-center justify-center border-t-4 border-violet-500">
+                            <span className="text-2xl font-bold text-violet-400">{equipe.agendei}</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2">Agendei</p>
+                          <p className="text-[10px] text-violet-400">{taxaQualAgendei}%</p>
+                        </div>
+                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
+                        <div className="text-center">
+                          <div className="w-20 h-16 bg-gradient-to-b from-[#d4af37]/30 to-[#d4af37]/10 rounded-t-xl flex items-center justify-center border-t-4 border-[#d4af37]">
+                            <span className="text-xl font-bold text-[#d4af37]">{equipe.marcados}</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2">Marcados</p>
+                        </div>
+                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
+                        <div className="text-center">
+                          <div className="w-16 h-14 bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 rounded-t-lg flex items-center justify-center border-t-4 border-emerald-500">
+                            <span className="text-lg font-bold text-emerald-400">{equipe.veio}</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2">Veio</p>
+                          <p className="text-[10px] text-emerald-400">{taxaPresenca}%</p>
+                        </div>
+                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
+                        <div className="text-center">
+                          <div className="w-14 h-12 bg-gradient-to-b from-emerald-500/50 to-emerald-500/20 rounded-t flex items-center justify-center border-t-4 border-emerald-400">
+                            <span className="text-lg font-bold text-emerald-300">{equipe.vendas}</span>
+                          </div>
+                          <p className="text-xs text-white/50 mt-2">Vendas</p>
+                          <p className="text-[10px] text-emerald-300">{taxaConversao}%</p>
+                        </div>
+                      </div>
+
+                      {/* Faltou separado */}
+                      <div className="flex justify-center">
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-6 py-3 text-center">
+                          <p className="text-xs text-white/50">Faltou</p>
+                          <p className="text-2xl font-bold text-red-400">{equipe.nao}</p>
+                        </div>
+                      </div>
+                    </div>
                   )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </main>
+                })
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  )
-}
-
-// Componente de Card de Métrica
-function MetricCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
-  const colorClasses: Record<string, string> = {
-    cyan: "from-cyan-500/10 to-cyan-500/5 border-cyan-500/20 text-cyan-400",
-    violet: "from-violet-500/10 to-violet-500/5 border-violet-500/20 text-violet-400",
-    amber: "from-amber-500/10 to-amber-500/5 border-amber-500/20 text-amber-400",
-    emerald: "from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 text-emerald-400",
-    red: "from-red-500/10 to-red-500/5 border-red-500/20 text-red-400",
-    blue: "from-blue-500/10 to-blue-500/5 border-blue-500/20 text-blue-400",
-  }
-
-  return (
-    <div className={`bg-gradient-to-br ${colorClasses[color]} border rounded-xl p-4 backdrop-blur-sm`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-white/40 text-xs uppercase tracking-wider">{label}</span>
-        <span className={`text-lg font-bold opacity-30`}>{icon}</span>
-      </div>
-      <p className={`text-3xl font-bold ${colorClasses[color].split(" ").pop()}`}>{value}</p>
     </div>
   )
 }
