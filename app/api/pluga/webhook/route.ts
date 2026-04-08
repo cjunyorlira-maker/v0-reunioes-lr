@@ -11,15 +11,15 @@ const CAMPO_ORIGEM_ID = 797344
 const CAMPO_DATA_QUALIFICACAO_ID = 1026046
 
 // Webhook para receber eventos do Pluga
-// Pluga envia apenas: { tipo: "qualificado" | "agendei" | "veio" | "nao_veio" | "venda_fechada", lead_id }
-// A API busca os dados completos diretamente no Kommo
+// Pluga envia: { tipo, lead_id, data_evento (do campo qualificação) }
+// A API busca os dados completos (nome, vendedor, equipe, origem) no Kommo
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { tipo, lead_id } = body
+    const { tipo, lead_id, data_evento } = body
 
-    if (!tipo || !lead_id) {
-      return NextResponse.json({ error: "Faltam campos obrigatórios: tipo e lead_id" }, { status: 400 })
+    if (!tipo || !lead_id || !data_evento) {
+      return NextResponse.json({ error: "Faltam campos obrigatórios: tipo, lead_id e data_evento" }, { status: 400 })
     }
 
     const token = process.env.KOMMO_ACCESS_TOKEN
@@ -66,9 +66,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Extrai campos customizados
+    // Extrai campos customizados (origem)
     let origem = null
-    let dataQualificacao = null
     const customFields = leadData.custom_fields_values || []
 
     for (const field of customFields) {
@@ -79,20 +78,10 @@ export async function POST(req: NextRequest) {
       if (fieldId === CAMPO_ORIGEM_ID) {
         origem = field.values?.[0]?.enum || value || null
       }
-
-      // Data de qualificação
-      if (fieldId === CAMPO_DATA_QUALIFICACAO_ID) {
-        if (value && typeof value === "number") {
-          const date = new Date(value * 1000)
-          dataQualificacao = date.toISOString()
-        } else if (value && typeof value === "string") {
-          dataQualificacao = value
-        }
-      }
     }
 
-    // Usa a data de qualificação se existir, senão usa a data atual
-    const dataEvento = dataQualificacao || new Date().toISOString()
+    // Usa a data_evento que vem do Pluga diretamente
+    const dataEventoFormatada = new Date(data_evento).toISOString()
 
     // Insere o evento na tabela
     const { data, error } = await supabase
@@ -104,7 +93,7 @@ export async function POST(req: NextRequest) {
         vendedor: vendedor,
         equipe: equipe,
         origem: origem,
-        data_evento: dataEvento,
+        data_evento: dataEventoFormatada,
       })
       .select()
 
@@ -113,7 +102,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Erro ao processar evento" }, { status: 500 })
     }
 
-    console.log(`[v0] Evento ${tipo} registrado para lead ${lead_id} (${leadNome}) - Vendedor: ${vendedor}, Equipe: ${equipe}`)
+    console.log(`[v0] Evento ${tipo} registrado para lead ${lead_id} (${leadNome}) - Vendedor: ${vendedor}, Equipe: ${equipe}, Origem: ${origem}`)
 
     return NextResponse.json({ 
       success: true, 
@@ -123,7 +112,7 @@ export async function POST(req: NextRequest) {
         vendedor,
         equipe,
         origem,
-        dataEvento
+        dataEvento: dataEventoFormatada
       }
     }, { status: 200 })
   } catch (error) {
