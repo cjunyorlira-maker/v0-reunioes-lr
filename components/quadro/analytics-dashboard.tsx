@@ -70,6 +70,19 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const taxaConversaoQualificados = totalQualificadosSemana > 0
     ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
     : 0
+
+  // Calcula "Qualifiquei" por vendedor usando os dados da tabela pluga_eventos
+  const qualifiqueiPorVendedor = useMemo(() => {
+    const stats: Record<string, number> = {}
+    
+    qualificadosSemana.forEach((lead) => {
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
+      stats[vendedor] = (stats[vendedor] || 0) + 1
+    })
+    
+    return stats
+  }, [qualificadosSemana])
+
   // Calcula "Agendei" separadamente usando TODOS os leads (criados no range ativo)
   const agendeiPorVendedor = useMemo(() => {
     const stats: Record<string, number> = {}
@@ -443,17 +456,19 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               <thead>
                 <tr className="border-b border-[rgba(212,175,55,0.1)]">
                   <th className="text-left py-2 text-[#8a8070] font-medium">Vendedor</th>
+                  <th className="text-center py-2 text-cyan-400 font-medium">Qualif.</th>
                   <th className="text-center py-2 text-violet-400 font-medium">Agendei</th>
-                  <th className="text-center py-2 text-[#8a8070] font-medium">Marcados</th>
-                  <th className="text-center py-2 text-[#8a8070] font-medium">Veio</th>
-                  <th className="text-center py-2 text-[#8a8070] font-medium">Faltou</th>
-                  <th className="text-center py-2 text-[#8a8070] font-medium">Vendas</th>
+                  <th className="text-center py-2 text-[#d4af37] font-medium">Marcados</th>
+                  <th className="text-center py-2 text-emerald-400 font-medium">Veio</th>
+                  <th className="text-center py-2 text-red-400 font-medium">Faltou</th>
+                  <th className="text-center py-2 text-emerald-400 font-medium">Vendas</th>
                   <th className="text-center py-2 text-[#8a8070] font-medium">Conv.</th>
                 </tr>
               </thead>
               <tbody>
                 {vendedorStats.map((v) => {
                   const agendeiTotal = v.agendeiDia["total"] || 0
+                  const qualifiqueiTotal = qualifiqueiPorVendedor[v.nome] || 0
                   return (
                   <tr key={v.nome} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.02)]">
                     <td className="py-2">
@@ -473,8 +488,9 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
                         </div>
                       </div>
                     </td>
+                    <td className="text-center text-cyan-400 font-semibold">{qualifiqueiTotal}</td>
                     <td className="text-center text-violet-400 font-semibold">{agendeiTotal}</td>
-                    <td className="text-center text-[#f5f0e8]">{v.total}</td>
+                    <td className="text-center text-[#d4af37]">{v.total}</td>
                     <td className="text-center text-emerald-400">{v.veio}</td>
                     <td className="text-center text-red-400">{v.nao}</td>
                     <td className="text-center text-emerald-400 font-semibold">{v.vendas}</td>
