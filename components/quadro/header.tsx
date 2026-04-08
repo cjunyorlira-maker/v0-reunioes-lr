@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, Plus, LogOut } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -78,6 +79,16 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Novo Lead</span>
+        </button>
+
+        {/* Dashboard button */}
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-[12px] font-bold px-4 py-2.5 rounded-lg transition-all shadow-lg shadow-cyan-500/20"
+        >
+          <span>📊</span>
+          <span className="hidden sm:inline">Dashboard</span>
+        </Link>
         </button>
         
         {/* Logout */}

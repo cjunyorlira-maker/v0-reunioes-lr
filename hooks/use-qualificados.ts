@@ -19,10 +19,10 @@ interface QualificadosData {
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-// Hook para buscar leads qualificados da semana
-// Agora busca da tabela pluga_eventos (preenchida via webhook do Pluga)
+// Hook para buscar leads qualificados
+// Filtra por data_evento (data da qualificação) - pode ser dia específico ou semana toda
 export function useQualificados(dateRange?: { start: string; end: string }) {
-  // Busca eventos do Pluga (nova fonte de dados)
+  // Busca eventos do Pluga filtrando pela data de qualificação
   const plugaKey = dateRange
     ? `/api/pluga/eventos?tipo=qualificado&startDate=${dateRange.start}&endDate=${dateRange.end}`
     : null
@@ -44,18 +44,35 @@ export function useQualificados(dateRange?: { start: string; end: string }) {
     { refreshInterval: 5 * 60 * 1000 }
   )
 
-  // Combina os dois resultados removendo duplicados pelo nome
+  // Combina os dois resultados removendo duplicados pelo lead_id
   const plugaLeads = plugaData?.leads || []
   const kommoLeads = kommoData?.leads || []
   
-  // Usa Map para remover duplicados (nome como chave)
-  const combinedMap = new Map<string, LeadQualificado>()
+  // Usa Map para remover duplicados (id como chave - mais preciso que nome)
+  const combinedMap = new Map<string | number, LeadQualificado>()
   
   // Primeiro adiciona do Pluga (prioridade)
   for (const lead of plugaLeads) {
-    const key = lead.nome?.toLowerCase().trim() || lead.id.toString()
-    combinedMap.set(key, lead)
+    combinedMap.set(lead.id, lead)
   }
+  
+  // Depois adiciona do Kommo (só se não existir pelo id)
+  for (const lead of kommoLeads) {
+    if (!combinedMap.has(lead.id)) {
+      combinedMap.set(lead.id, lead)
+    }
+  }
+
+  const qualificadosSemana = Array.from(combinedMap.values())
+
+  return {
+    qualificadosSemana,
+    totalSemana: qualificadosSemana.length,
+    isLoading: plugaLoading || kommoLoading,
+    error: plugaError || kommoError,
+    mutate: plugaMutate,
+  }
+}
   
   // Depois adiciona do Kommo (só se não existir)
   for (const lead of kommoLeads) {
