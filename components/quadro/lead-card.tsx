@@ -2,6 +2,7 @@
 
 import { Lead } from "@/lib/types"
 import { formatTimeDisplay } from "@/lib/date-utils"
+import { getFotoVendedor } from "@/lib/vendedor-fotos"
 
 interface LeadCardProps {
   lead: Lead
@@ -50,19 +51,22 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         {/* Header with photo and info */}
         <div className="flex items-start gap-3 mb-2">
           {/* Photo - Larger */}
-          {lead.foto_responsavel ? (
-            <img 
-              src={lead.foto_responsavel} 
-              alt={lead.responsavel}
-              className="w-11 h-11 rounded-full object-cover border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
-            />
-          ) : (
-            <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
-              <span className="text-[16px] text-[#d4af37] font-semibold">
-                {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
-              </span>
-            </div>
-          )}
+          {(() => {
+            const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
+            return fotoUrl ? (
+              <img 
+                src={fotoUrl} 
+                alt={lead.responsavel}
+                className="w-11 h-11 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[16px] text-[#d4af37] font-semibold">
+                  {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              </div>
+            )
+          })()}
           
           <div className="flex-1 min-w-0">
             {/* Status + Time row */}
