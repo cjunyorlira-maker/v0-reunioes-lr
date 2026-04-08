@@ -36,17 +36,34 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       onClick={() => onEdit(lead)}
     >
       <div className="p-3.5 relative">
-        {/* Botão X para excluir */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(lead.id)
-          }}
-          className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Excluir lead"
-        >
-          x
-        </button>
+        {/* Botão X para remover a tag de venda fechada quando estiver marcado */}
+        {lead.venda_fechada && onVendaFechada && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onVendaFechada(lead.id)
+            }}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Remover tag de Venda Fechada"
+          >
+            x
+          </button>
+        )}
+        {/* Botão X para excluir (só aparece se não estiver marcado como venda fechada) */}
+        {!lead.venda_fechada && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm("Tem certeza que deseja deletar este lead?")) {
+                onDelete(lead.id)
+              }
+            }}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Excluir lead (com confirmação)"
+          >
+            x
+          </button>
+        )}
         
         {/* Header with photo and info */}
         <div className="flex items-start gap-3 mb-2">
