@@ -76,10 +76,12 @@ export async function POST(req: NextRequest) {
           
           if (leads.length > 0) {
             const leadData = leads[0]
+            console.log("[v0] Lead encontrado:", leadData.name, "ID:", leadData.id, "Responsible:", leadData.responsible_user_id)
             finalLeadId = leadData.id?.toString() || null
 
             // Busca dados do responsável (vendedor e equipe)
             if (leadData.responsible_user_id) {
+              console.log("[v0] Buscando user ID:", leadData.responsible_user_id)
               const userResponse = await fetch(
                 `https://${subdomain}.kommo.com/api/v4/users/${leadData.responsible_user_id}?with=group`,
                 {
@@ -89,9 +91,14 @@ export async function POST(req: NextRequest) {
 
               if (userResponse.ok) {
                 const user = await userResponse.json()
+                console.log("[v0] User encontrado:", user.name, "ID:", user.id)
                 finalVendedor = user.name || "Não informado"
                 finalEquipe = user._embedded?.groups?.[0]?.name || user.group?.name || "Sem equipe"
+              } else {
+                console.error("[v0] Erro ao buscar user:", await userResponse.text())
               }
+            } else {
+              console.log("[v0] Lead sem responsible_user_id")
             }
 
             // Extrai origem do Kommo se não veio do Pluga
