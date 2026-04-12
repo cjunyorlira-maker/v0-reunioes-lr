@@ -159,6 +159,8 @@ export async function POST(req: NextRequest) {
           foto_responsavel: fotoResponsavel,
           // Data de agendamento (quando chega na etapa Confirmar Reunião)
           data_agendei: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+          // Data original de reunião (não muda em remarcações)
+          data_original: dataReuniao || lead.agendei || null,
           // Data de qualificação (se veio do campo qualifiquei do Kommo)
           data_qualificacao: lead.qualifiquei ? new Date(lead.qualifiquei).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : null,
         }
@@ -171,11 +173,16 @@ export async function POST(req: NextRequest) {
         // Verifica se já existe pelo kommo_id
         const { data: existing } = await supabase
           .from("leads")
-          .select("id")
+          .select("id, data_original")
           .eq("kommo_id", leadData.kommo_id)
           .single()
 
         if (existing) {
+          // Se já existe, não sobrescreve data_original (foi a primeira data agendada)
+          if (existing.data_original) {
+            delete leadData.data_original
+          }
+          
           // Atualiza o lead existente
           const { data, error } = await supabase
             .from("leads")

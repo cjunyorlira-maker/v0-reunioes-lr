@@ -30,9 +30,17 @@ interface VendedorStats {
 export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDashboardProps) {
   // Filtro por dia — null = semana toda
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  // Filtro por equipe — null = todas
+  const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
 
   // Dias da semana para os botões do filtro
   const weekDays = useMemo(() => getWeekDays(), [])
+
+  // Todas as equipes disponíveis
+  const todasEquipes = useMemo(() => {
+    const equipes = new Set(leads.map(l => l.equipe).filter(Boolean))
+    return Array.from(equipes).sort()
+  }, [leads])
 
   // Range efetivo: dia selecionado ou semana toda
   const activeRange = useMemo(() => {
@@ -40,10 +48,14 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return { start: selectedDay, end: selectedDay }
   }, [selectedDay, dateRange])
 
-  // Leads filtrados pelo range ativo (dia ou semana)
+  // Leads filtrados pelo range ativo (dia ou semana) E equipe selecionada
   const leadsAtivos = useMemo(() => {
-    return leads.filter(l => l.data >= activeRange.start && l.data <= activeRange.end)
-  }, [leads, activeRange])
+    return leads.filter(l => {
+      const matchesRange = l.data >= activeRange.start && l.data <= activeRange.end
+      const matchesEquipe = !selectedEquipe || l.equipe === selectedEquipe
+      return matchesRange && matchesEquipe
+    })
+  }, [leads, activeRange, selectedEquipe])
 
   // Busca leads qualificados automaticamente pela tabela qualificacoes
   const {
@@ -288,20 +300,30 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   // Totais gerais — usa leadsAtivos
   const totals = useMemo(() => {
     const veioCount = leadsAtivos.filter(l => l.status === "veio").length
-    const naoCount = leadsAtivos.filter(l => l.status === "nao").length
+    const naoCount = leadsAtivos.filter(l => l.status === "nao" && !l.remarcado).length
+    // Leads remarcados para outra semana contam como "Faltou" no período original
+    const remarcadosOutraSemana = leadsAtivos.filter(l => {
+      if (!l.remarcado || !l.data_original) return false
+      // Se data_original está no período ativo mas data é outra, é remarcado
+      return l.data_original >= activeRange.start && 
+             l.data_original <= activeRange.end &&
+             (l.data < activeRange.start || l.data > activeRange.end)
+    }).length
+    
+    const naoTotal = naoCount + remarcadosOutraSemana
     const vendasCount = leadsAtivos.filter(l => l.venda_fechada).length
     const retornosCount = leadsAtivos.filter(l => l.retorno).length
 
     return {
       total: leadsAtivos.length,
       veio: veioCount,
-      nao: naoCount,
+      nao: naoTotal,
       vendas: vendasCount,
       retornos: retornosCount,
-      taxaPresenca: leads.length > 0 ? Math.round((veioCount / (veioCount + naoCount || 1)) * 100) : 0,
+      taxaPresenca: (veioCount + naoTotal) > 0 ? Math.round((veioCount / (veioCount + naoTotal)) * 100) : 0,
       taxaConversao: veioCount > 0 ? Math.round((vendasCount / veioCount) * 100) : 0,
     }
-  }, [leadsAtivos])
+  }, [leadsAtivos, activeRange])
 
   if (leads.length === 0) return null
 
@@ -349,6 +371,35 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
       </div>
 
+      {/* Botões de filtro por equipe */}
+      {todasEquipes.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedEquipe(null)}
+            className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors font-medium ${
+              selectedEquipe === null
+                ? "bg-emerald-600 text-white border-emerald-600"
+                : "bg-transparent text-[#8a8070] border-[rgba(255,255,255,0.08)] hover:border-emerald-600/40 hover:text-emerald-400"
+            }`}
+          >
+            Todas Equipes
+          </button>
+          {todasEquipes.map((equipe) => (
+            <button
+              key={equipe}
+              onClick={() => setSelectedEquipe(equipe)}
+              className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+                selectedEquipe === equipe
+                  ? "bg-sky-500 text-white border-sky-500"
+                  : "bg-transparent text-[#8a8070] border-[rgba(255,255,255,0.08)] hover:border-sky-500/40 hover:text-sky-400"
+              }`}
+            >
+              {equipe}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Painel LEADS QUALIFICADOS DA SEMANA — automático pelo campo 1026046 */}
       <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
@@ -390,9 +441,16 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
             <p className="text-[11px] text-amber-400 font-medium mb-2">Sem reuniao marcada:</p>
             <div className="flex flex-wrap gap-2">
               {qualificadosSemReuniao.map(q => (
-                <span key={q.id} className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1">
+                <a
+                  key={q.id}
+                  href={`https://app.kommo.com/contacts/${q.kommo_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1 hover:bg-amber-500/20 hover:border-amber-500/40 transition-colors cursor-pointer"
+                  title="Abrir no Kommo"
+                >
                   {q.nome}{q.responsavel ? ` · ${q.responsavel}` : ""}
-                </span>
+                </a>
               ))}
             </div>
           </div>
