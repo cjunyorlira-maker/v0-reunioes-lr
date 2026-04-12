@@ -172,20 +172,20 @@ export default function DashboardPage() {
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
   }, [leadsAtivos])
 
-  // Funil por equipe
+  // Funil por equipe - apenas leads que passaram por qualifiquei E agendei no periodo
   const funilPorEquipe = useMemo(() => {
     const map: Record<string, any> = {}
 
-    // Qualificados por equipe
+    // Qualificados por equipe (data_qualificacao no periodo)
     qualificados.forEach((q: any) => {
       const equipe = q.equipe || "Sem equipe"
       if (!map[equipe]) {
-        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
       map[equipe].qualificados++
     })
 
-    // Agendei por equipe (usa data_agendei)
+    // Agendei por equipe (data_agendei no periodo)
     leads.forEach((lead: any) => {
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
@@ -193,26 +193,103 @@ export default function DashboardPage() {
 
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
-        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
       map[equipe].agendei++
     })
 
-    // Resultados por equipe (sem retornos, separando remarcados)
-    leadsAtivos.forEach((lead: any) => {
+    // Marcados = leads que passaram por agendei no periodo (marcados para reuniao)
+    // Veio/Nao = resultados apenas dos que foram agendados no periodo
+    leads.forEach((lead: any) => {
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
+      if (lead.retorno) return
+
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
         map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
-      map[equipe].marcados++
-      if (lead.status === "veio") map[equipe].veio++
-      if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
-      if (lead.remarcado) map[equipe].remarcados++
-      if (lead.venda_fechada) map[equipe].vendas++
+      // Marcados sao os que sairam do agendei e foram marcados para reuniao
+      if (lead.data) {
+        map[equipe].marcados++
+        if (lead.status === "veio") map[equipe].veio++
+        if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
+        if (lead.remarcado) map[equipe].remarcados++
+        if (lead.venda_fechada) map[equipe].vendas++
+      }
     })
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
-  }, [qualificados, leads, leadsAtivos, activeRange])
+  }, [qualificados, leads, activeRange])
+
+  // Conversao Qualifiquei -> Agendei por vendedor
+  const conversaoQualAgendei = useMemo(() => {
+    const map: Record<string, { nome: string; foto: string | null; equipe: string; qualificados: number; agendei: number; taxa: number }> = {}
+
+    // Qualificados
+    qualificados.forEach((q: any) => {
+      const vendedor = normalizeVendedorNome(q.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = { nome: vendedor, foto: getFotoVendedor(vendedor), equipe: q.equipe || "Sem equipe", qualificados: 0, agendei: 0, taxa: 0 }
+      }
+      map[vendedor].qualificados++
+    })
+
+    // Agendei
+    leads.forEach((lead: any) => {
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
+
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = { nome: vendedor, foto: lead.foto_responsavel || getFotoVendedor(vendedor), equipe: lead.equipe || "Sem equipe", qualificados: 0, agendei: 0, taxa: 0 }
+      }
+      map[vendedor].agendei++
+    })
+
+    // Calcula taxa
+    Object.values(map).forEach(v => {
+      v.taxa = v.qualificados > 0 ? Math.round((v.agendei / v.qualificados) * 100) : 0
+    })
+
+    return Object.values(map).filter(v => v.qualificados > 0 || v.agendei > 0).sort((a, b) => b.taxa - a.taxa)
+  }, [qualificados, leads, activeRange])
+
+  // Conversao por equipe
+  const conversaoPorEquipe = useMemo(() => {
+    const map: Record<string, { nome: string; qualificados: number; agendei: number; taxa: number }> = {}
+
+    // Qualificados
+    qualificados.forEach((q: any) => {
+      const equipe = q.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { nome: equipe, qualificados: 0, agendei: 0, taxa: 0 }
+      }
+      map[equipe].qualificados++
+    })
+
+    // Agendei
+    leads.forEach((lead: any) => {
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
+
+      const equipe = lead.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { nome: equipe, qualificados: 0, agendei: 0, taxa: 0 }
+      }
+      map[equipe].agendei++
+    })
+
+    // Calcula taxa
+    Object.values(map).forEach(e => {
+      e.taxa = e.qualificados > 0 ? Math.round((e.agendei / e.qualificados) * 100) : 0
+    })
+
+    return Object.values(map).filter(e => e.qualificados > 0 || e.agendei > 0).sort((a, b) => b.taxa - a.taxa)
+  }, [qualificados, leads, activeRange])
 
   // Atendentes
   const atendenteStats = useMemo(() => {
@@ -259,7 +336,7 @@ export default function DashboardPage() {
       report += `Agendei: ${agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0)}\n`
       report += `Marcados: ${stats.total}\n`
       report += `Veio: ${stats.veio} | Faltou: ${stats.nao}\n`
-      report += `Vendas: ${stats.vendas} | Retornos: ${stats.retornos}\n`
+      report += `Vendas: ${stats.vendas}\n`
       report += `Taxa Presenca: ${stats.taxaPresenca}% | Conversao: ${stats.taxaConversao}%\n\n`
 
       report += `*QUALIFIQUEI POR VENDEDOR*\n`
@@ -567,6 +644,65 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+
+              {/* Ranking de Conversao Qualifiquei -> Agendei */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Por Vendedor */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-emerald-400 mb-4">Conversao Qualifiquei → Agendei (Vendedor)</h3>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {conversaoQualAgendei.length === 0 ? (
+                      <p className="text-white/40 text-sm">Sem dados de conversao</p>
+                    ) : (
+                      conversaoQualAgendei.map((v, idx) => (
+                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
+                          {v.foto ? (
+                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-emerald-500/30" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+                              {v.nome.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">{v.nome}</p>
+                            <p className="text-xs text-white/40">{v.qualificados} qual → {v.agendei} agendei</p>
+                          </div>
+                          <span className={`text-2xl font-bold ${v.taxa >= 70 ? "text-emerald-400" : v.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
+                            {v.taxa}%
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Por Equipe */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                  <h3 className="text-lg font-semibold text-amber-400 mb-4">Conversao Qualifiquei → Agendei (Equipe)</h3>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {conversaoPorEquipe.length === 0 ? (
+                      <p className="text-white/40 text-sm">Sem dados de conversao</p>
+                    ) : (
+                      conversaoPorEquipe.map((e, idx) => (
+                        <div key={e.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
+                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
+                          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                            {e.nome.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">{e.nome}</p>
+                            <p className="text-xs text-white/40">{e.qualificados} qual → {e.agendei} agendei</p>
+                          </div>
+                          <span className={`text-2xl font-bold ${e.taxa >= 70 ? "text-emerald-400" : e.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
+                            {e.taxa}%
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -599,10 +735,6 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-white/50 uppercase">Vendas</p>
                   <p className="text-3xl font-bold text-emerald-400">{stats.vendas}</p>
                 </div>
-                <div className="bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 border border-cyan-500/20 rounded-xl p-4">
-                  <p className="text-[10px] text-white/50 uppercase">Retornos</p>
-                  <p className="text-3xl font-bold text-cyan-400">{stats.retornos}</p>
-                </div>
                 <div className="bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/20 rounded-xl p-4">
                   <p className="text-[10px] text-white/50 uppercase">Conversao</p>
                   <p className="text-3xl font-bold text-amber-400">{stats.taxaConversao}%</p>
@@ -620,7 +752,6 @@ export default function DashboardPage() {
                       <th className="text-center py-3 px-2 text-emerald-400 font-medium">Veio</th>
                       <th className="text-center py-3 px-2 text-red-400 font-medium">Faltou</th>
                       <th className="text-center py-3 px-2 text-emerald-400 font-medium">Vendas</th>
-                      <th className="text-center py-3 px-2 text-cyan-400 font-medium">Retornos</th>
                       <th className="text-center py-3 px-2 text-white/50 font-medium">Conv.</th>
                     </tr>
                   </thead>
@@ -648,7 +779,6 @@ export default function DashboardPage() {
                           <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{v.veio}</td>
                           <td className="text-center py-3 px-2 text-red-400 font-semibold">{v.nao}</td>
                           <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{v.vendas}</td>
-                          <td className="text-center py-3 px-2 text-cyan-400 font-semibold">{v.retornos}</td>
                           <td className="text-center py-3 px-2 text-white/70 font-semibold">{conv}%</td>
                         </tr>
                       )

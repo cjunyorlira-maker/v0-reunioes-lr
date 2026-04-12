@@ -304,11 +304,11 @@ export default function PioresDesempenhoPage() {
             </div>
           </div>
 
-          {/* Piores em Agendar */}
+          {/* Piores em Agendei */}
           <div className="bg-[#18181b] border border-white/10 rounded-xl p-6">
             <h3 className="text-lg font-bold text-orange-400 mb-4 flex items-center gap-2">
               <TrendingDown className="w-5 h-5" />
-              Piores em Agendar
+              Piores em Agendei
             </h3>
             <div className="space-y-3">
               {pioresAgendar.map((item: any, idx) => (
@@ -362,11 +362,11 @@ export default function PioresDesempenhoPage() {
             </div>
           </div>
 
-          {/* Piores em Presenca (Taxa) */}
+          {/* Piores em Marcar e Nao Vim */}
           <div className="bg-[#18181b] border border-white/10 rounded-xl p-6">
             <h3 className="text-lg font-bold text-pink-400 mb-4 flex items-center gap-2">
               <TrendingDown className="w-5 h-5" />
-              Piores em Presenca
+              Piores em Marcar e Nao Vim
             </h3>
             <div className="space-y-3">
               {pioresPresenca.map((item: any, idx) => (
