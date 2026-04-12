@@ -57,25 +57,40 @@ export default function DashboardPage() {
   const leads = leadsData || []
   const qualificados = qualificadosData?.leads || []
 
-  // Leads filtrados pelo range ativo
+  // Leads filtrados pelo range ativo (exclui retornos)
   const leadsAtivos = useMemo(() => {
-    return leads.filter((l: any) => l.data >= activeRange.start && l.data <= activeRange.end)
+    return leads.filter((l: any) => {
+      // Exclui retornos
+      if (l.retorno) return false
+      
+      // Filtra por data
+      return l.data >= activeRange.start && l.data <= activeRange.end
+    })
   }, [leads, activeRange])
 
-  // Estatisticas gerais
+  // Leads remarcados na mesma semana vs outra semana
+  const leadsRemarcados = useMemo(() => {
+    return leads.filter((l: any) => {
+      if (!l.remarcado) return false
+      // Se a data original estava no range mas foi remarcado
+      return l.data >= activeRange.start && l.data <= activeRange.end
+    })
+  }, [leads, activeRange])
+
+  // Estatisticas gerais (sem retornos)
   const stats = useMemo(() => {
     const veio = leadsAtivos.filter((l: any) => l.status === "veio").length
-    const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
+    const nao = leadsAtivos.filter((l: any) => l.status === "nao" && !l.remarcado).length
+    const remarcados = leadsAtivos.filter((l: any) => l.remarcado).length
     const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
-    const retornos = leadsAtivos.filter((l: any) => l.retorno).length
 
     return {
       total: leadsAtivos.length,
       veio,
       nao,
+      remarcados,
       vendas,
-      retornos,
-      pendentes: leadsAtivos.length - veio - nao,
+      pendentes: leadsAtivos.length - veio - nao - remarcados,
       taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
       taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
     }
@@ -126,7 +141,7 @@ export default function DashboardPage() {
     return Object.values(map).sort((a, b) => b.qualificados - a.qualificados)
   }, [qualificados])
 
-  // Resultados por vendedor (marcados, veio, faltou, vendas)
+  // Resultados por vendedor (marcados, veio, faltou, vendas) - sem retornos
   const resultadosPorVendedor = useMemo(() => {
     const map: Record<string, any> = {}
 
@@ -140,15 +155,15 @@ export default function DashboardPage() {
           marcados: 0,
           veio: 0,
           nao: 0,
+          remarcados: 0,
           vendas: 0,
-          retornos: 0,
         }
       }
       map[vendedor].marcados++
       if (lead.status === "veio") map[vendedor].veio++
-      if (lead.status === "nao") map[vendedor].nao++
+      if (lead.status === "nao" && !lead.remarcado) map[vendedor].nao++
+      if (lead.remarcado) map[vendedor].remarcados++
       if (lead.venda_fechada) map[vendedor].vendas++
-      if (lead.retorno) map[vendedor].retornos++
     })
 
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
@@ -180,15 +195,16 @@ export default function DashboardPage() {
       map[equipe].agendei++
     })
 
-    // Resultados por equipe
+    // Resultados por equipe (sem retornos, separando remarcados)
     leadsAtivos.forEach((lead: any) => {
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
-        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, vendas: 0 }
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
       map[equipe].marcados++
       if (lead.status === "veio") map[equipe].veio++
-      if (lead.status === "nao") map[equipe].nao++
+      if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
+      if (lead.remarcado) map[equipe].remarcados++
       if (lead.venda_fechada) map[equipe].vendas++
     })
 
@@ -304,6 +320,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard/vendedores"
+                className="px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-400 text-sm font-medium transition-all"
+              >
+                Lista Vendedores
+              </Link>
+              <Link
+                href="/dashboard/piores"
+                className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-all"
+              >
+                Piores
+              </Link>
               <button
                 onClick={handleCopyReport}
                 disabled={copying}
@@ -764,8 +792,8 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        {/* No-Show Alert */}
-                        <div className="mt-4 flex items-center justify-center gap-4">
+                        {/* Resultados: No-Show, Remarcados, Vendas */}
+                        <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
                           <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
                             <div>
                               <p className="text-[10px] text-white/50 uppercase">No-Show</p>
@@ -773,6 +801,14 @@ export default function DashboardPage() {
                             </div>
                             <div className="text-red-400 font-bold text-lg">{taxaNoShow}%</div>
                           </div>
+                          {(equipe.remarcados || 0) > 0 && (
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
+                              <div>
+                                <p className="text-[10px] text-white/50 uppercase">Remarcados</p>
+                                <p className="text-xl font-bold text-orange-400">{equipe.remarcados}</p>
+                              </div>
+                            </div>
+                          )}
                           {equipe.vendas > 0 && (
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
                               <div>
