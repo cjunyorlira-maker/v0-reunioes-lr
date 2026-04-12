@@ -9,12 +9,12 @@ function getSupabaseClient() {
   )
 }
 
-// Busca a equipe do usuário no Kommo
-async function getEquipeFromKommo(responsavelId: string): Promise<string | null> {
+// Busca dados do usuário no Kommo (equipe e foto)
+async function getUserDataFromKommo(responsavelId: string): Promise<{ equipe: string | null, foto: string | null, nome: string | null }> {
   const token = process.env.KOMMO_ACCESS_TOKEN
   const subdomain = process.env.KOMMO_SUBDOMAIN
 
-  if (!token || !subdomain || !responsavelId) return null
+  if (!token || !subdomain || !responsavelId) return { equipe: null, foto: null, nome: null }
 
   try {
     const response = await fetch(
@@ -27,14 +27,16 @@ async function getEquipeFromKommo(responsavelId: string): Promise<string | null>
     if (response.ok) {
       const user = await response.json()
       const equipe = user._embedded?.groups?.[0]?.name || user.group?.name || null
-      console.log("[v0] Equipe encontrada para", responsavelId, ":", equipe)
-      return equipe
+      const foto = user.avatar || user.avatar_url || null
+      const nome = user.name || null
+      console.log("[v0] Dados do usuário:", responsavelId, "- Equipe:", equipe, "- Nome:", nome)
+      return { equipe, foto, nome }
     }
   } catch (error) {
-    console.error("[v0] Erro ao buscar equipe:", error)
+    console.error("[v0] Erro ao buscar dados do usuário:", error)
   }
 
-  return null
+  return { equipe: null, foto: null, nome: null }
 }
 
 export async function POST(req: NextRequest) {
@@ -49,10 +51,25 @@ export async function POST(req: NextRequest) {
 
     for (const lead of leads) {
       try {
-        // Se equipe não veio, busca do Kommo pelo responsavel_id
+        // Busca dados do usuário do Kommo (equipe, foto, nome correto)
         let equipe = lead.equipe
-        if (!equipe && lead.responsavel_id) {
-          equipe = await getEquipeFromKommo(lead.responsavel_id.toString())
+        let fotoResponsavel = null
+        let nomeResponsavel = lead.responsavel
+        
+        if (lead.responsavel_id) {
+          const userData = await getUserDataFromKommo(lead.responsavel_id.toString())
+          if (!equipe) equipe = userData.equipe
+          fotoResponsavel = userData.foto
+          if (userData.nome) nomeResponsavel = userData.nome // Usa nome do Kommo se disponível
+        }
+
+        // Extrai data e hora do campo data_reuniao (formato: "2026-04-15 21:00")
+        let dataReuniao = null
+        let horaReuniao = null
+        if (lead.data_reuniao) {
+          const partes = lead.data_reuniao.split(" ")
+          dataReuniao = partes[0] // "2026-04-15"
+          horaReuniao = partes[1] || null // "21:00"
         }
 
         // Mapeia os campos do Kommo para as colunas da tabela leads
@@ -60,15 +77,16 @@ export async function POST(req: NextRequest) {
           kommo_id: lead.kommo_lead_id?.toString(),
           kommo_lead_id: lead.kommo_lead_id?.toString(),
           nome: lead.nome,
-          responsavel: lead.responsavel,
+          responsavel: nomeResponsavel,
           responsavel_id: lead.responsavel_id?.toString(),
           equipe: equipe,
           origem: lead.origem,
-          data: lead.agendei || null,
-          hora: lead.hora_reuniao || null,
+          data: dataReuniao || lead.agendei || null,
+          hora: horaReuniao || null,
           status: "pending",
           tipo: lead.tipo || null,
           tipo_reuniao: lead.tipo_reuniao || null,
+          foto_responsavel: fotoResponsavel,
         }
         
         // Remove campos undefined para não sobrescrever com null
