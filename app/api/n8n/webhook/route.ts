@@ -176,9 +176,12 @@ export async function POST(req: NextRequest) {
           })
           .select()
 
-        if (error) throw error
+        if (error) {
+          console.error("[v0] Erro no upsert:", error)
+          throw error
+        }
         results.push({ action: "upserted", lead: data?.[0], kommo_id: lead.kommo_lead_id })
-        console.log("[v0] Lead upserted:", leadData.nome)
+        console.log("[v0] Lead upserted com sucesso:", leadData.nome)
       } catch (error: any) {
         const errorMsg = error?.message || error?.details || JSON.stringify(error)
         console.error("[v0] Erro ao processar lead:", errorMsg)
