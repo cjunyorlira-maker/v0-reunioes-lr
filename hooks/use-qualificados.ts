@@ -2,6 +2,7 @@ import useSWR from "swr"
 
 export interface LeadQualificado {
   id: number | string
+  kommo_id?: string | null
   nome: string
   responsavel: string | null
   responsavel_id: number | null

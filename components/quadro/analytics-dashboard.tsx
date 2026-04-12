@@ -64,13 +64,20 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   }, [leads])
 
   // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
+  // Verifica se o kommo_id do qualificado existe na tabela leads (virou agendei)
   const qualificadosNoAgendei = useMemo(() => {
-    return qualificadosAtivos.filter(q => kommoIdsNoAgendei.has(String(q.kommo_id)))
+    return qualificadosAtivos.filter(q => {
+      const qKommoId = String(q.kommo_id || q.id)
+      return kommoIdsNoAgendei.has(qKommoId)
+    })
   }, [qualificadosAtivos, kommoIdsNoAgendei])
 
   // Qualificados sem reunião marcada (apenas do período ativo)
   const qualificadosSemReuniao = useMemo(() => {
-    return qualificadosAtivos.filter(q => !kommoIdsNoAgendei.has(String(q.kommo_id)))
+    return qualificadosAtivos.filter(q => {
+      const qKommoId = String(q.kommo_id || q.id)
+      return !kommoIdsNoAgendei.has(qKommoId)
+    })
   }, [qualificadosAtivos, kommoIdsNoAgendei])
 
   const taxaConversaoQualificados = totalQualificadosSemana > 0

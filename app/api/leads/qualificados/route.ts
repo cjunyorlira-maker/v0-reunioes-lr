@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     // Formata para o padrão esperado pelo hook
     const leads = (data || []).map(lead => ({
       id: lead.kommo_lead_id || lead.kommo_id || lead.id,
+      kommo_id: lead.kommo_id,
       nome: lead.nome,
       responsavel: lead.responsavel,
       responsavel_id: lead.responsavel_id,

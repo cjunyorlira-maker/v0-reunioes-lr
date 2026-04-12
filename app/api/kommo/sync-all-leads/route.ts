@@ -20,6 +20,7 @@ const ETAPAS_QUADRO = [
 
 // IDs dos campos customizados
 const CAMPO_DATA_REUNIAO_ID = 1025159
+const CAMPO_REMARCADO_ID = 1026862
 const CAMPO_TIPO_REUNIAO_ID = 1026810
 const CAMPO_ORIGEM_ID = 797344
 
@@ -97,6 +98,8 @@ export async function POST() {
             // Extrai campos customizados
             let dataReuniao: string | null = null
             let horaReuniao: string | null = null
+            let dataRemarcado: string | null = null
+            let horaRemarcado: string | null = null
             let tipoReuniao: string | null = null
             let origem: string | null = null
 
@@ -111,6 +114,12 @@ export async function POST() {
                 horaReuniao = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
               }
 
+              if (fieldId === CAMPO_REMARCADO_ID && value && typeof value === "number") {
+                const date = new Date(value * 1000)
+                dataRemarcado = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+                horaRemarcado = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
+              }
+
               if (fieldId === CAMPO_TIPO_REUNIAO_ID && value) {
                 tipoReuniao = String(value)
               }
@@ -119,6 +128,11 @@ export async function POST() {
                 origem = String(value)
               }
             }
+
+            // Se for remarcado, usa a data do campo remarcado
+            const isRemarcado = statusId === 102225923
+            const dataFinal = isRemarcado && dataRemarcado ? dataRemarcado : dataReuniao
+            const horaFinal = isRemarcado && horaRemarcado ? horaRemarcado : horaReuniao
 
             // Define status baseado na etapa
             let status: "pending" | "veio" | "nao" = "pending"
@@ -140,12 +154,12 @@ export async function POST() {
               responsavel_id: responsavelId?.toString(),
               equipe,
               origem,
-              data: dataReuniao,
-              hora: horaReuniao,
+              data: dataFinal,
+              hora: horaFinal,
               status,
               tipo_reuniao: tipoReuniao,
               foto_responsavel: fotoResponsavel,
-              remarcado: statusId === 102225923,
+              remarcado: isRemarcado,
             }
 
             if (existing) {
