@@ -168,39 +168,18 @@ export async function POST(req: NextRequest) {
           if (leadData[key] === undefined) delete leadData[key]
         })
 
-        // Verifica se já existe pelo kommo_id
-        const { data: existing, error: fetchError } = await supabase
+        // Usa upsert para evitar duplicações (atômico)
+        const { data, error } = await supabase
           .from("leads")
-          .select("id")
-          .eq("kommo_id", leadData.kommo_id)
-          .single()
+          .upsert(leadData, { 
+            onConflict: "kommo_id",
+            ignoreDuplicates: false 
+          })
+          .select()
 
-        if (fetchError && fetchError.code !== "PGRST116") {
-          throw fetchError
-        }
-
-        if (existing) {
-          // Atualiza o lead existente
-          const { data, error } = await supabase
-            .from("leads")
-            .update(leadData)
-            .eq("id", existing.id)
-            .select()
-
-          if (error) throw error
-          results.push({ action: "updated", lead: data?.[0], kommo_id: lead.kommo_lead_id })
-          console.log("[v0] Lead atualizado:", leadData.nome, "ID:", existing.id)
-        } else {
-          // Insere novo lead
-          const { data, error } = await supabase
-            .from("leads")
-            .insert([leadData])
-            .select()
-
-          if (error) throw error
-          results.push({ action: "created", lead: data?.[0], kommo_id: lead.kommo_lead_id })
-          console.log("[v0] Lead criado:", leadData.nome)
-        }
+        if (error) throw error
+        results.push({ action: "upserted", lead: data?.[0], kommo_id: lead.kommo_lead_id })
+        console.log("[v0] Lead upserted:", leadData.nome)
       } catch (error: any) {
         const errorMsg = error?.message || error?.details || JSON.stringify(error)
         console.error("[v0] Erro ao processar lead:", errorMsg)
