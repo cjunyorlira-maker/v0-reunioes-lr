@@ -208,6 +208,31 @@ export async function POST(req: NextRequest) {
 
     console.log(`[v0] Evento ${tipo} registrado: ${lead_nome} - Vendedor: ${finalVendedor}, Equipe: ${finalEquipe}, Origem: ${finalOrigem}`)
 
+    // Também insere na tabela qualificacoes para o dashboard
+    if (tipo === "qualificado") {
+      const dataQualFormatada = data_evento 
+        ? new Date(data_evento).toISOString().split("T")[0] 
+        : new Date().toISOString().split("T")[0]
+
+      const { error: qualError } = await supabase
+        .from("qualificacoes")
+        .upsert({
+          kommo_id: finalLeadId,
+          kommo_lead_id: finalLeadId,
+          nome: finalLeadNome || lead_nome,
+          responsavel: finalVendedor || "Não informado",
+          equipe: finalEquipe || "Sem equipe",
+          origem: finalOrigem,
+          data_qualificacao: dataQualFormatada,
+        }, { onConflict: "kommo_id" })
+
+      if (qualError) {
+        console.error("[v0] Erro ao salvar na tabela qualificacoes:", qualError)
+      } else {
+        console.log("[v0] Qualificação salva na tabela qualificacoes")
+      }
+    }
+
     return NextResponse.json({ 
       success: true, 
       data,

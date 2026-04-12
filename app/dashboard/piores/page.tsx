@@ -12,8 +12,12 @@ const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 type ViewMode = "equipe" | "vendedor"
 
+type FilterMode = "semana" | "dia" | "custom"
+
 export default function PioresDesempenhoPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("equipe")
+  const [filterMode, setFilterMode] = useState<FilterMode>("semana")
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [customStartDate, setCustomStartDate] = useState<string>("")
   const [customEndDate, setCustomEndDate] = useState<string>("")
 
@@ -26,11 +30,14 @@ export default function PioresDesempenhoPage() {
 
   // Range ativo
   const activeRange = useMemo(() => {
-    if (customStartDate && customEndDate) {
+    if (filterMode === "dia" && selectedDay) {
+      return { start: selectedDay, end: selectedDay }
+    }
+    if (filterMode === "custom" && customStartDate && customEndDate) {
       return { start: customStartDate, end: customEndDate }
     }
     return weekRange
-  }, [customStartDate, customEndDate, weekRange])
+  }, [filterMode, selectedDay, customStartDate, customEndDate, weekRange])
 
   // Busca dados
   const { data: leadsData } = useSWR("/api/leads", fetcher, { refreshInterval: 30000 })
@@ -238,36 +245,75 @@ export default function PioresDesempenhoPage() {
 
       {/* Filtro de periodo */}
       <div className="px-6 py-4 max-w-[1400px] mx-auto">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-white/50" />
-            <span className="text-sm text-white/50">Periodo:</span>
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1">
+            <button
+              onClick={() => { setFilterMode("semana"); setSelectedDay(null); }}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                filterMode === "semana" ? "bg-red-500 text-white" : "text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Semana
+            </button>
+            <button
+              onClick={() => setFilterMode("dia")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                filterMode === "dia" ? "bg-orange-500 text-white" : "text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Por Dia
+            </button>
+            <button
+              onClick={() => setFilterMode("custom")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                filterMode === "custom" ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Periodo
+            </button>
           </div>
-          <button
-            onClick={() => { setCustomStartDate(""); setCustomEndDate(""); }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              !customStartDate && !customEndDate
-                ? "bg-red-500 text-white"
-                : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
-            }`}
-          >
-            Semana Atual
-          </button>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-red-500 focus:outline-none"
-            />
-            <span className="text-white/30">ate</span>
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-red-500 focus:outline-none"
-            />
-          </div>
+
+          {filterMode === "dia" && (
+            <div className="flex flex-wrap gap-2">
+              {weekDays.map((day) => {
+                const dayStr = formatDateForDB(day.date)
+                return (
+                  <button
+                    key={dayStr}
+                    onClick={() => setSelectedDay(dayStr)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      selectedDay === dayStr
+                        ? "bg-orange-500 text-white"
+                        : day.isToday
+                        ? "bg-orange-500/20 border border-orange-500/30 text-orange-400"
+                        : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                    }`}
+                  >
+                    {day.dayName} {day.dayNumber}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {filterMode === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-cyan-500 focus:outline-none"
+              />
+              <span className="text-white/30">ate</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+          )}
         </div>
       </div>
 

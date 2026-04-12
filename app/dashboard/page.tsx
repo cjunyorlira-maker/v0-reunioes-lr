@@ -172,6 +172,25 @@ export default function DashboardPage() {
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
   }, [leadsAtivos])
 
+  // Origens dos leads marcados e vendas
+  const origensMarcados = useMemo(() => {
+    const mapMarcados: Record<string, number> = {}
+    const mapVendas: Record<string, number> = {}
+
+    leadsAtivos.forEach((lead: any) => {
+      const origem = lead.origem || "Nao informado"
+      mapMarcados[origem] = (mapMarcados[origem] || 0) + 1
+      if (lead.venda_fechada) {
+        mapVendas[origem] = (mapVendas[origem] || 0) + 1
+      }
+    })
+
+    return {
+      marcados: Object.entries(mapMarcados).sort((a, b) => b[1] - a[1]),
+      vendas: Object.entries(mapVendas).sort((a, b) => b[1] - a[1]),
+    }
+  }, [leadsAtivos])
+
   // Funil por equipe - apenas leads que passaram por qualifiquei E agendei no periodo
   const funilPorEquipe = useMemo(() => {
     const map: Record<string, any> = {}
@@ -813,31 +832,43 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Origem */}
+                {/* Origens Marcados e Vendas */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
                   <h3 className="text-lg font-semibold text-violet-400 mb-4">Origem dos Leads</h3>
-                  {origemData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={origemData.slice(0, 6)}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name.substring(0, 10)} ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {origemData.slice(0, 6).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-white/40 text-sm">Sem dados de origem</p>
-                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Origens Marcados */}
+                    <div>
+                      <p className="text-sm text-[#d4af37] mb-2 font-medium">Marcados</p>
+                      <div className="space-y-1 max-h-[180px] overflow-y-auto">
+                        {origensMarcados.marcados.length === 0 ? (
+                          <p className="text-white/30 text-xs">Sem dados</p>
+                        ) : (
+                          origensMarcados.marcados.map(([origem, qtd]) => (
+                            <div key={origem} className="flex items-center justify-between text-sm">
+                              <span className="text-white/60 truncate">{origem}</span>
+                              <span className="text-[#d4af37] font-semibold">{qtd}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {/* Origens Vendas */}
+                    <div>
+                      <p className="text-sm text-emerald-400 mb-2 font-medium">Vendas</p>
+                      <div className="space-y-1 max-h-[180px] overflow-y-auto">
+                        {origensMarcados.vendas.length === 0 ? (
+                          <p className="text-white/30 text-xs">Sem vendas</p>
+                        ) : (
+                          origensMarcados.vendas.map(([origem, qtd]) => (
+                            <div key={origem} className="flex items-center justify-between text-sm">
+                              <span className="text-white/60 truncate">{origem}</span>
+                              <span className="text-emerald-400 font-semibold">{qtd}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
