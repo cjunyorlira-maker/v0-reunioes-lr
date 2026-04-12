@@ -39,7 +39,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
   // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
   // Revalida a cada 5 segundos para pegar mudanças de remarcação
-  const { data: allLeadsData, mutate: mutateAllLeads } = useSWR<{ data: Lead[] }>(
+  const { data: allLeadsData } = useSWR<Lead[]>(
     "/api/leads", 
     fetcher,
     { 
@@ -48,7 +48,10 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       refreshInterval: 5000  // Recarrega a cada 5 segundos
     }
   )
-  const allLeads = allLeadsData?.data || []
+  const allLeads = allLeadsData || []
+  
+  // Debug: log para verificar se allLeads está carregando
+  console.log("[v0] allLeads count:", allLeads.length, "com data_agendei:", allLeads.filter(l => l.data_agendei).length)
 
   // Dias da semana para os botões do filtro
   const weekDays = useMemo(() => getWeekDays(), [])
