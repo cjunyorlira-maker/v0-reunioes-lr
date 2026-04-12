@@ -55,13 +55,10 @@ export async function POST(req: NextRequest) {
           equipe = await getEquipeFromKommo(lead.responsavel_id.toString())
         }
 
-        // Detecta status baseado nas tags e custom fields
-        let status = "pendente"
-        if (lead.tags?.includes("Agendei")) status = "agendado"
-        if (lead.tags?.includes("Marcado")) status = "marcado"
+        // Detecta status baseado nas tags - valores aceitos: 'pending', 'veio', 'nao'
+        let status = "pending"
         if (lead.tags?.includes("Veio")) status = "veio"
         if (lead.tags?.includes("Não Veio")) status = "nao"
-        if (lead.qualifiquei) status = "qualificado"
 
         // Mapeia os campos do Kommo para as colunas da tabela leads
         // Colunas existentes: id, created_at, updated_at, nome, kommo_id, kommo_lead_id, 
