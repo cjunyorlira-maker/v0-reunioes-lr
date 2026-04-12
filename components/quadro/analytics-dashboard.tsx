@@ -248,23 +248,24 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
   }, [leadsAtivos])
 
-  // Agendei (leads CRIADOS dentro do range ativo - para medir produtividade)
+  // Agendei (leads com data_agendei dentro do range ativo - para medir produtividade)
   const agendeiPorDia = useMemo(() => {
     const stats: Record<string, Record<string, number>> = {}
     const totalPorDia: Record<string, number> = {}
     const porEquipe: Record<string, number> = {}
 
     leads.forEach((lead) => {
-      const createdDate = lead.created_at?.split("T")[0]
-      if (!createdDate) return
-      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+      // Usa data_agendei - data em que o lead foi agendado (criado na etapa Confirmar Reunião)
+      const agendadoDate = lead.data_agendei
+      if (!agendadoDate) return
+      if (agendadoDate < activeRange.start || agendadoDate > activeRange.end) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       const equipe = lead.equipe || "Sem equipe"
       
       if (!stats[vendedor]) stats[vendedor] = {}
-      stats[vendedor][createdDate] = (stats[vendedor][createdDate] || 0) + 1
-      totalPorDia[createdDate] = (totalPorDia[createdDate] || 0) + 1
+      stats[vendedor][agendadoDate] = (stats[vendedor][agendadoDate] || 0) + 1
+      totalPorDia[agendadoDate] = (totalPorDia[agendadoDate] || 0) + 1
       porEquipe[equipe] = (porEquipe[equipe] || 0) + 1
     })
 
