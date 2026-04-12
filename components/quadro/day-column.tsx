@@ -19,7 +19,7 @@ interface DayColumnProps {
 export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado, onVendaFechada, onRetorno }: DayColumnProps) {
   const dayLeads = leads
     .filter((lead) => lead.data === formatDateForDB(day.date))
-    .sort((a, b) => a.hora.localeCompare(b.hora))
+    .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
 
   const isToday = day.isToday
 
