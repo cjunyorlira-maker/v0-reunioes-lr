@@ -158,7 +158,21 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return stats
   }, [allLeads, activeRange, selectedEquipe])
 
-  // Estatísticas por vendedor — usa leadsAtivos (dia ou semana) para marcados
+  // Leads remarcados para outra semana (para usar em vendedorStats, equipeStats, origemStats)
+  const remarcadosOutraSemanaList = useMemo(() => {
+    return allLeads.filter(l => {
+      if (!l.remarcado) return false
+      // Filtra por equipe se selecionada
+      if (selectedEquipe && l.equipe && l.equipe !== selectedEquipe) return false
+      const dataOriginal = l.data_original || l.data_agendei
+      if (!dataOriginal) return false
+      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
+      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
+      return dentroDoRange && foraDoRange
+    })
+  }, [allLeads, activeRange, selectedEquipe])
+
+  // Estatísticas por vendedor — usa leadsAtivos (dia ou semana) para marcados + remarcados
   const vendedorStats = useMemo(() => {
     const stats: Record<string, VendedorStats> = {}
 
@@ -187,7 +201,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       
       if (lead.status === "veio") {
         stats[vendedor].veio++
-      } else if (lead.status === "nao") {
+      } else if (lead.status === "nao" && !lead.remarcado) {
         stats[vendedor].nao++
       } else {
         stats[vendedor].pending++
@@ -199,6 +213,31 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       if (lead.origem) {
         stats[vendedor].origens[lead.origem] = (stats[vendedor].origens[lead.origem] || 0) + 1
       }
+    })
+
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemanaList.forEach((lead) => {
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
+
+      if (!stats[vendedor]) {
+        stats[vendedor] = {
+          nome: vendedor,
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor),
+          equipe: lead.equipe || "Sem equipe",
+          total: 0,
+          veio: 0,
+          nao: 0,
+          pending: 0,
+          vendas: 0,
+          retornos: 0,
+          agendeiDia: {},
+          origens: {},
+          conversao: 0,
+        }
+      }
+
+      stats[vendedor].total++
+      stats[vendedor].nao++ // Conta como faltou
     })
 
     // Adiciona vendedores que têm Agendei mas não têm leads marcados no período
@@ -235,9 +274,9 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       if (agendeiB !== agendeiA) return agendeiB - agendeiA
       return b.total - a.total
     })
-  }, [leadsAtivos, agendeiPorVendedor])
+  }, [leadsAtivos, agendeiPorVendedor, remarcadosOutraSemanaList])
 
-  // Estatísticas por equipe
+  // Estatísticas por equipe (inclui remarcados)
   const equipeStats = useMemo(() => {
     const stats: Record<string, { total: number; veio: number; nao: number; vendas: number; conversao: number }> = {}
 
@@ -250,8 +289,18 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
       stats[equipe].total++
       if (lead.status === "veio") stats[equipe].veio++
-      if (lead.status === "nao") stats[equipe].nao++
+      if (lead.status === "nao" && !lead.remarcado) stats[equipe].nao++
       if (lead.venda_fechada) stats[equipe].vendas++
+    })
+
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemanaList.forEach((lead) => {
+      const equipe = lead.equipe || "Sem equipe"
+      if (!stats[equipe]) {
+        stats[equipe] = { total: 0, veio: 0, nao: 0, vendas: 0, conversao: 0 }
+      }
+      stats[equipe].total++
+      stats[equipe].nao++
     })
 
     Object.values(stats).forEach((s) => {
@@ -259,9 +308,9 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
-  }, [leadsAtivos])
+  }, [leadsAtivos, remarcadosOutraSemanaList])
 
-  // Estatísticas de origem
+  // Estatísticas de origem (inclui remarcados)
   const origemStats = useMemo(() => {
     const stats: Record<string, { total: number; veio: number; nao: number }> = {}
 
@@ -274,11 +323,21 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
       stats[origem].total++
       if (lead.status === "veio") stats[origem].veio++
-      if (lead.status === "nao") stats[origem].nao++
+      if (lead.status === "nao" && !lead.remarcado) stats[origem].nao++
+    })
+
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemanaList.forEach((lead) => {
+      const origem = lead.origem || "Não informada"
+      if (!stats[origem]) {
+        stats[origem] = { total: 0, veio: 0, nao: 0 }
+      }
+      stats[origem].total++
+      stats[origem].nao++
     })
 
     return Object.entries(stats).sort((a, b) => b[1].total - a[1].total)
-  }, [leadsAtivos])
+  }, [leadsAtivos, remarcadosOutraSemanaList])
 
   // Estatísticas por atendente
   const atendenteStats = useMemo(() => {
