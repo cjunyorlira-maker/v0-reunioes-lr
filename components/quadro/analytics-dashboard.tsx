@@ -76,6 +76,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const qualificadosSemReuniao = useMemo(() => {
     return qualificadosAtivos.filter(q => {
       const qKommoId = String(q.kommo_id || q.id)
+      // Se NÃO tem um lead com agendei neste período, não marcou reunião ainda
       return !kommoIdsNoAgendei.has(qKommoId)
     })
   }, [qualificadosAtivos, kommoIdsNoAgendei])
