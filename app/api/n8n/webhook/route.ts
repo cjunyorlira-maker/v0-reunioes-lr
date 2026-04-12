@@ -1,6 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
+// Busca a equipe do usuário no Kommo
+async function getEquipeFromKommo(responsavelId: string): Promise<string | null> {
+  const token = process.env.KOMMO_ACCESS_TOKEN
+  const subdomain = process.env.KOMMO_SUBDOMAIN
+
+  if (!token || !subdomain || !responsavelId) return null
+
+  try {
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/users/${responsavelId}?with=group`,
+      {
+        headers: { "Authorization": `Bearer ${token}` },
+      }
+    )
+
+    if (response.ok) {
+      const user = await response.json()
+      const equipe = user._embedded?.groups?.[0]?.name || user.group?.name || null
+      console.log("[v0] Equipe encontrada para", responsavelId, ":", equipe)
+      return equipe
+    }
+  } catch (error) {
+    console.error("[v0] Erro ao buscar equipe:", error)
+  }
+
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -14,13 +42,19 @@ export async function POST(req: NextRequest) {
 
     for (const lead of leads) {
       try {
+        // Se equipe não veio, busca do Kommo pelo responsavel_id
+        let equipe = lead.equipe
+        if (!equipe && lead.responsavel_id) {
+          equipe = await getEquipeFromKommo(lead.responsavel_id.toString())
+        }
+
         // Mapeia os campos do Kommo para os campos da app
         const leadData = {
           kommo_id: lead.kommo_lead_id?.toString(),
           nome: lead.nome,
           responsavel: lead.responsavel,
           responsavel_id: lead.responsavel_id?.toString(),
-          equipe: lead.equipe,
+          equipe: equipe,
           origem: lead.origem,
           data: lead.agendei || lead.created_at, // Data do agendamento ou criação
           hora: lead.data_reuniao ? new Date(lead.data_reuniao).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null,
