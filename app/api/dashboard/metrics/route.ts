@@ -19,14 +19,14 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseClient()
     
     // Define data de início baseado no período
+    // Semana começa no Domingo e termina no Sábado
     let dataInicio = new Date()
     if (periodo === "semana") {
-      const dia = dataInicio.getDay()
-      const diff = dataInicio.getDate() - dia + (dia === 0 ? -6 : 1)
-      dataInicio = new Date(dataInicio.setDate(diff))
-    } else {
-      dataInicio.setHours(0, 0, 0, 0)
+      const dia = dataInicio.getDay() // 0=domingo, 6=sábado
+      // Volta para o domingo da semana atual
+      dataInicio = new Date(dataInicio.setDate(dataInicio.getDate() - dia))
     }
+    dataInicio.setHours(0, 0, 0, 0)
     const dataInicioStr = dataInicio.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
 
     // Query base

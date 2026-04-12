@@ -12,19 +12,18 @@ export function getWeekDays(weekOffset: number = 0): WeekDay[] {
   const today = getTodayInBrazil()
   const currentDay = today.getDay()
   
-  // Calcular o início da semana (segunda-feira)
+  // Calcular o início da semana (domingo)
   // getDay(): 0=domingo, 1=segunda, 2=terça... 6=sábado
-  const daysUntilMonday = currentDay === 0 ? 6 : currentDay - 1
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - daysUntilMonday + (weekOffset * 7))
+  const sunday = new Date(today)
+  sunday.setDate(today.getDate() - currentDay + (weekOffset * 7))
   
   const days: WeekDay[] = []
-  const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+  const dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
   const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
   
   for (let i = 0; i < 7; i++) {
-    const date = new Date(monday)
-    date.setDate(monday.getDate() + i)
+    const date = new Date(sunday)
+    date.setDate(sunday.getDate() + i)
     
     days.push({
       date,
