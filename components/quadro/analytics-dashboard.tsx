@@ -163,10 +163,10 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     leadsAtivos.forEach((lead) => {
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
 
-        if (!stats[vendedor]) {
-          stats[vendedor] = {
-            nome: vendedor,
-            foto: lead.foto_responsavel || getFotoVendedor(vendedor),
+      if (!stats[vendedor]) {
+        stats[vendedor] = {
+          nome: vendedor,
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor),
           equipe: lead.equipe || "Sem equipe",
           total: 0,
           veio: 0,
