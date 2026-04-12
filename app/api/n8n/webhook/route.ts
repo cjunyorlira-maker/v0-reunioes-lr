@@ -51,10 +51,61 @@ export async function POST(req: NextRequest) {
 
     for (const lead of leads) {
       try {
-        // Só processa leads na etapa "Confirmar Reunião" (status_id: 67567420)
+        // Processa leads em duas etapas:
+        // 1. "Vendendo Reunião" (67567419) - marca como qualificado
+        // 2. "Confirmar Reunião" (67567420) - cria o cartão com agendamento
+        
+        const STATUS_VENDENDO_REUNIAO = "67567419"
         const STATUS_CONFIRMAR_REUNIAO = "67567420"
-        if (lead.status_id?.toString() !== STATUS_CONFIRMAR_REUNIAO) {
-          console.log("[v0] Lead ignorado - etapa:", lead.status_id, "- não é Confirmar Reunião (67567420)")
+        
+        const statusAtual = lead.status_id?.toString()
+        
+        // Se chegou em "Vendendo Reunião", marca data_qualificacao
+        if (statusAtual === STATUS_VENDENDO_REUNIAO) {
+          console.log("[v0] Lead em 'Vendendo Reunião':", lead.nome)
+          
+          let nomeResponsavel = lead.responsavel
+          if (lead.responsavel_id) {
+            const userData = await getUserDataFromKommo(lead.responsavel_id.toString())
+            if (userData.nome) nomeResponsavel = userData.nome
+          }
+          
+          const leadData: Record<string, any> = {
+            kommo_id: lead.kommo_lead_id?.toString(),
+            kommo_lead_id: lead.kommo_lead_id?.toString(),
+            nome: lead.nome,
+            responsavel: nomeResponsavel,
+            responsavel_id: lead.responsavel_id?.toString(),
+            // Data de qualificação (hoje)
+            data_qualificacao: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+          }
+          
+          Object.keys(leadData).forEach(key => {
+            if (leadData[key] === undefined) delete leadData[key]
+          })
+          
+          const { data: existing } = await supabase
+            .from("leads")
+            .select("id")
+            .eq("kommo_id", leadData.kommo_id)
+            .single()
+          
+          if (existing) {
+            await supabase
+              .from("leads")
+              .update(leadData)
+              .eq("id", existing.id)
+          } else {
+            await supabase.from("leads").insert([leadData])
+          }
+          
+          results.push({ action: "qualificado", lead_name: lead.nome, kommo_id: lead.kommo_lead_id })
+          continue
+        }
+        
+        // Se chegou em "Confirmar Reunião", cria/atualiza o cartão
+        if (statusAtual !== STATUS_CONFIRMAR_REUNIAO) {
+          console.log("[v0] Lead ignorado - etapa:", lead.status_id)
           results.push({ action: "ignored", reason: "etapa_incorreta", status_id: lead.status_id, lead_name: lead.nome })
           continue
         }
@@ -103,6 +154,10 @@ export async function POST(req: NextRequest) {
           tipo: lead.tipo || null,
           tipo_reuniao: lead.tipo_reuniao || null,
           foto_responsavel: fotoResponsavel,
+          // Data de agendamento (quando chega na etapa Confirmar Reunião)
+          data_agendei: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+          // Data de qualificação (se veio do campo qualifiquei do Kommo)
+          data_qualificacao: lead.qualifiquei ? new Date(lead.qualifiquei).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : null,
         }
         
         // Remove campos undefined para não sobrescrever com null

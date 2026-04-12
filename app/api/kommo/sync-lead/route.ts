@@ -140,11 +140,13 @@ export async function POST(request: NextRequest) {
     const CAMPO_TIPO_REUNIAO_ID = 1026810
     const CAMPO_DATA_REUNIAO_ID = 1025159
     const CAMPO_REMARCADO_ID = 1026862  // Campo data e hora para remarcados
+    const CAMPO_QUALIFIQUEI_ID = 1026046  // Campo data de qualificação
     const CAMPO_ORIGEM_ID = 797344
     
-    // Variáveis para data/hora de remarcado
+    // Variáveis para data/hora de remarcado e qualificação
     let dataRemarcado: string | null = null
     let horaRemarcado: string | null = null
+    let dataQualificacao: string | null = null
     
     console.log("[v0] Custom fields do lead:", JSON.stringify(customFields, null, 2))
     
@@ -192,6 +194,15 @@ export async function POST(request: NextRequest) {
           console.log("[v0] Data remarcado extraída:", dataRemarcado, horaRemarcado)
         }
       }
+      
+      // Campo Qualifiquei - data de qualificação (quando vendedor qualifica no Kommo)
+      if (fieldId === CAMPO_QUALIFIQUEI_ID) {
+        if (value && typeof value === "number") {
+          const date = new Date(value * 1000)
+          dataQualificacao = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+          console.log("[v0] Data de qualificação extraída:", dataQualificacao)
+        }
+      }
     }
     
     // Se for remarcado e tiver data de remarcado, usa ela ao invés da data original
@@ -225,6 +236,11 @@ export async function POST(request: NextRequest) {
     
     if (horaReuniao) {
       updateData.hora = horaReuniao
+    }
+    
+    // Se encontrou data de qualificação, atualiza
+    if (dataQualificacao) {
+      updateData.data_qualificacao = dataQualificacao
     }
     
     // Atualiza o lead no banco
