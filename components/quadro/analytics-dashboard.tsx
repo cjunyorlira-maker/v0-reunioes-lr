@@ -2,9 +2,12 @@
 
 import { Lead } from "@/lib/types"
 import { useMemo, useState } from "react"
+import useSWR from "swr"
 import { useQualificados } from "@/hooks/use-qualificados"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 interface AnalyticsDashboardProps {
   leads: Lead[]
@@ -32,6 +35,11 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   // Filtro por equipe — null = todas
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
+
+  // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
+  // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
+  const { data: allLeadsData } = useSWR<{ data: Lead[] }>("/api/leads", fetcher)
+  const allLeads = allLeadsData?.data || []
 
   // Dias da semana para os botões do filtro
   const weekDays = useMemo(() => getWeekDays(), [])
@@ -70,10 +78,15 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return qualificadosSemana.filter(q => q.data_qualificacao === selectedDay)
   }, [qualificadosSemana, selectedDay])
 
-  // Kommo IDs que já têm reunião marcada no nosso sistema
+  // Kommo IDs que já têm reunião marcada no nosso sistema (usa allLeads)
   const kommoIdsNoAgendei = useMemo(() => {
-    return new Set(leads.map(l => l.kommo_id).filter(Boolean))
-  }, [leads])
+    // Filtra por leads que tem data_agendei no periodo ativo
+    const leadsComAgendei = allLeads.filter(l => {
+      if (!l.data_agendei) return false
+      return l.data_agendei >= activeRange.start && l.data_agendei <= activeRange.end
+    })
+    return new Set(leadsComAgendei.map(l => l.kommo_id).filter(Boolean))
+  }, [allLeads, activeRange])
 
   // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
   // Verifica se o kommo_id do qualificado existe na tabela leads (virou agendei)
@@ -110,20 +123,23 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   }, [qualificadosSemana])
 
   // Calcula "Agendei" usando data_agendei (quando lead entrou em Confirmar Reuniao)
+  // Usa allLeads porque leads com data_agendei desta semana podem ter reunião em outra semana
   const agendeiPorVendedor = useMemo(() => {
     const stats: Record<string, number> = {}
     
-    leads.forEach((lead) => {
+    allLeads.forEach((lead) => {
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
       if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
+      // Filtra por equipe se selecionada
+      if (selectedEquipe && lead.equipe !== selectedEquipe) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       stats[vendedor] = (stats[vendedor] || 0) + 1
     })
     
     return stats
-  }, [leads, activeRange])
+  }, [allLeads, activeRange, selectedEquipe])
 
   // Estatísticas por vendedor — usa leadsAtivos (dia ou semana) para marcados
   const vendedorStats = useMemo(() => {
@@ -297,33 +313,44 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return Object.values(agendeiPorDia.totalPorDia).reduce((acc, val) => acc + val, 0)
   }, [agendeiPorDia])
 
-  // Totais gerais — usa leadsAtivos
+  // Totais gerais — usa leadsAtivos + remarcados de allLeads
   const totals = useMemo(() => {
     const veioCount = leadsAtivos.filter(l => l.status === "veio").length
     const naoCount = leadsAtivos.filter(l => l.status === "nao" && !l.remarcado).length
+    
     // Leads remarcados para outra semana contam como "Faltou" no período original
-    const remarcadosOutraSemana = leadsAtivos.filter(l => {
-      if (!l.remarcado || !l.data_original) return false
-      // Se data_original está no período ativo mas data é outra, é remarcado
-      return l.data_original >= activeRange.start && 
-             l.data_original <= activeRange.end &&
-             (l.data < activeRange.start || l.data > activeRange.end)
+    // Busca de allLeads porque o lead remarcado tem data de outra semana (não está em leadsAtivos)
+    const remarcadosOutraSemana = allLeads.filter(l => {
+      if (!l.remarcado) return false
+      // Filtra por equipe se selecionada
+      if (selectedEquipe && l.equipe !== selectedEquipe) return false
+      // Se data_original (ou data_agendei se data_original não existe) está no período
+      const dataOriginal = l.data_original || l.data_agendei
+      if (!dataOriginal) return false
+      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
+      // E a data atual da reunião está FORA do range (foi remarcado para outra semana)
+      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
+      return dentroDoRange && foraDoRange
     }).length
     
     const naoTotal = naoCount + remarcadosOutraSemana
     const vendasCount = leadsAtivos.filter(l => l.venda_fechada).length
     const retornosCount = leadsAtivos.filter(l => l.retorno).length
+    
+    // Total inclui remarcados
+    const totalMarcados = leadsAtivos.length + remarcadosOutraSemana
 
     return {
-      total: leadsAtivos.length,
+      total: totalMarcados,
       veio: veioCount,
       nao: naoTotal,
       vendas: vendasCount,
       retornos: retornosCount,
+      remarcados: remarcadosOutraSemana,
       taxaPresenca: (veioCount + naoTotal) > 0 ? Math.round((veioCount / (veioCount + naoTotal)) * 100) : 0,
       taxaConversao: veioCount > 0 ? Math.round((vendasCount / veioCount) * 100) : 0,
     }
-  }, [leadsAtivos, activeRange])
+  }, [leadsAtivos, allLeads, activeRange, selectedEquipe])
 
   if (leads.length === 0) return null
 
@@ -443,7 +470,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               {qualificadosSemReuniao.map(q => (
                 <a
                   key={q.id}
-                  href={`https://app.kommo.com/contacts/${q.kommo_id}`}
+                  href={`https://grupomultimarcas.kommo.com/leads/detail/${q.kommo_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1 hover:bg-amber-500/20 hover:border-amber-500/40 transition-colors cursor-pointer"
