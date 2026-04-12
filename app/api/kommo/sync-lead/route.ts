@@ -139,7 +139,12 @@ export async function POST(request: NextRequest) {
     const customFields = leadDetails.custom_fields_values || []
     const CAMPO_TIPO_REUNIAO_ID = 1026810
     const CAMPO_DATA_REUNIAO_ID = 1025159
+    const CAMPO_REMARCADO_ID = 1026862  // Campo data e hora para remarcados
     const CAMPO_ORIGEM_ID = 797344
+    
+    // Variáveis para data/hora de remarcado
+    let dataRemarcado: string | null = null
+    let horaRemarcado: string | null = null
     
     console.log("[v0] Custom fields do lead:", JSON.stringify(customFields, null, 2))
     
@@ -177,6 +182,23 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+      
+      // Campo Remarcado - nova data/hora para leads remarcados
+      if (fieldId === CAMPO_REMARCADO_ID) {
+        if (value && typeof value === "number") {
+          const date = new Date(value * 1000)
+          dataRemarcado = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+          horaRemarcado = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
+          console.log("[v0] Data remarcado extraída:", dataRemarcado, horaRemarcado)
+        }
+      }
+    }
+    
+    // Se for remarcado e tiver data de remarcado, usa ela ao invés da data original
+    if (isRemarcado && dataRemarcado) {
+      dataReuniao = dataRemarcado
+      horaReuniao = horaRemarcado
+      console.log("[v0] Usando data de remarcado:", dataReuniao, horaReuniao)
     }
     
     // Prepara dados para atualizar

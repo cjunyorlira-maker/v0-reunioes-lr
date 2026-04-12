@@ -2,6 +2,16 @@
 
 export const PIPELINE_PRINCIPAL = 7012299
 
+// IDs dos campos customizados do Kommo
+export const CAMPOS = {
+  DATA_REUNIAO: 1025159,
+  REMARCADO: 1026862, // Campo data e hora para remarcados
+  DATA_VIERAM: 1026050,
+  DATA_NAO_VIERAM: 1026053,
+  ATENDENTE_SELECAO: 1025747,
+  ATENDENTE_TEXTO: 1025387,
+} as const
+
 export const ETAPAS = {
   // Etapas iniciais
   INCOMING_LEADS: 58498467,

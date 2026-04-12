@@ -17,13 +17,14 @@ const PIPELINE_ID = 7012299
 
 export async function POST(request: NextRequest) {
   try {
-    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente, atendenteId, data_reuniao } = await request.json()
+    const { kommo_id, kommo_lead_id, status, nome, responsavel_id, atendente, atendenteId, data_reuniao, hora_reuniao } = await request.json()
     
     // IDs dos campos personalizados no Kommo
     const CAMPO_ATENDENTE_SELECAO_ID = 1026479  // Campo de seleção (enum) do atendente
     const CAMPO_ATENDENTE_TEXTO_ID = 1026812     // Campo de texto do atendente
     const CAMPO_DATA_NAO_VIERAM_ID = 1026052
     const CAMPO_DATA_VIERAM_ID = 1026050
+    const CAMPO_REMARCADO_ID = 1026862  // Campo data e hora para remarcados
 
     if (!status || !["veio", "nao", "remarcou"].includes(status)) {
       return NextResponse.json(
@@ -204,6 +205,21 @@ export async function POST(request: NextRequest) {
       const timestamp = Math.floor(dataReuniao.getTime() / 1000)
       customFieldsImediato.push({
         field_id: CAMPO_DATA_NAO_VIERAM_ID,
+        values: [{ value: timestamp }]
+      })
+    }
+    
+    // Se for "remarcou", preenche o campo Remarcado com a nova data e hora
+    if (status === "remarcou" && data_reuniao) {
+      // Cria timestamp com data e hora
+      let dateStr = data_reuniao
+      if (hora_reuniao) {
+        dateStr = `${data_reuniao}T${hora_reuniao}:00`
+      }
+      const dataRemarcada = new Date(dateStr)
+      const timestamp = Math.floor(dataRemarcada.getTime() / 1000)
+      customFieldsImediato.push({
+        field_id: CAMPO_REMARCADO_ID,
         values: [{ value: timestamp }]
       })
     }

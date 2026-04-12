@@ -8,6 +8,7 @@ import { DayColumn } from "@/components/quadro/day-column"
 import { NewLeadModal } from "@/components/quadro/new-lead-modal"
 import { EditLeadModal } from "@/components/quadro/edit-lead-modal"
 import { AtendenteModal } from "@/components/quadro/atendente-modal"
+import { RemarcarModal } from "@/components/quadro/remarcar-modal"
 import { NextWeekPreview } from "@/components/quadro/next-week-preview"
 import { AnalyticsDashboard } from "@/components/quadro/analytics-dashboard"
 import type { Lead } from "@/lib/types"
@@ -31,6 +32,8 @@ export default function QuadroReunioes() {
   const [isAtendenteModalOpen, setIsAtendenteModalOpen] = useState(false)
   const [pendingVeioLead, setPendingVeioLead] = useState<Lead | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [isRemarcarModalOpen, setIsRemarcarModalOpen] = useState(false)
+  const [pendingRemarcarLead, setPendingRemarcarLead] = useState<Lead | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -105,13 +108,18 @@ export default function QuadroReunioes() {
       return
     }
     
+    // Se for "remarcou", abre o modal para selecionar nova data/hora
+    if (status === "remarcou") {
+      const lead = leads.find(l => l.id === id)
+      if (lead) {
+        setPendingRemarcarLead(lead)
+        setIsRemarcarModalOpen(true)
+      }
+      return
+    }
+    
     try {
-      // Se for remarcou, atualiza o campo remarcado para true e mantém status pending
-      const updateData = status === "remarcou" 
-        ? { remarcado: true, status: "pending" as const }
-        : { status: status as "veio" | "nao" | "pending" }
-      
-      await updateLead(id, updateData)
+      await updateLead(id, { status: status as "veio" | "nao" | "pending" })
       
       // Encontra o lead para pegar o kommo_id
       const lead = leads.find(l => l.id === id)
@@ -135,12 +143,11 @@ export default function QuadroReunioes() {
           const toastMessages = {
             veio: "Cliente marcado como presente e movido no Kommo!",
             nao: "Cliente marcado como ausente e movido no Kommo!",
-            remarcou: "Cliente remarcado e movido no Kommo!"
           }
           
           if (response.ok) {
             const responseData = await response.json()
-            toast.success(toastMessages[status as keyof typeof toastMessages])
+            toast.success(status === "veio" ? toastMessages.veio : toastMessages.nao)
             
             // Chama a API para atualizar a data após 5 segundos (para sobrescrever o bot do Kommo)
             if (lead.data && responseData.leadId) {
@@ -161,33 +168,15 @@ export default function QuadroReunioes() {
               }, 5000) // 5 segundos de delay
             }
           } else {
-            toast.success(
-              status === "veio" 
-                ? "Cliente marcado como presente!" 
-                : status === "nao"
-                  ? "Cliente marcado como ausente"
-                  : "Cliente remarcado!"
-            )
+            toast.success(status === "veio" ? "Cliente marcado como presente!" : "Cliente marcado como ausente")
             console.error("Erro ao mover no Kommo")
           }
         } catch (kommoError) {
           console.error("Erro ao mover no Kommo:", kommoError)
-          toast.success(
-            status === "veio" 
-              ? "Cliente marcado como presente!" 
-              : status === "nao"
-                ? "Cliente marcado como ausente"
-                : "Cliente remarcado!"
-          )
+          toast.success(status === "veio" ? "Cliente marcado como presente!" : "Cliente marcado como ausente")
         }
       } else {
-        toast.success(
-          status === "veio" 
-            ? "Cliente marcado como presente!" 
-            : status === "nao" 
-              ? "Cliente marcado como ausente" 
-              : "Status resetado"
-        )
+        toast.success(status === "veio" ? "Cliente marcado como presente!" : status === "nao" ? "Cliente marcado como ausente" : "Status resetado")
       }
     } catch {
       toast.error("Erro ao atualizar status")
@@ -299,6 +288,51 @@ export default function QuadroReunioes() {
       }
     } catch {
       toast.error("Erro ao atualizar status")
+    }
+  }
+
+  const handleRemarcarWithDate = async (novaData: string, novaHora: string) => {
+    if (!pendingRemarcarLead) return
+    
+    const lead = pendingRemarcarLead
+    setIsRemarcarModalOpen(false)
+    setPendingRemarcarLead(null)
+    
+    try {
+      // Atualiza o lead com a nova data/hora e marca como remarcado
+      await updateLead(lead.id, { 
+        data: novaData, 
+        hora: novaHora, 
+        remarcado: true, 
+        status: "pending" 
+      })
+      
+      // Move o lead no Kommo para etapa Remarcados e preenche o campo remarcado
+      try {
+        const response = await fetch("/api/kommo/move-lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kommo_id: lead.kommo_id,
+            kommo_lead_id: lead.kommo_lead_id,
+            nome: lead.nome,
+            status: "remarcou",
+            data_reuniao: novaData,
+            hora_reuniao: novaHora,
+          })
+        })
+        
+        if (response.ok) {
+          toast.success(`Reunião remarcada para ${novaData} às ${novaHora}!`)
+        } else {
+          toast.success("Reunião remarcada com sucesso!")
+        }
+      } catch (kommoError) {
+        console.error("Erro ao mover no Kommo:", kommoError)
+        toast.success("Reunião remarcada com sucesso!")
+      }
+    } catch {
+      toast.error("Erro ao remarcar reunião")
     }
   }
 
@@ -489,6 +523,18 @@ export default function QuadroReunioes() {
         }}
         onConfirm={handleVeioWithAtendente}
         leadNome={pendingVeioLead?.nome || ""}
+      />
+
+      <RemarcarModal
+        open={isRemarcarModalOpen}
+        onClose={() => {
+          setIsRemarcarModalOpen(false)
+          setPendingRemarcarLead(null)
+        }}
+        onConfirm={handleRemarcarWithDate}
+        leadNome={pendingRemarcarLead?.nome || ""}
+        currentData={pendingRemarcarLead?.data || ""}
+        currentHora={pendingRemarcarLead?.hora || ""}
       />
     </div>
   )
