@@ -64,10 +64,14 @@ export async function POST(req: NextRequest) {
         if (statusAtual === STATUS_VENDENDO_REUNIAO) {
           console.log("[v0] Lead em 'Vendendo Reunião':", lead.nome)
           
+          // Busca dados completos do usuário (nome, equipe, foto)
           let nomeResponsavel = lead.responsavel
+          let equipe = lead.equipe
+          
           if (lead.responsavel_id) {
             const userData = await getUserDataFromKommo(lead.responsavel_id.toString())
             if (userData.nome) nomeResponsavel = userData.nome
+            if (userData.equipe) equipe = userData.equipe
           }
           
           const leadData: Record<string, any> = {
@@ -76,6 +80,8 @@ export async function POST(req: NextRequest) {
             nome: lead.nome,
             responsavel: nomeResponsavel,
             responsavel_id: lead.responsavel_id?.toString(),
+            equipe: equipe,
+            origem: lead.origem,
             // Data de qualificação (hoje)
             data_qualificacao: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
           }
@@ -99,7 +105,7 @@ export async function POST(req: NextRequest) {
             await supabase.from("leads").insert([leadData])
           }
           
-          results.push({ action: "qualificado", lead_name: lead.nome, kommo_id: lead.kommo_lead_id })
+          results.push({ action: "qualificado", lead_name: lead.nome, kommo_id: lead.kommo_lead_id, equipe: equipe })
           continue
         }
         
