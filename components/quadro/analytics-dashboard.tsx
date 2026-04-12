@@ -101,7 +101,6 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
     return new Set(leadsComAgendei.map(l => l.kommo_id).filter(Boolean))
   }, [allLeads, activeRange, selectedEquipe])
-  }, [allLeads, activeRange])
 
   // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
   // Verifica se o kommo_id do qualificado existe na tabela leads (virou agendei)
