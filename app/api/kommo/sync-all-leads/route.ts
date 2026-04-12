@@ -39,7 +39,7 @@ export async function POST() {
 
       while (hasMore) {
         const response = await fetch(
-          `https://${subdomain}.kommo.com/api/v4/leads?filter[statuses][0][status_id]=${statusId}&filter[statuses][0][pipeline_id]=7012299&with=contacts&page=${page}&limit=50`,
+          `https://${subdomain}.kommo.com/api/v4/leads?filter[statuses][0][status_id]=${statusId}&filter[statuses][0][pipeline_id]=7012299&with=contacts&page=${page}&limit=250`,
           {
             headers: { "Authorization": `Bearer ${token}` },
           }
