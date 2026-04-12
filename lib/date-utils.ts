@@ -62,7 +62,8 @@ export function formatDateDisplay(dateStr: string): string {
   })
 }
 
-export function formatTimeDisplay(timeStr: string): string {
+export function formatTimeDisplay(timeStr: string | null | undefined): string {
+  if (!timeStr) return ""
   return timeStr.slice(0, 5) // "14:30:00" -> "14:30"
 }
 
