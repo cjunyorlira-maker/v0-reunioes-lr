@@ -84,7 +84,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
     : 0
 
-  // Calcula "Qualifiquei" por vendedor usando os dados da tabela pluga_eventos
+  // Calcula "Qualifiquei" por vendedor usando os dados da tabela qualificacoes
   const qualifiqueiPorVendedor = useMemo(() => {
     const stats: Record<string, number> = {}
     
@@ -96,14 +96,14 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return stats
   }, [qualificadosSemana])
 
-  // Calcula "Agendei" separadamente usando TODOS os leads (criados no range ativo)
+  // Calcula "Agendei" usando data_agendei (quando lead entrou em Confirmar Reuniao)
   const agendeiPorVendedor = useMemo(() => {
     const stats: Record<string, number> = {}
     
     leads.forEach((lead) => {
-      const createdDate = lead.created_at?.split("T")[0]
-      if (!createdDate) return
-      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       stats[vendedor] = (stats[vendedor] || 0) + 1
