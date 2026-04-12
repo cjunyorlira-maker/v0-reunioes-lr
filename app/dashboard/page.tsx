@@ -40,9 +40,16 @@ export default function DashboardPage() {
     return dateRange
   }, [filterMode, selectedDay, customStartDate, customEndDate, dateRange])
 
-  // Busca dados
+  // Busca dados da semana
   const { data: leadsData } = useSWR(
     `/api/leads?startDate=${dateRange.start}&endDate=${dateRange.end}`,
+    fetcher,
+    { refreshInterval: 30000 }
+  )
+
+  // Busca TODOS os leads (para calcular remarcados e agendei corretamente)
+  const { data: allLeadsData } = useSWR(
+    `/api/leads`,
     fetcher,
     { refreshInterval: 30000 }
   )
@@ -55,6 +62,7 @@ export default function DashboardPage() {
   )
 
   const leads = leadsData || []
+  const allLeads = allLeadsData || []
   const qualificados = qualificadosData?.leads || []
 
   // Leads filtrados pelo range ativo (exclui retornos)
@@ -69,8 +77,9 @@ export default function DashboardPage() {
   }, [leads, activeRange])
 
   // Leads remarcados para OUTRA semana (tinham data_original no range mas data atual fora)
+  // Usa allLeads porque o lead remarcado pode ter data fora do range atual
   const remarcadosOutraSemana = useMemo(() => {
-    return leads.filter((l: any) => {
+    return allLeads.filter((l: any) => {
       if (!l.remarcado) return false
       // Se data_original (ou data_agendei) estava no período mas data foi remarcada para fora
       const dataOriginal = l.data_original || l.data_agendei
@@ -79,7 +88,7 @@ export default function DashboardPage() {
       const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
       return dentroDoRange && foraDoRange
     })
-  }, [leads, activeRange])
+  }, [allLeads, activeRange])
 
   // Estatisticas gerais (sem retornos)
   const stats = useMemo(() => {
@@ -108,10 +117,11 @@ export default function DashboardPage() {
   }, [leadsAtivos, remarcadosOutraSemana])
 
   // Agendei por vendedor (leads com data_agendei no periodo)
+  // Usa allLeads para pegar leads que foram agendados nesta semana mas remarcados para outra
   const agendeiPorVendedor = useMemo(() => {
     const map: Record<string, { nome: string; foto: string | null; equipe: string; agendei: number }> = {}
 
-    leads.forEach((lead: any) => {
+    allLeads.forEach((lead: any) => {
       // Usa data_agendei ao inves de created_at
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
@@ -130,7 +140,7 @@ export default function DashboardPage() {
     })
 
     return Object.values(map).sort((a, b) => b.agendei - a.agendei)
-  }, [leads, activeRange])
+  }, [allLeads, activeRange])
 
   // Qualifiquei por vendedor
   const qualifiqueiPorVendedor = useMemo(() => {
@@ -219,7 +229,7 @@ export default function DashboardPage() {
     }
   }, [leadsAtivos])
 
-  // Funil por equipe - apenas leads que passaram por qualifiquei E agendei no periodo
+  // Funil por equipe - usa allLeads para pegar todos incluindo remarcados
   const funilPorEquipe = useMemo(() => {
     const map: Record<string, any> = {}
 
@@ -232,8 +242,8 @@ export default function DashboardPage() {
       map[equipe].qualificados++
     })
 
-    // Agendei por equipe (data_agendei no periodo)
-    leads.forEach((lead: any) => {
+    // Agendei por equipe (data_agendei no periodo) - usa allLeads
+    allLeads.forEach((lead: any) => {
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
       if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
@@ -245,30 +255,33 @@ export default function DashboardPage() {
       map[equipe].agendei++
     })
 
-    // Marcados = leads que passaram por agendei no periodo (marcados para reuniao)
-    // Veio/Nao = resultados apenas dos que foram agendados no periodo
-    leads.forEach((lead: any) => {
-      const agendeiDate = lead.data_agendei
-      if (!agendeiDate) return
-      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
+    // Marcados = leads com reunião agendada no período (data dentro do range)
+    leadsAtivos.forEach((lead: any) => {
       if (lead.retorno) return
 
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
         map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
-      // Marcados sao os que sairam do agendei e foram marcados para reuniao
-      if (lead.data) {
-        map[equipe].marcados++
-        if (lead.status === "veio") map[equipe].veio++
-        if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
-        if (lead.remarcado) map[equipe].remarcados++
-        if (lead.venda_fechada) map[equipe].vendas++
+      map[equipe].marcados++
+      if (lead.status === "veio") map[equipe].veio++
+      if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
+      if (lead.venda_fechada) map[equipe].vendas++
+    })
+
+    // Adiciona remarcados para outra semana como faltou
+    remarcadosOutraSemana.forEach((lead: any) => {
+      const equipe = lead.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
       }
+      map[equipe].marcados++
+      map[equipe].nao++
+      map[equipe].remarcados++
     })
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
-  }, [qualificados, leads, activeRange])
+  }, [qualificados, allLeads, leadsAtivos, remarcadosOutraSemana, activeRange])
 
   // Conversao Qualifiquei -> Agendei por vendedor
   const conversaoQualAgendei = useMemo(() => {
@@ -283,8 +296,8 @@ export default function DashboardPage() {
       map[vendedor].qualificados++
     })
 
-    // Agendei
-    leads.forEach((lead: any) => {
+    // Agendei - usa allLeads para pegar todos incluindo remarcados
+    allLeads.forEach((lead: any) => {
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
       if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
@@ -302,7 +315,7 @@ export default function DashboardPage() {
     })
 
     return Object.values(map).filter(v => v.qualificados > 0 || v.agendei > 0).sort((a, b) => b.taxa - a.taxa)
-  }, [qualificados, leads, activeRange])
+  }, [qualificados, allLeads, activeRange])
 
   // Conversao por equipe
   const conversaoPorEquipe = useMemo(() => {
@@ -317,8 +330,8 @@ export default function DashboardPage() {
       map[equipe].qualificados++
     })
 
-    // Agendei
-    leads.forEach((lead: any) => {
+    // Agendei - usa allLeads para pegar todos incluindo remarcados
+    allLeads.forEach((lead: any) => {
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
       if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
@@ -336,7 +349,7 @@ export default function DashboardPage() {
     })
 
     return Object.values(map).filter(e => e.qualificados > 0 || e.agendei > 0).sort((a, b) => b.taxa - a.taxa)
-  }, [qualificados, leads, activeRange])
+  }, [qualificados, allLeads, activeRange])
 
   // Atendentes
   const atendenteStats = useMemo(() => {
