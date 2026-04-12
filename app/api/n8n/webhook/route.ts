@@ -55,15 +55,7 @@ export async function POST(req: NextRequest) {
           equipe = await getEquipeFromKommo(lead.responsavel_id.toString())
         }
 
-        // Detecta status baseado nas tags - valores aceitos: 'pending', 'veio', 'nao'
-        let status = "pending"
-        if (lead.tags?.includes("Veio")) status = "veio"
-        if (lead.tags?.includes("Não Veio")) status = "nao"
-
         // Mapeia os campos do Kommo para as colunas da tabela leads
-        // Colunas existentes: id, created_at, updated_at, nome, kommo_id, kommo_lead_id, 
-        // responsavel, responsavel_id, equipe, origem, data, hora, status, tipo, 
-        // tipo_reuniao, atendente, venda_fechada, retorno, remarcado, foto_responsavel
         const leadData: Record<string, any> = {
           kommo_id: lead.kommo_lead_id?.toString(),
           kommo_lead_id: lead.kommo_lead_id?.toString(),
@@ -74,12 +66,9 @@ export async function POST(req: NextRequest) {
           origem: lead.origem,
           data: lead.agendei || null,
           hora: lead.hora_reuniao || null,
-          status: status,
+          status: "pending",
           tipo: lead.tipo || null,
           tipo_reuniao: lead.tipo_reuniao || null,
-          venda_fechada: lead.tags?.includes("Venda Fechada") || false,
-          retorno: lead.tags?.includes("Retornar contato") || false,
-          remarcado: lead.tags?.includes("Remarcado") || false,
         }
         
         // Remove campos undefined para não sobrescrever com null
