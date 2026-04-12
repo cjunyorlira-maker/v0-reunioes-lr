@@ -71,13 +71,21 @@ export async function POST(req: NextRequest) {
           if (userData.nome) nomeResponsavel = userData.nome // Usa nome do Kommo se disponível
         }
 
-        // Extrai data e hora do campo data_reuniao (formato: "2026-04-15 21:00")
+        // Extrai data e hora do campo data_reuniao_raw (timestamp Unix)
+        // Converte para timezone de São Paulo (UTC-3)
         let dataReuniao = null
         let horaReuniao = null
-        if (lead.data_reuniao) {
+        if (lead.data_reuniao_raw) {
+          const timestamp = parseInt(lead.data_reuniao_raw) * 1000 // Unix timestamp em ms
+          const date = new Date(timestamp)
+          // Formata para timezone de São Paulo
+          dataReuniao = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) // "2026-04-15"
+          horaReuniao = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) // "18:00"
+        } else if (lead.data_reuniao) {
+          // Fallback para o campo formatado (se não tiver raw)
           const partes = lead.data_reuniao.split(" ")
-          dataReuniao = partes[0] // "2026-04-15"
-          horaReuniao = partes[1] || null // "21:00"
+          dataReuniao = partes[0]
+          horaReuniao = partes[1] || null
         }
 
         // Mapeia os campos do Kommo para as colunas da tabela leads
