@@ -96,7 +96,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     const leadsComAgendei = allLeads.filter(l => {
       if (!l.data_agendei) return false
       const dentroDoRange = l.data_agendei >= activeRange.start && l.data_agendei <= activeRange.end
-      const matchesEquipe = !selectedEquipe || l.equipe === selectedEquipe
+      // Inclui leads sem equipe (null) - só filtra se tem equipe E é diferente da selecionada
+      const matchesEquipe = !selectedEquipe || !l.equipe || l.equipe === selectedEquipe
       return dentroDoRange && matchesEquipe
     })
     return new Set(leadsComAgendei.map(l => l.kommo_id).filter(Boolean))
@@ -145,8 +146,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       const agendeiDate = lead.data_agendei
       if (!agendeiDate) return
       if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
-      // Filtra por equipe se selecionada
-      if (selectedEquipe && lead.equipe !== selectedEquipe) return
+      // Filtra por equipe se selecionada - inclui leads sem equipe (null)
+      if (selectedEquipe && lead.equipe && lead.equipe !== selectedEquipe) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       stats[vendedor] = (stats[vendedor] || 0) + 1
@@ -310,8 +311,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       const agendadoDate = lead.data_agendei
       if (!agendadoDate) return
       if (agendadoDate < activeRange.start || agendadoDate > activeRange.end) return
-      // Filtra por equipe se selecionada
-      if (selectedEquipe && lead.equipe !== selectedEquipe) return
+      // Filtra por equipe se selecionada - inclui leads sem equipe (null)
+      if (selectedEquipe && lead.equipe && lead.equipe !== selectedEquipe) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       const equipe = lead.equipe || "Sem equipe"
@@ -339,8 +340,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     // Busca de allLeads porque o lead remarcado tem data de outra semana (não está em leadsAtivos)
     const remarcadosOutraSemana = allLeads.filter(l => {
       if (!l.remarcado) return false
-      // Filtra por equipe se selecionada
-      if (selectedEquipe && l.equipe !== selectedEquipe) return false
+      // Filtra por equipe se selecionada - inclui leads sem equipe (null)
+      if (selectedEquipe && l.equipe && l.equipe !== selectedEquipe) return false
       // Se data_original (ou data_agendei se data_original não existe) está no período
       const dataOriginal = l.data_original || l.data_agendei
       if (!dataOriginal) return false
