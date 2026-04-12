@@ -3,8 +3,10 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, LogOut } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, LogOut, RefreshCw } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { useState } from "react"
+import { toast } from "sonner"
 
 interface HeaderProps {
   weekLabel: string
@@ -15,12 +17,36 @@ interface HeaderProps {
 
 export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderProps) {
   const router = useRouter()
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
     router.refresh()
+  }
+  
+  const handleSyncLeads = async () => {
+    setIsSyncing(true)
+    try {
+      const response = await fetch("/api/kommo/sync-all-leads", {
+        method: "POST"
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(`Sincronizados ${data.count} leads do Kommo!`)
+        // Recarrega a página para mostrar os leads restaurados
+        window.location.reload()
+      } else {
+        toast.error("Erro ao sincronizar leads")
+      }
+    } catch (error) {
+      console.error("Erro na sincronização:", error)
+      toast.error("Erro ao sincronizar leads")
+    } finally {
+      setIsSyncing(false)
+    }
   }
   
   return (
@@ -45,6 +71,17 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
 
       {/* Controls */}
       <div className="flex items-center gap-2.5">
+        {/* Sync button */}
+        <button
+          onClick={handleSyncLeads}
+          disabled={isSyncing}
+          className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 text-white text-[12px] font-bold px-4 py-2.5 rounded-lg transition-all shadow-lg shadow-purple-500/20"
+          title="Sincronizar leads do Kommo"
+        >
+          <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+        </button>
+        
         {/* Sync indicator */}
         <span className="hidden md:flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
