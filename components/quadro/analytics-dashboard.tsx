@@ -50,8 +50,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   )
   const allLeads = allLeadsData || []
   
-  // Debug: log para verificar se allLeads está carregando
-  console.log("[v0] allLeads count:", allLeads.length, "com data_agendei:", allLeads.filter(l => l.data_agendei).length)
+
 
   // Dias da semana para os botões do filtro
   const weekDays = useMemo(() => getWeekDays(), [])
@@ -491,7 +490,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               {qualificadosSemReuniao.map(q => (
                 <a
                   key={q.id}
-                  href={`https://grupomultimarcas.kommo.com/leads/detail/${q.kommo_id}`}
+                  href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${q.kommo_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[11px] bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-full px-3 py-1 hover:bg-amber-500/20 hover:border-amber-500/40 transition-colors cursor-pointer"
