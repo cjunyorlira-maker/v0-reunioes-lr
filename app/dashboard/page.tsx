@@ -7,15 +7,20 @@ import useSWR from "swr"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
+import { Calendar } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 type TabType = "produtividade" | "resultados" | "funil"
+type FilterMode = "semana" | "dia" | "custom"
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("produtividade")
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [copying, setCopying] = useState(false)
+  const [filterMode, setFilterMode] = useState<FilterMode>("semana")
+  const [customStartDate, setCustomStartDate] = useState<string>("")
+  const [customEndDate, setCustomEndDate] = useState<string>("")
 
   // Dias da semana
   const weekDays = useMemo(() => getWeekDays(), [])
@@ -24,10 +29,16 @@ export default function DashboardPage() {
     end: formatDateForDB(weekDays[weekDays.length - 1].date),
   }), [weekDays])
 
+  // Range ativo baseado no modo de filtro
   const activeRange = useMemo(() => {
-    if (!selectedDay) return dateRange
-    return { start: selectedDay, end: selectedDay }
-  }, [selectedDay, dateRange])
+    if (filterMode === "custom" && customStartDate && customEndDate) {
+      return { start: customStartDate, end: customEndDate }
+    }
+    if (filterMode === "dia" && selectedDay) {
+      return { start: selectedDay, end: selectedDay }
+    }
+    return dateRange
+  }, [filterMode, selectedDay, customStartDate, customEndDate, dateRange])
 
   // Busca dados
   const { data: leadsData } = useSWR(
@@ -36,8 +47,9 @@ export default function DashboardPage() {
     { refreshInterval: 30000 }
   )
 
+  // Busca qualificados da tabela qualificacoes
   const { data: qualificadosData } = useSWR(
-    `/api/pluga/eventos?tipo=qualificado&startDate=${activeRange.start}&endDate=${activeRange.end}`,
+    `/api/leads/qualificados?startDate=${activeRange.start}&endDate=${activeRange.end}`,
     fetcher,
     { refreshInterval: 30000 }
   )
@@ -69,14 +81,15 @@ export default function DashboardPage() {
     }
   }, [leadsAtivos])
 
-  // Agendei por vendedor (leads criados no periodo)
+  // Agendei por vendedor (leads com data_agendei no periodo)
   const agendeiPorVendedor = useMemo(() => {
     const map: Record<string, { nome: string; foto: string | null; equipe: string; agendei: number }> = {}
 
     leads.forEach((lead: any) => {
-      const createdDate = lead.created_at?.split("T")[0]
-      if (!createdDate) return
-      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+      // Usa data_agendei ao inves de created_at
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
 
       const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
       if (!map[vendedor]) {
@@ -154,11 +167,11 @@ export default function DashboardPage() {
       map[equipe].qualificados++
     })
 
-    // Agendei por equipe
+    // Agendei por equipe (usa data_agendei)
     leads.forEach((lead: any) => {
-      const createdDate = lead.created_at?.split("T")[0]
-      if (!createdDate) return
-      if (createdDate < activeRange.start || createdDate > activeRange.end) return
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
 
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
@@ -311,34 +324,88 @@ export default function DashboardPage() {
         {/* Filtros */}
         <div className="px-6 py-4 max-w-[1600px] mx-auto">
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <button
-              onClick={() => setSelectedDay(null)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedDay === null
-                  ? "bg-[#d4af37] text-black"
-                  : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
-              }`}
-            >
-              Semana Toda
-            </button>
-            {weekDays.map((day) => {
-              const dayStr = formatDateForDB(day.date)
-              return (
-                <button
-                  key={dayStr}
-                  onClick={() => setSelectedDay(dayStr)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedDay === dayStr
-                      ? "bg-violet-500 text-white"
-                      : day.isToday
-                      ? "bg-violet-500/20 border border-violet-500/30 text-violet-400"
-                      : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
-                  }`}
-                >
-                  {day.dayName} {day.dayNumber}
-                </button>
-              )
-            })}
+            {/* Modo de filtro */}
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1">
+              <button
+                onClick={() => { setFilterMode("semana"); setSelectedDay(null); }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  filterMode === "semana"
+                    ? "bg-[#d4af37] text-black"
+                    : "text-white/70 hover:bg-white/10"
+                }`}
+              >
+                Semana Toda
+              </button>
+              <button
+                onClick={() => setFilterMode("dia")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  filterMode === "dia"
+                    ? "bg-violet-500 text-white"
+                    : "text-white/70 hover:bg-white/10"
+                }`}
+              >
+                Por Dia
+              </button>
+              <button
+                onClick={() => setFilterMode("custom")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  filterMode === "custom"
+                    ? "bg-cyan-500 text-white"
+                    : "text-white/70 hover:bg-white/10"
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                Periodo
+              </button>
+            </div>
+
+            {/* Seletor de dias (quando filtro por dia) */}
+            {filterMode === "dia" && (
+              <div className="flex flex-wrap gap-2">
+                {weekDays.map((day) => {
+                  const dayStr = formatDateForDB(day.date)
+                  return (
+                    <button
+                      key={dayStr}
+                      onClick={() => setSelectedDay(dayStr)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        selectedDay === dayStr
+                          ? "bg-violet-500 text-white"
+                          : day.isToday
+                          ? "bg-violet-500/20 border border-violet-500/30 text-violet-400"
+                          : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                      }`}
+                    >
+                      {day.dayName} {day.dayNumber}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Seletor de periodo customizado */}
+            {filterMode === "custom" && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-white/50">De:</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-white/50">Ate:</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tabs */}
@@ -623,66 +690,102 @@ export default function DashboardPage() {
               {funilPorEquipe.length === 0 ? (
                 <p className="text-white/40">Nenhum dado disponivel</p>
               ) : (
-                funilPorEquipe.map((equipe: any) => {
-                  const taxaQualAgendei = equipe.qualificados > 0 ? Math.round((equipe.agendei / equipe.qualificados) * 100) : 0
-                  const taxaPresenca = (equipe.veio + equipe.nao) > 0 ? Math.round((equipe.veio / (equipe.veio + equipe.nao)) * 100) : 0
-                  const taxaConversao = equipe.veio > 0 ? Math.round((equipe.vendas / equipe.veio) * 100) : 0
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {funilPorEquipe.map((equipe: any) => {
+                    const taxaQualAgendei = equipe.qualificados > 0 ? Math.round((equipe.agendei / equipe.qualificados) * 100) : 0
+                    const taxaMarcados = equipe.agendei > 0 ? Math.round((equipe.marcados / equipe.agendei) * 100) : 0
+                    const taxaPresenca = equipe.marcados > 0 ? Math.round((equipe.veio / equipe.marcados) * 100) : 0
+                    const taxaNoShow = equipe.marcados > 0 ? Math.round((equipe.nao / equipe.marcados) * 100) : 0
+                    const maxValue = Math.max(equipe.qualificados, equipe.agendei, equipe.marcados, equipe.veio, 1)
 
-                  return (
-                    <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-                      <h4 className="text-lg font-bold text-[#d4af37] mb-6">{equipe.equipe}</h4>
+                    return (
+                      <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+                        <h4 className="text-lg font-bold text-[#d4af37] mb-6 text-center">{equipe.equipe}</h4>
 
-                      {/* Funil visual */}
-                      <div className="flex items-end justify-center gap-4 mb-6">
-                        <div className="text-center">
-                          <div className="w-28 h-24 bg-gradient-to-b from-cyan-500/30 to-cyan-500/10 rounded-t-3xl flex items-center justify-center border-t-4 border-cyan-500">
-                            <span className="text-3xl font-bold text-cyan-400">{equipe.qualificados}</span>
+                        {/* Funil Visual Real */}
+                        <div className="flex flex-col items-center gap-0">
+                          {/* Qualificados - Topo do funil (mais largo) */}
+                          <div className="relative w-full">
+                            <div 
+                              className="h-14 bg-gradient-to-r from-cyan-500/40 to-cyan-500/20 flex items-center justify-between px-4 mx-auto transition-all"
+                              style={{ 
+                                width: `${Math.max((equipe.qualificados / maxValue) * 100, 30)}%`,
+                                clipPath: "polygon(0 0, 100% 0, 95% 100%, 5% 100%)"
+                              }}
+                            >
+                              <span className="text-sm font-medium text-cyan-300">QUALIFICADOS</span>
+                              <span className="text-2xl font-bold text-cyan-400">{equipe.qualificados}</span>
+                            </div>
+                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-white/40">100%</div>
                           </div>
-                          <p className="text-xs text-white/50 mt-2">Qualificados</p>
+
+                          {/* Agendei */}
+                          <div className="relative w-full">
+                            <div 
+                              className="h-14 bg-gradient-to-r from-violet-500/40 to-violet-500/20 flex items-center justify-between px-4 mx-auto transition-all"
+                              style={{ 
+                                width: `${Math.max((equipe.agendei / maxValue) * 100, 25)}%`,
+                                clipPath: "polygon(5% 0, 95% 0, 90% 100%, 10% 100%)"
+                              }}
+                            >
+                              <span className="text-sm font-medium text-violet-300">AGENDEI</span>
+                              <span className="text-2xl font-bold text-violet-400">{equipe.agendei}</span>
+                            </div>
+                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-violet-400 font-semibold">{taxaQualAgendei}%</div>
+                          </div>
+
+                          {/* Marcados */}
+                          <div className="relative w-full">
+                            <div 
+                              className="h-14 bg-gradient-to-r from-[#d4af37]/40 to-[#d4af37]/20 flex items-center justify-between px-4 mx-auto transition-all"
+                              style={{ 
+                                width: `${Math.max((equipe.marcados / maxValue) * 100, 20)}%`,
+                                clipPath: "polygon(10% 0, 90% 0, 85% 100%, 15% 100%)"
+                              }}
+                            >
+                              <span className="text-sm font-medium text-[#d4af37]/80">MARCADOS</span>
+                              <span className="text-2xl font-bold text-[#d4af37]">{equipe.marcados}</span>
+                            </div>
+                          </div>
+
+                          {/* Vieram */}
+                          <div className="relative w-full">
+                            <div 
+                              className="h-14 bg-gradient-to-r from-emerald-500/40 to-emerald-500/20 flex items-center justify-between px-4 mx-auto transition-all"
+                              style={{ 
+                                width: `${Math.max((equipe.veio / maxValue) * 100, 15)}%`,
+                                clipPath: "polygon(15% 0, 85% 0, 80% 100%, 20% 100%)"
+                              }}
+                            >
+                              <span className="text-sm font-medium text-emerald-300">VIERAM</span>
+                              <span className="text-2xl font-bold text-emerald-400">{equipe.veio}</span>
+                            </div>
+                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-emerald-400 font-semibold">{taxaPresenca}%</div>
+                          </div>
                         </div>
-                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
-                        <div className="text-center">
-                          <div className="w-24 h-20 bg-gradient-to-b from-violet-500/30 to-violet-500/10 rounded-t-2xl flex items-center justify-center border-t-4 border-violet-500">
-                            <span className="text-2xl font-bold text-violet-400">{equipe.agendei}</span>
+
+                        {/* No-Show Alert */}
+                        <div className="mt-4 flex items-center justify-center gap-4">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
+                            <div>
+                              <p className="text-[10px] text-white/50 uppercase">No-Show</p>
+                              <p className="text-xl font-bold text-red-400">{equipe.nao}</p>
+                            </div>
+                            <div className="text-red-400 font-bold text-lg">{taxaNoShow}%</div>
                           </div>
-                          <p className="text-xs text-white/50 mt-2">Agendei</p>
-                          <p className="text-[10px] text-violet-400">{taxaQualAgendei}%</p>
-                        </div>
-                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
-                        <div className="text-center">
-                          <div className="w-20 h-16 bg-gradient-to-b from-[#d4af37]/30 to-[#d4af37]/10 rounded-t-xl flex items-center justify-center border-t-4 border-[#d4af37]">
-                            <span className="text-xl font-bold text-[#d4af37]">{equipe.marcados}</span>
-                          </div>
-                          <p className="text-xs text-white/50 mt-2">Marcados</p>
-                        </div>
-                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
-                        <div className="text-center">
-                          <div className="w-16 h-14 bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 rounded-t-lg flex items-center justify-center border-t-4 border-emerald-500">
-                            <span className="text-lg font-bold text-emerald-400">{equipe.veio}</span>
-                          </div>
-                          <p className="text-xs text-white/50 mt-2">Veio</p>
-                          <p className="text-[10px] text-emerald-400">{taxaPresenca}%</p>
-                        </div>
-                        <div className="text-white/30 text-2xl pb-8">&#8594;</div>
-                        <div className="text-center">
-                          <div className="w-14 h-12 bg-gradient-to-b from-emerald-500/50 to-emerald-500/20 rounded-t flex items-center justify-center border-t-4 border-emerald-400">
-                            <span className="text-lg font-bold text-emerald-300">{equipe.vendas}</span>
-                          </div>
-                          <p className="text-xs text-white/50 mt-2">Vendas</p>
-                          <p className="text-[10px] text-emerald-300">{taxaConversao}%</p>
+                          {equipe.vendas > 0 && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
+                              <div>
+                                <p className="text-[10px] text-white/50 uppercase">Vendas</p>
+                                <p className="text-xl font-bold text-emerald-400">{equipe.vendas}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      {/* Faltou separado */}
-                      <div className="flex justify-center">
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-6 py-3 text-center">
-                          <p className="text-xs text-white/50">Faltou</p>
-                          <p className="text-2xl font-bold text-red-400">{equipe.nao}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
+                    )
+                  })}
+                </div>
               )}
             </div>
           )}
