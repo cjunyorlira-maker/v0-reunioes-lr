@@ -58,6 +58,11 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return qualificadosSemana.filter(q => q.data_qualificacao === selectedDay)
   }, [qualificadosSemana, selectedDay])
 
+  // Kommo IDs que já têm reunião marcada no nosso sistema
+  const kommoIdsNoAgendei = useMemo(() => {
+    return new Set(leads.map(l => l.kommo_id).filter(Boolean))
+  }, [leads])
+
   // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
   const qualificadosNoAgendei = useMemo(() => {
     return qualificadosAtivos.filter(q => kommoIdsNoAgendei.has(String(q.kommo_id)))
