@@ -52,10 +52,10 @@ export async function POST(req: NextRequest) {
     for (const lead of leads) {
       try {
         // Processa leads em duas etapas:
-        // 1. "Vendendo Reunião" (67567419) - marca como qualificado
+        // 1. "Vendendo Reunião" (58498479) - marca como qualificado
         // 2. "Confirmar Reunião" (67567420) - cria o cartão com agendamento
         
-        const STATUS_VENDENDO_REUNIAO = "67567419"
+        const STATUS_VENDENDO_REUNIAO = "58498479"
         const STATUS_CONFIRMAR_REUNIAO = "67567420"
         
         const statusAtual = lead.status_id?.toString()
