@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
+
+// Criar cliente Supabase direto (sem cookies) para webhooks
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 // Busca a equipe do usuário no Kommo
 async function getEquipeFromKommo(responsavelId: string): Promise<string | null> {
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
     // Se for um array, processa cada item
     const leads = Array.isArray(body) ? body : [body]
 
-    const supabase = createClient()
+    const supabase = getSupabaseClient()
     const results = []
 
     for (const lead of leads) {
