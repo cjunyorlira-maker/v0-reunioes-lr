@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
 
     for (const lead of leads) {
       try {
-        // Só processa leads na etapa "Confirmar Reunião" (status_id: 58498483)
-        const STATUS_CONFIRMAR_REUNIAO = "58498483"
+        // Só processa leads na etapa "Confirmar Reunião" (status_id: 67567420)
+        const STATUS_CONFIRMAR_REUNIAO = "67567420"
         if (lead.status_id?.toString() !== STATUS_CONFIRMAR_REUNIAO) {
-          console.log("[v0] Lead ignorado - etapa:", lead.status_id, "- não é Confirmar Reunião")
+          console.log("[v0] Lead ignorado - etapa:", lead.status_id, "- não é Confirmar Reunião (67567420)")
           results.push({ action: "ignored", reason: "etapa_incorreta", status_id: lead.status_id, lead_name: lead.nome })
           continue
         }
