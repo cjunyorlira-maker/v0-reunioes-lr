@@ -211,13 +211,17 @@ export async function POST(request: NextRequest) {
     
     // Se for "remarcou", preenche o campo Remarcado com a nova data e hora
     if (status === "remarcou" && data_reuniao) {
-      // Cria timestamp com data e hora
+      // Cria timestamp com data e hora no timezone de São Paulo (UTC-3)
       let dateStr = data_reuniao
       if (hora_reuniao) {
-        dateStr = `${data_reuniao}T${hora_reuniao}:00`
+        // Adiciona o offset de São Paulo (-03:00) para garantir hora correta
+        dateStr = `${data_reuniao}T${hora_reuniao}:00-03:00`
+      } else {
+        dateStr = `${data_reuniao}T12:00:00-03:00`
       }
       const dataRemarcada = new Date(dateStr)
       const timestamp = Math.floor(dataRemarcada.getTime() / 1000)
+      console.log("[v0] Remarcado timestamp:", dateStr, "->", timestamp)
       customFieldsImediato.push({
         field_id: CAMPO_REMARCADO_ID,
         values: [{ value: timestamp }]
