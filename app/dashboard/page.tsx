@@ -80,9 +80,12 @@ export default function DashboardPage() {
   // Estatisticas gerais (sem retornos)
   const stats = useMemo(() => {
     const veio = leadsAtivos.filter((l: any) => l.status === "veio").length
-    const nao = leadsAtivos.filter((l: any) => l.status === "nao" && !l.remarcado).length
+    const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
     const remarcados = leadsAtivos.filter((l: any) => l.remarcado).length
     const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
+    
+    // Pendentes = total - veio - nao (remarcados já estão em nao ou em pendentes)
+    const pendentes = leadsAtivos.length - veio - nao
 
     return {
       total: leadsAtivos.length,
@@ -90,7 +93,7 @@ export default function DashboardPage() {
       nao,
       remarcados,
       vendas,
-      pendentes: leadsAtivos.length - veio - nao - remarcados,
+      pendentes,
       taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
       taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
     }
@@ -730,91 +733,78 @@ export default function DashboardPage() {
                       <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
                         <h4 className="text-lg font-bold text-[#d4af37] mb-6 text-center">{equipe.equipe}</h4>
 
-                        {/* Funil Visual Real */}
-                        <div className="flex flex-col items-center gap-0">
-                          {/* Qualificados - Topo do funil (mais largo) */}
-                          <div className="relative w-full">
-                            <div 
-                              className="h-14 bg-gradient-to-r from-cyan-500/40 to-cyan-500/20 flex items-center justify-between px-4 mx-auto transition-all"
-                              style={{ 
-                                width: `${Math.max((equipe.qualificados / maxValue) * 100, 30)}%`,
-                                clipPath: "polygon(0 0, 100% 0, 95% 100%, 5% 100%)"
-                              }}
-                            >
+                        {/* Funil simples em linhas horizontais */}
+                        <div className="space-y-4">
+                          {/* Qualificados */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-cyan-300">QUALIFICADOS</span>
                               <span className="text-2xl font-bold text-cyan-400">{equipe.qualificados}</span>
                             </div>
-                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-white/40">100%</div>
+                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400" style={{ width: "100%" }}></div>
+                            </div>
                           </div>
 
                           {/* Agendei */}
-                          <div className="relative w-full">
-                            <div 
-                              className="h-14 bg-gradient-to-r from-violet-500/40 to-violet-500/20 flex items-center justify-between px-4 mx-auto transition-all"
-                              style={{ 
-                                width: `${Math.max((equipe.agendei / maxValue) * 100, 25)}%`,
-                                clipPath: "polygon(5% 0, 95% 0, 90% 100%, 10% 100%)"
-                              }}
-                            >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-violet-300">AGENDEI</span>
-                              <span className="text-2xl font-bold text-violet-400">{equipe.agendei}</span>
+                              <span className="text-sm text-violet-400">{taxaQualAgendei}%</span>
                             </div>
-                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-violet-400 font-semibold">{taxaQualAgendei}%</div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-violet-500 to-violet-400" style={{ width: equipe.qualificados > 0 ? `${(equipe.agendei / equipe.qualificados) * 100}%` : "0%" }}></div>
+                              </div>
+                              <span className="text-2xl font-bold text-violet-400 min-w-fit">{equipe.agendei}</span>
+                            </div>
                           </div>
 
                           {/* Marcados */}
-                          <div className="relative w-full">
-                            <div 
-                              className="h-14 bg-gradient-to-r from-[#d4af37]/40 to-[#d4af37]/20 flex items-center justify-between px-4 mx-auto transition-all"
-                              style={{ 
-                                width: `${Math.max((equipe.marcados / maxValue) * 100, 20)}%`,
-                                clipPath: "polygon(10% 0, 90% 0, 85% 100%, 15% 100%)"
-                              }}
-                            >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-[#d4af37]/80">MARCADOS</span>
-                              <span className="text-2xl font-bold text-[#d4af37]">{equipe.marcados}</span>
+                              <span className="text-sm text-[#d4af37]/60">{equipe.agendei > 0 ? Math.round((equipe.marcados / equipe.agendei) * 100) : 0}%</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-[#d4af37] to-yellow-400" style={{ width: equipe.agendei > 0 ? `${(equipe.marcados / equipe.agendei) * 100}%` : "0%" }}></div>
+                              </div>
+                              <span className="text-2xl font-bold text-[#d4af37] min-w-fit">{equipe.marcados}</span>
                             </div>
                           </div>
 
                           {/* Vieram */}
-                          <div className="relative w-full">
-                            <div 
-                              className="h-14 bg-gradient-to-r from-emerald-500/40 to-emerald-500/20 flex items-center justify-between px-4 mx-auto transition-all"
-                              style={{ 
-                                width: `${Math.max((equipe.veio / maxValue) * 100, 15)}%`,
-                                clipPath: "polygon(15% 0, 85% 0, 80% 100%, 20% 100%)"
-                              }}
-                            >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-emerald-300">VIERAM</span>
-                              <span className="text-2xl font-bold text-emerald-400">{equipe.veio}</span>
+                              <span className="text-sm text-emerald-400">{taxaPresenca}%</span>
                             </div>
-                            <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-emerald-400 font-semibold">{taxaPresenca}%</div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: equipe.marcados > 0 ? `${(equipe.veio / equipe.marcados) * 100}%` : "0%" }}></div>
+                              </div>
+                              <span className="text-2xl font-bold text-emerald-400 min-w-fit">{equipe.veio}</span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Resultados: No-Show, Remarcados, Vendas */}
-                        <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
-                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
-                            <div>
-                              <p className="text-[10px] text-white/50 uppercase">No-Show</p>
-                              <p className="text-xl font-bold text-red-400">{equipe.nao}</p>
-                            </div>
-                            <div className="text-red-400 font-bold text-lg">{taxaNoShow}%</div>
+                        {/* Resumo final */}
+                        <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-3 gap-2">
+                          <div className="text-center">
+                            <p className="text-[10px] text-white/50 uppercase">No-Show</p>
+                            <p className="text-xl font-bold text-red-400">{equipe.nao}</p>
                           </div>
                           {(equipe.remarcados || 0) > 0 && (
-                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
-                              <div>
-                                <p className="text-[10px] text-white/50 uppercase">Remarcados</p>
-                                <p className="text-xl font-bold text-orange-400">{equipe.remarcados}</p>
-                              </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-white/50 uppercase">Remarcados</p>
+                              <p className="text-xl font-bold text-orange-400">{equipe.remarcados}</p>
                             </div>
                           )}
                           {equipe.vendas > 0 && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-4 py-2 flex items-center gap-3">
-                              <div>
-                                <p className="text-[10px] text-white/50 uppercase">Vendas</p>
-                                <p className="text-xl font-bold text-emerald-400">{equipe.vendas}</p>
-                              </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-white/50 uppercase">Vendas</p>
+                              <p className="text-xl font-bold text-emerald-400">{equipe.vendas}</p>
                             </div>
                           )}
                         </div>
