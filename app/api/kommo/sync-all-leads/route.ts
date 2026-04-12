@@ -13,6 +13,9 @@ const ETAPAS_QUADRO = [
   102225923,  // Remarcados
   69799508,   // Vieram
   69799504,   // Não Vieram
+  69615804,   // Vendido produção
+  142,        // Closed - won
+  143,        // Closed - lost
 ]
 
 // IDs dos campos customizados
@@ -39,14 +42,14 @@ export async function POST() {
 
       while (hasMore) {
         const response = await fetch(
-          `https://${subdomain}.kommo.com/api/v4/leads?filter[statuses][0][status_id]=${statusId}&filter[statuses][0][pipeline_id]=7012299&with=contacts&page=${page}&limit=250`,
+          `https://${subdomain}.kommo.com/api/v4/leads?filter[statuses][0][status_id]=${statusId}&filter[statuses][0][pipeline_id]=7012299&with=contacts&page=${page}&limit=250&order[id]=DESC`,
           {
             headers: { "Authorization": `Bearer ${token}` },
           }
         )
 
         if (!response.ok) {
-          console.error(`Erro ao buscar etapa ${statusId}:`, response.status)
+          console.error(`Erro ao buscar etapa ${statusId} página ${page}:`, response.status)
           break
         }
 
@@ -56,6 +59,13 @@ export async function POST() {
         if (leads.length === 0) {
           hasMore = false
           break
+        }
+
+        // Continua buscando próximas páginas até atingir limite
+        if (page > 100) {
+          hasMore = false
+        } else {
+          page++
         }
 
         for (const lead of leads) {
