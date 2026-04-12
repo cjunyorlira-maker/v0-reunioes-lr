@@ -63,31 +63,32 @@ export async function POST(req: NextRequest) {
         if (lead.tags?.includes("Não Veio")) status = "nao"
         if (lead.qualifiquei) status = "qualificado"
 
-        // Mapeia os campos do Kommo para os campos da app
-        const leadData = {
+        // Mapeia os campos do Kommo para as colunas da tabela leads
+        // Colunas existentes: id, created_at, updated_at, nome, kommo_id, kommo_lead_id, 
+        // responsavel, responsavel_id, equipe, origem, data, hora, status, tipo, 
+        // tipo_reuniao, atendente, venda_fechada, retorno, remarcado, foto_responsavel
+        const leadData: Record<string, any> = {
           kommo_id: lead.kommo_lead_id?.toString(),
+          kommo_lead_id: lead.kommo_lead_id?.toString(),
           nome: lead.nome,
           responsavel: lead.responsavel,
           responsavel_id: lead.responsavel_id?.toString(),
           equipe: equipe,
           origem: lead.origem,
-          data: lead.agendei, // Data do agendamento
+          data: lead.agendei || null,
           hora: lead.hora_reuniao || null,
           status: status,
-          valor: lead.price ? parseFloat(lead.price.toString()) : null,
-          entrada: lead.entrada ? parseFloat(lead.entrada.toString()) : null,
-          parcela: lead.parcela ? parseFloat(lead.parcela.toString()) : null,
-          tipo_bem: lead.tipo,
-          tipo_reuniao: lead.tipo_reuniao,
-          tags: lead.tags?.join(", ") || null,
-          atendente: null, // Será preenchido ao marcar como "veio"
+          tipo: lead.tipo || null,
+          tipo_reuniao: lead.tipo_reuniao || null,
           venda_fechada: lead.tags?.includes("Venda Fechada") || false,
           retorno: lead.tags?.includes("Retornar contato") || false,
-          qualificado: lead.qualifiquei ? true : false,
-          data_qualificacao: lead.qualifiquei,
-          created_at: lead.created_at,
-          updated_at: lead.updated_at,
+          remarcado: lead.tags?.includes("Remarcado") || false,
         }
+        
+        // Remove campos undefined para não sobrescrever com null
+        Object.keys(leadData).forEach(key => {
+          if (leadData[key] === undefined) delete leadData[key]
+        })
 
         // Verifica se já existe pelo kommo_id
         const { data: existing, error: fetchError } = await supabase
@@ -122,13 +123,14 @@ export async function POST(req: NextRequest) {
           results.push({ action: "created", lead: data?.[0], kommo_id: lead.kommo_lead_id })
           console.log("[v0] Lead criado:", leadData.nome)
         }
-      } catch (error) {
-        console.error("[v0] Erro ao processar lead:", error)
+      } catch (error: any) {
+        const errorMsg = error?.message || error?.details || JSON.stringify(error)
+        console.error("[v0] Erro ao processar lead:", errorMsg)
         results.push({ 
           action: "error", 
           lead_name: lead.nome,
           kommo_id: lead.kommo_lead_id,
-          error: String(error) 
+          error: errorMsg
         })
       }
     }
