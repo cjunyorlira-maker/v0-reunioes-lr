@@ -38,17 +38,29 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
   // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
   // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
-  const { data: allLeadsData } = useSWR<{ data: Lead[] }>("/api/leads", fetcher)
+  // Revalida a cada 5 segundos para pegar mudanças de remarcação
+  const { data: allLeadsData, mutate: mutateAllLeads } = useSWR<{ data: Lead[] }>(
+    "/api/leads", 
+    fetcher,
+    { 
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: 5000  // Recarrega a cada 5 segundos
+    }
+  )
   const allLeads = allLeadsData?.data || []
 
   // Dias da semana para os botões do filtro
   const weekDays = useMemo(() => getWeekDays(), [])
 
-  // Todas as equipes disponíveis
+  // Todas as equipes disponíveis (usa allLeads para incluir todas)
   const todasEquipes = useMemo(() => {
-    const equipes = new Set(leads.map(l => l.equipe).filter(Boolean))
+    const equipes = new Set([
+      ...allLeads.map(l => l.equipe).filter(Boolean),
+      ...leads.map(l => l.equipe).filter(Boolean)
+    ])
     return Array.from(equipes).sort()
-  }, [leads])
+  }, [allLeads, leads])
 
   // Range efetivo: dia selecionado ou semana toda
   const activeRange = useMemo(() => {
@@ -83,9 +95,12 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     // Filtra por leads que tem data_agendei no periodo ativo
     const leadsComAgendei = allLeads.filter(l => {
       if (!l.data_agendei) return false
-      return l.data_agendei >= activeRange.start && l.data_agendei <= activeRange.end
+      const dentroDoRange = l.data_agendei >= activeRange.start && l.data_agendei <= activeRange.end
+      const matchesEquipe = !selectedEquipe || l.equipe === selectedEquipe
+      return dentroDoRange && matchesEquipe
     })
     return new Set(leadsComAgendei.map(l => l.kommo_id).filter(Boolean))
+  }, [allLeads, activeRange, selectedEquipe])
   }, [allLeads, activeRange])
 
   // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
@@ -290,11 +305,14 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     const totalPorDia: Record<string, number> = {}
     const porEquipe: Record<string, number> = {}
 
-    leads.forEach((lead) => {
+    // Usa allLeads para incluir leads remarcados
+    allLeads.forEach((lead) => {
       // Usa data_agendei - data em que o lead foi agendado (criado na etapa Confirmar Reunião)
       const agendadoDate = lead.data_agendei
       if (!agendadoDate) return
       if (agendadoDate < activeRange.start || agendadoDate > activeRange.end) return
+      // Filtra por equipe se selecionada
+      if (selectedEquipe && lead.equipe !== selectedEquipe) return
       
       const vendedor = normalizeVendedorNome(lead.responsavel || "Não informado")
       const equipe = lead.equipe || "Sem equipe"
@@ -306,7 +324,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     })
 
     return { porVendedor: stats, totalPorDia, porEquipe }
-  }, [leads, activeRange])
+  }, [allLeads, activeRange, selectedEquipe])
 
   // Total agendei da semana
   const totalAgendeiSemana = useMemo(() => {
