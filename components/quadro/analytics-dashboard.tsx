@@ -45,27 +45,28 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return leads.filter(l => l.data >= activeRange.start && l.data <= activeRange.end)
   }, [leads, activeRange])
 
-  // Busca leads qualificados automaticamente pelo campo 1026046 — sempre semana toda
+  // Busca leads qualificados automaticamente pela tabela qualificacoes
   const {
     qualificadosSemana,
     totalSemana: totalQualificadosSemana,
     isLoading: loadingQualificados
   } = useQualificados(dateRange)
+  
+  // Filtra qualificados pelo dia selecionado
+  const qualificadosAtivos = useMemo(() => {
+    if (!selectedDay) return qualificadosSemana
+    return qualificadosSemana.filter(q => q.data_qualificacao === selectedDay)
+  }, [qualificadosSemana, selectedDay])
 
-  // Kommo IDs que já têm reunião marcada no nosso sistema
-  const kommoIdsNoAgendei = useMemo(() => {
-    return new Set(leads.map(l => l.kommo_lead_id).filter(Boolean))
-  }, [leads])
-
-  // Qualificados desta semana que já entraram no agendei
+  // Qualificados com reunião marcada (apenas do período ativo - dia ou semana)
   const qualificadosNoAgendei = useMemo(() => {
-    return qualificadosSemana.filter(q => kommoIdsNoAgendei.has(String(q.id)))
-  }, [qualificadosSemana, kommoIdsNoAgendei])
+    return qualificadosAtivos.filter(q => kommoIdsNoAgendei.has(String(q.kommo_id)))
+  }, [qualificadosAtivos, kommoIdsNoAgendei])
 
-  // Qualificados desta semana que ainda não têm reunião marcada
+  // Qualificados sem reunião marcada (apenas do período ativo)
   const qualificadosSemReuniao = useMemo(() => {
-    return qualificadosSemana.filter(q => !kommoIdsNoAgendei.has(String(q.id)))
-  }, [qualificadosSemana, kommoIdsNoAgendei])
+    return qualificadosAtivos.filter(q => !kommoIdsNoAgendei.has(String(q.kommo_id)))
+  }, [qualificadosAtivos, kommoIdsNoAgendei])
 
   const taxaConversaoQualificados = totalQualificadosSemana > 0
     ? Math.round((qualificadosNoAgendei.length / totalQualificadosSemana) * 100)
