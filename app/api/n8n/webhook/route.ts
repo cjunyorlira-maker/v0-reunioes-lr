@@ -172,8 +172,7 @@ export async function POST(req: NextRequest) {
         const { data, error } = await supabase
           .from("leads")
           .upsert(leadData, { 
-            onConflict: "kommo_id",
-            ignoreDuplicates: false 
+            onConflict: "kommo_id"
           })
           .select()
 
