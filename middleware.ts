@@ -14,9 +14,11 @@ export const config = {
      * - favicon.ico (favicon file)
      * - /api/pluga/* (webhooks from Pluga)
      * - /api/kommo/* (external API integrations)
+     * - /api/n8n/* (webhooks from N8N)
+     * - /api/webhook/* (generic webhooks)
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|api/n8n|api/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
