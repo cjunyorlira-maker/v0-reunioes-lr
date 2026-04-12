@@ -161,11 +161,20 @@ export async function POST(request: NextRequest) {
       // Data da reunião - campo específico ID 1025159
       if (fieldId === CAMPO_DATA_REUNIAO_ID) {
         if (value && typeof value === "number") {
-          // Timestamp Unix - converte para data
+          // Timestamp Unix - converte para data e hora no timezone de São Paulo
           const date = new Date(value * 1000)
-          dataReuniao = date.toISOString().split("T")[0]
+          dataReuniao = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) // "2026-04-15"
+          horaReuniao = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) // "18:00"
+          console.log("[v0] Data da reunião extraída:", dataReuniao, horaReuniao)
         } else if (value && typeof value === "string" && value.match(/\d{4}-\d{2}-\d{2}/)) {
           dataReuniao = value.split("T")[0]
+          // Tenta extrair hora se estiver no formato ISO
+          if (value.includes("T")) {
+            const timePart = value.split("T")[1]
+            if (timePart) {
+              horaReuniao = timePart.substring(0, 5) // "HH:mm"
+            }
+          }
         }
       }
     }
