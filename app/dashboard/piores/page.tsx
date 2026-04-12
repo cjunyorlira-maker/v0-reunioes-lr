@@ -58,6 +58,18 @@ export default function PioresDesempenhoPage() {
     })
   }, [leads, activeRange])
 
+  // Leads remarcados para OUTRA semana (tinham data_original no range mas data atual fora)
+  const remarcadosOutraSemana = useMemo(() => {
+    return leads.filter((l: any) => {
+      if (!l.remarcado) return false
+      const dataOriginal = l.data_original || l.data_agendei
+      if (!dataOriginal) return false
+      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
+      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
+      return dentroDoRange && foraDoRange
+    })
+  }, [leads, activeRange])
+
   // Piores por EQUIPE
   const pioresPorEquipe = useMemo(() => {
     const map: Record<string, {
@@ -103,6 +115,16 @@ export default function PioresDesempenhoPage() {
       if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
     })
 
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemana.forEach((lead: any) => {
+      const equipe = lead.equipe || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { nome: equipe, agendei: 0, qualificados: 0, marcados: 0, veio: 0, nao: 0, taxaPresenca: 0 }
+      }
+      map[equipe].marcados++
+      map[equipe].nao++
+    })
+
     // Calcula taxa de presenca
     Object.values(map).forEach(e => {
       const total = e.veio + e.nao
@@ -110,7 +132,7 @@ export default function PioresDesempenhoPage() {
     })
 
     return Object.values(map)
-  }, [qualificados, leads, leadsAtivos, activeRange])
+  }, [qualificados, leads, leadsAtivos, activeRange, remarcadosOutraSemana])
 
   // Piores por VENDEDOR
   const pioresPorVendedor = useMemo(() => {
@@ -174,6 +196,21 @@ export default function PioresDesempenhoPage() {
       if (lead.status === "nao" && !lead.remarcado) map[vendedor].nao++
     })
 
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemana.forEach((lead: any) => {
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = { 
+          nome: vendedor, 
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
+          equipe: lead.equipe || "Sem equipe",
+          agendei: 0, qualificados: 0, marcados: 0, veio: 0, nao: 0, taxaPresenca: 0 
+        }
+      }
+      map[vendedor].marcados++
+      map[vendedor].nao++
+    })
+
     // Calcula taxa de presenca
     Object.values(map).forEach(v => {
       const total = v.veio + v.nao
@@ -181,7 +218,7 @@ export default function PioresDesempenhoPage() {
     })
 
     return Object.values(map)
-  }, [qualificados, leads, leadsAtivos, activeRange])
+  }, [qualificados, leads, leadsAtivos, activeRange, remarcadosOutraSemana])
 
   // Dados ativos baseado no modo
   const data = viewMode === "equipe" ? pioresPorEquipe : pioresPorVendedor

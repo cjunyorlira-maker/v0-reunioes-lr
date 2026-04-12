@@ -68,27 +68,35 @@ export default function DashboardPage() {
     })
   }, [leads, activeRange])
 
-  // Leads remarcados na mesma semana vs outra semana
-  const leadsRemarcados = useMemo(() => {
+  // Leads remarcados para OUTRA semana (tinham data_original no range mas data atual fora)
+  const remarcadosOutraSemana = useMemo(() => {
     return leads.filter((l: any) => {
       if (!l.remarcado) return false
-      // Se a data original estava no range mas foi remarcado
-      return l.data >= activeRange.start && l.data <= activeRange.end
+      // Se data_original (ou data_agendei) estava no período mas data foi remarcada para fora
+      const dataOriginal = l.data_original || l.data_agendei
+      if (!dataOriginal) return false
+      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
+      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
+      return dentroDoRange && foraDoRange
     })
   }, [leads, activeRange])
 
   // Estatisticas gerais (sem retornos)
   const stats = useMemo(() => {
     const veio = leadsAtivos.filter((l: any) => l.status === "veio").length
-    const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
-    const remarcados = leadsAtivos.filter((l: any) => l.remarcado).length
+    const naoComum = leadsAtivos.filter((l: any) => l.status === "nao" && !l.remarcado).length
+    // Remarcados para outra semana contam como "Faltou" no período original
+    const nao = naoComum + remarcadosOutraSemana.length
+    const remarcados = remarcadosOutraSemana.length
     const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
     
-    // Pendentes = total - veio - nao (remarcados já estão em nao ou em pendentes)
-    const pendentes = leadsAtivos.length - veio - nao
+    // Total inclui remarcados para outra semana
+    const total = leadsAtivos.length + remarcadosOutraSemana.length
+    // Pendentes = total - veio - nao
+    const pendentes = total - veio - nao
 
     return {
-      total: leadsAtivos.length,
+      total,
       veio,
       nao,
       remarcados,
@@ -97,7 +105,7 @@ export default function DashboardPage() {
       taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
       taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
     }
-  }, [leadsAtivos])
+  }, [leadsAtivos, remarcadosOutraSemana])
 
   // Agendei por vendedor (leads com data_agendei no periodo)
   const agendeiPorVendedor = useMemo(() => {
@@ -148,6 +156,7 @@ export default function DashboardPage() {
   const resultadosPorVendedor = useMemo(() => {
     const map: Record<string, any> = {}
 
+    // Primeiro processa leadsAtivos
     leadsAtivos.forEach((lead: any) => {
       const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
       if (!map[vendedor]) {
@@ -165,12 +174,31 @@ export default function DashboardPage() {
       map[vendedor].marcados++
       if (lead.status === "veio") map[vendedor].veio++
       if (lead.status === "nao" && !lead.remarcado) map[vendedor].nao++
-      if (lead.remarcado) map[vendedor].remarcados++
       if (lead.venda_fechada) map[vendedor].vendas++
     })
 
+    // Adiciona remarcados para outra semana como "Faltou"
+    remarcadosOutraSemana.forEach((lead: any) => {
+      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = {
+          nome: vendedor,
+          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
+          equipe: lead.equipe || "Sem equipe",
+          marcados: 0,
+          veio: 0,
+          nao: 0,
+          remarcados: 0,
+          vendas: 0,
+        }
+      }
+      map[vendedor].marcados++
+      map[vendedor].nao++
+      map[vendedor].remarcados++
+    })
+
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
-  }, [leadsAtivos])
+  }, [leadsAtivos, remarcadosOutraSemana])
 
   // Origens dos leads marcados e vendas
   const origensMarcados = useMemo(() => {
