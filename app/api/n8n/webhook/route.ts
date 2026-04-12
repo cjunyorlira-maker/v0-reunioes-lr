@@ -168,20 +168,44 @@ export async function POST(req: NextRequest) {
           if (leadData[key] === undefined) delete leadData[key]
         })
 
-        // Usa upsert para evitar duplicações (atômico)
-        const { data, error } = await supabase
+        // Verifica se já existe pelo kommo_id
+        const { data: existing } = await supabase
           .from("leads")
-          .upsert(leadData, { 
-            onConflict: "kommo_id"
-          })
-          .select()
+          .select("id")
+          .eq("kommo_id", leadData.kommo_id)
+          .single()
 
-        if (error) {
-          console.error("[v0] Erro no upsert:", error)
-          throw error
+        if (existing) {
+          // Atualiza o lead existente
+          const { data, error } = await supabase
+            .from("leads")
+            .update(leadData)
+            .eq("id", existing.id)
+            .select()
+
+          if (error) throw error
+          results.push({ action: "updated", lead: data?.[0], kommo_id: lead.kommo_lead_id })
+          console.log("[v0] Lead atualizado:", leadData.nome)
+        } else {
+          // Insere novo lead
+          const { data, error } = await supabase
+            .from("leads")
+            .insert([leadData])
+            .select()
+
+          if (error) {
+            // Se der erro de duplicado, ignora (outro request já inseriu)
+            if (error.code === "23505") {
+              console.log("[v0] Lead já existe (inserido por outro request):", leadData.nome)
+              results.push({ action: "skipped_duplicate", kommo_id: lead.kommo_lead_id })
+            } else {
+              throw error
+            }
+          } else {
+            results.push({ action: "created", lead: data?.[0], kommo_id: lead.kommo_lead_id })
+            console.log("[v0] Lead criado:", leadData.nome)
+          }
         }
-        results.push({ action: "upserted", lead: data?.[0], kommo_id: lead.kommo_lead_id })
-        console.log("[v0] Lead upserted com sucesso:", leadData.nome)
       } catch (error: any) {
         const errorMsg = error?.message || error?.details || JSON.stringify(error)
         console.error("[v0] Erro ao processar lead:", errorMsg)
