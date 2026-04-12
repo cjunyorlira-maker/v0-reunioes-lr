@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         
         const statusAtual = lead.status_id?.toString()
         
-        // Se chegou em "Vendendo Reunião", marca data_qualificacao
+        // Se chegou em "Vendendo Reunião", marca data_qualificacao (sem criar cartão)
         if (statusAtual === STATUS_VENDENDO_REUNIAO) {
           console.log("[v0] Lead em 'Vendendo Reunião':", lead.nome)
           
@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
             if (userData.equipe) equipe = userData.equipe
           }
           
-          const leadData: Record<string, any> = {
+          // Insere na tabela qualificacoes (não cria cartão no quadro)
+          const qualificacaoData = {
             kommo_id: lead.kommo_lead_id?.toString(),
             kommo_lead_id: lead.kommo_lead_id?.toString(),
             nome: lead.nome,
@@ -82,27 +83,23 @@ export async function POST(req: NextRequest) {
             responsavel_id: lead.responsavel_id?.toString(),
             equipe: equipe,
             origem: lead.origem,
-            // Data de qualificação (hoje)
             data_qualificacao: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
           }
           
-          Object.keys(leadData).forEach(key => {
-            if (leadData[key] === undefined) delete leadData[key]
-          })
-          
+          // Verifica se já existe
           const { data: existing } = await supabase
-            .from("leads")
+            .from("qualificacoes")
             .select("id")
-            .eq("kommo_id", leadData.kommo_id)
+            .eq("kommo_id", qualificacaoData.kommo_id)
             .single()
           
           if (existing) {
             await supabase
-              .from("leads")
-              .update(leadData)
+              .from("qualificacoes")
+              .update(qualificacaoData)
               .eq("id", existing.id)
           } else {
-            await supabase.from("leads").insert([leadData])
+            await supabase.from("qualificacoes").insert([qualificacaoData])
           }
           
           results.push({ action: "qualificado", lead_name: lead.nome, kommo_id: lead.kommo_lead_id, equipe: equipe })

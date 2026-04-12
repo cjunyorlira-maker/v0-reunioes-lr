@@ -10,9 +10,8 @@ export async function GET(request: NextRequest) {
   
   try {
     let query = supabase
-      .from("leads")
+      .from("qualificacoes")
       .select("id, kommo_id, kommo_lead_id, nome, responsavel, responsavel_id, equipe, origem, data_qualificacao, created_at")
-      .not("data_qualificacao", "is", null)
       .order("data_qualificacao", { ascending: false })
     
     // Filtra por período se fornecido
