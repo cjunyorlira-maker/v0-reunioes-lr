@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getSupabaseClient } from "@/lib/supabase"
+import { createClient } from "@supabase/supabase-js"
+
+// Criar cliente Supabase direto para webhooks
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 // Função para extrair dados do payload do Kommo
 function extractKommoData(data: any): { leadId: string | null; statusId: string | null } {
