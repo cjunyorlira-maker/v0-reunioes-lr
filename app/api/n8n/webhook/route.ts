@@ -132,9 +132,32 @@ function extractFromRawKommo(data: any): { leadId: string | null, statusId: stri
 
 export async function POST(req: NextRequest) {
   try {
-    const bodyRaw = await req.json()
-    console.log("[v0] WEBHOOK RECEBIDO - Tipo:", typeof bodyRaw, "É array?:", Array.isArray(bodyRaw))
-    console.log("[v0] Chaves principais:", Object.keys(bodyRaw).slice(0, 20))
+    console.log("[v0] WEBHOOK RECEBIDO")
+    console.log("[v0] Content-Type:", req.headers.get("content-type"))
+    
+    let bodyRaw: any
+    const contentType = req.headers.get("content-type") || ""
+    
+    // Se vem form-urlencoded (Kommo direto), faz parse manual
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      console.log("[v0] Detectado form-urlencoded (Kommo direto)")
+      const text = await req.text()
+      const params = new URLSearchParams(text)
+      bodyRaw = {}
+      
+      // Converte URLSearchParams para objeto
+      params.forEach((value, key) => {
+        bodyRaw[key] = value
+      })
+      
+      console.log("[v0] Parsed form-urlencoded - Chaves:", Object.keys(bodyRaw).slice(0, 10))
+    } 
+    // Se vem JSON (N8N ou requisição direta JSON)
+    else {
+      console.log("[v0] Detectado JSON")
+      bodyRaw = await req.json()
+      console.log("[v0] Parsed JSON - Chaves:", Object.keys(bodyRaw).slice(0, 10))
+    }
     
     // Se a requisição veio com a chave "body" (N8N pode ter wrapped), extrai
     const body = bodyRaw.body || bodyRaw
@@ -148,9 +171,7 @@ export async function POST(req: NextRequest) {
     for (const leadInput of leads) {
       try {
         console.log("[v0] ===== NOVO LEAD =====")
-        console.log("[v0] Tipo de leadInput:", typeof leadInput)
         console.log("[v0] Chaves:", Object.keys(leadInput).slice(0, 20))
-        console.log("[v0] Procurando leads[status][0][id]:", leadInput["leads[status][0][id]"])
         
         // NOVA LÓGICA: Extrai ID e status de diferentes formatos
         let kommoLeadId = leadInput.kommo_lead_id?.toString() || leadInput.kommo_id?.toString() || leadInput.id?.toString()
