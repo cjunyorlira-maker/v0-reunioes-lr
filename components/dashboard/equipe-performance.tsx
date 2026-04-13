@@ -16,13 +16,22 @@ interface EquipeStats {
   taxa_conversao: number
 }
 
-export default function EquipePerformance({ qualificados, leads }: EquipePerformanceProps) {
+export default function EquipePerformance({ qualificados = [], leads = [] }: EquipePerformanceProps) {
+  if (!qualificados?.length && !leads?.length) {
+    return (
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-[#f5f0e8] mb-4">Funil de Conversão por Equipe</h3>
+        <p className="text-[13px] text-[#8a8070]">Nenhum dado disponível</p>
+      </div>
+    )
+  }
+
   const equipes = useMemo(() => {
     const stats: Record<string, EquipeStats> = {}
 
     // Conta qualificados por equipe
-    (qualificados || []).forEach(q => {
-      if (!q.equipe) return
+    (Array.isArray(qualificados) ? qualificados : []).forEach(q => {
+      if (!q?.equipe) return
       if (!stats[q.equipe]) {
         stats[q.equipe] = {
           nome: q.equipe,
@@ -35,9 +44,9 @@ export default function EquipePerformance({ qualificados, leads }: EquipePerform
     })
 
     // Conta agendados por equipe
-    (leads || []).forEach(l => {
+    (Array.isArray(leads) ? leads : []).forEach(l => {
       // Só conta leads que têm data_agendei (entraram em "Confirmar Reunião")
-      if (!l.data_agendei) return
+      if (!l?.data_agendei) return
       const equipe = l.equipe || "Sem equipe"
       if (!stats[equipe]) {
         stats[equipe] = {
@@ -57,8 +66,6 @@ export default function EquipePerformance({ qualificados, leads }: EquipePerform
 
     return Object.values(stats).sort((a, b) => b.agendei - a.agendei)
   }, [qualificados, leads])
-
-  if (!qualificados || !leads) return null
 
   return (
     <div className="mb-8">
