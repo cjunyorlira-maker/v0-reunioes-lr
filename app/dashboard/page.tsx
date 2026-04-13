@@ -255,9 +255,14 @@ export default function DashboardPage() {
       map[equipe].agendei++
     })
 
-    // Marcados = leads com reunião agendada no período (data dentro do range)
-    leadsAtivos.forEach((lead: any) => {
+    // Marcados/Veio/Faltou = apenas leads que foram agendados via webhook (data_agendei no periodo)
+    // Assim o funil é consistente: só conta quem passou pelo processo completo (Qualifiquei → Agendei → Marcado)
+    allLeads.forEach((lead: any) => {
       if (lead.retorno) return
+
+      const agendeiDate = lead.data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < activeRange.start || agendeiDate > activeRange.end) return
 
       const equipe = lead.equipe || "Sem equipe"
       if (!map[equipe]) {
@@ -266,18 +271,8 @@ export default function DashboardPage() {
       map[equipe].marcados++
       if (lead.status === "veio") map[equipe].veio++
       if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
+      if (lead.remarcado) map[equipe].remarcados++
       if (lead.venda_fechada) map[equipe].vendas++
-    })
-
-    // Adiciona remarcados para outra semana como faltou
-    remarcadosOutraSemana.forEach((lead: any) => {
-      const equipe = lead.equipe || "Sem equipe"
-      if (!map[equipe]) {
-        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
-      }
-      map[equipe].marcados++
-      map[equipe].nao++
-      map[equipe].remarcados++
     })
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
