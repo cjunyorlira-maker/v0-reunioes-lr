@@ -132,8 +132,13 @@ function extractFromRawKommo(data: any): { leadId: string | null, statusId: stri
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    console.log("[v0] N8N Webhook recebido (objeto inteiro):", JSON.stringify(body).substring(0, 500))
+    const bodyRaw = await req.json()
+    console.log("[v0] WEBHOOK RECEBIDO - Tipo:", typeof bodyRaw, "É array?:", Array.isArray(bodyRaw))
+    console.log("[v0] Chaves principais:", Object.keys(bodyRaw).slice(0, 20))
+    
+    // Se a requisição veio com a chave "body" (N8N pode ter wrapped), extrai
+    const body = bodyRaw.body || bodyRaw
+    console.log("[v0] Body após unwrap - Tipo:", typeof body, "É array?:", Array.isArray(body))
 
     // Normaliza para array
     const leads = Array.isArray(body) ? body : [body]
@@ -142,20 +147,24 @@ export async function POST(req: NextRequest) {
 
     for (const leadInput of leads) {
       try {
-        console.log("[v0] Processando lead input:", JSON.stringify(leadInput).substring(0, 300))
+        console.log("[v0] ===== NOVO LEAD =====")
+        console.log("[v0] Tipo de leadInput:", typeof leadInput)
+        console.log("[v0] Chaves:", Object.keys(leadInput).slice(0, 20))
+        console.log("[v0] Procurando leads[status][0][id]:", leadInput["leads[status][0][id]"])
         
         // NOVA LÓGICA: Extrai ID e status de diferentes formatos
-        let kommoLeadId = leadInput.kommo_lead_id?.toString() || leadInput.kommo_id?.toString()
+        let kommoLeadId = leadInput.kommo_lead_id?.toString() || leadInput.kommo_id?.toString() || leadInput.id?.toString()
         let statusId = leadInput.status_id?.toString()
         
-        // Se não tem o ID nos campos normais, tenta extrair do payload RAW
+        // Se não tem o ID nos campos normais, tenta extrair do payload RAW (leads[status][0][id])
         if (!kommoLeadId) {
+          console.log("[v0] Tentando extrair do formato RAW...")
           const rawData = extractFromRawKommo(leadInput)
           kommoLeadId = rawData.leadId
           if (!statusId) statusId = rawData.statusId
         }
         
-        console.log("[v0] Após extração - Lead ID:", kommoLeadId, "Status:", statusId)
+        console.log("[v0] ID FINAL:", kommoLeadId, "Status FINAL:", statusId)
         
         if (!kommoLeadId) {
           console.log("[v0] Lead sem ID, ignorando")
