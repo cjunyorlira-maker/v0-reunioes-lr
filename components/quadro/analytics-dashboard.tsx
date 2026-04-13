@@ -6,6 +6,7 @@ import useSWR from "swr"
 import { useQualificados } from "@/hooks/use-qualificados"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
+import EquipePerformance from "@/components/dashboard/equipe-performance"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -785,6 +786,11 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
               </table>
             </div>
           )}
+        </div>
+
+        {/* Funil de Conversão por Equipe */}
+        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+          <EquipePerformance dateRange={activeRange} />
         </div>
       </div>
     </div>
