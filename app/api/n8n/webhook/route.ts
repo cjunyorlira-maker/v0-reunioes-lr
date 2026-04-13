@@ -39,51 +39,147 @@ async function getUserDataFromKommo(responsavelId: string): Promise<{ equipe: st
   return { equipe: null, foto: null, nome: null }
 }
 
+// Busca dados COMPLETOS do lead direto no Kommo pela API
+async function getLeadFromKommo(leadId: string): Promise<any | null> {
+  const token = process.env.KOMMO_ACCESS_TOKEN
+  const subdomain = process.env.KOMMO_SUBDOMAIN
+
+  if (!token || !subdomain || !leadId) return null
+
+  try {
+    const response = await fetch(
+      `https://${subdomain}.kommo.com/api/v4/leads/${leadId}?with=contacts`,
+      {
+        headers: { "Authorization": `Bearer ${token}` },
+      }
+    )
+
+    if (response.ok) {
+      const lead = await response.json()
+      console.log("[v0] Lead completo do Kommo:", leadId, "- Nome:", lead.name)
+      return lead
+    }
+  } catch (error) {
+    console.error("[v0] Erro ao buscar lead do Kommo:", error)
+  }
+
+  return null
+}
+
+// Extrai campos customizados do lead do Kommo
+function extractCustomFields(lead: any): Record<string, any> {
+  const cf: Record<string, any> = {}
+  const customFields = lead.custom_fields_values || []
+  
+  for (const field of customFields) {
+    const name = field.field_name
+    const value = field.values?.[0]?.value
+    if (name && value !== undefined) {
+      cf[name] = value
+    }
+  }
+  
+  return cf
+}
+
+// Converte timestamp Unix para data (YYYY-MM-DD)
+function tsToDate(ts: number | string | null): string | null {
+  if (!ts) return null
+  const timestamp = typeof ts === 'string' ? parseInt(ts) : ts
+  if (isNaN(timestamp)) return null
+  const date = new Date(timestamp * 1000)
+  return date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+}
+
+// Converte timestamp Unix para data e hora
+function tsToDateTime(ts: number | string | null): { data: string | null, hora: string | null } {
+  if (!ts) return { data: null, hora: null }
+  const timestamp = typeof ts === 'string' ? parseInt(ts) : ts
+  if (isNaN(timestamp)) return { data: null, hora: null }
+  const date = new Date(timestamp * 1000)
+  return {
+    data: date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+    hora: date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    console.log("[v0] N8N Webhook recebido - Lead:", body.nome)
+    console.log("[v0] N8N Webhook recebido:", JSON.stringify(body).substring(0, 200))
 
     // Normaliza para array
     const leads = Array.isArray(body) ? body : [body]
     const supabase = getSupabaseClient()
     const results = []
 
-    for (const lead of leads) {
+    for (const leadInput of leads) {
       try {
-        // Processa leads em duas etapas:
-        // 1. "Vendendo Reunião" (58498479) - marca como qualificado
-        // 2. "Confirmar Reunião" (67567420) - cria o cartão com agendamento
+        // NOVA LÓGICA: Extrai apenas o ID e status do payload (pode vir de diferentes formatos)
+        // Aceita tanto dados completos quanto apenas o ID do lead
+        let kommoLeadId = leadInput.kommo_lead_id?.toString() || leadInput.kommo_id?.toString()
+        let statusId = leadInput.status_id?.toString()
+        
+        // Se não tem o ID, tenta extrair do payload (pode não ter vindo do N8N processado)
+        if (!kommoLeadId && leadInput.id) {
+          kommoLeadId = leadInput.id.toString()
+        }
+        
+        console.log("[v0] Lead ID:", kommoLeadId, "Status:", statusId)
+        
+        if (!kommoLeadId) {
+          console.log("[v0] Lead sem ID, ignorando")
+          results.push({ action: "ignored", reason: "sem_id" })
+          continue
+        }
+        
+        // BUSCA DADOS COMPLETOS DO LEAD DIRETAMENTE NO KOMMO
+        const kommoLead = await getLeadFromKommo(kommoLeadId)
+        
+        if (!kommoLead) {
+          console.log("[v0] Lead não encontrado no Kommo:", kommoLeadId)
+          results.push({ action: "error", reason: "lead_nao_encontrado_kommo", kommo_id: kommoLeadId })
+          continue
+        }
+        
+        // Extrai campos customizados do lead do Kommo
+        const cf = extractCustomFields(kommoLead)
+        console.log("[v0] Campos customizados:", JSON.stringify(cf))
+        
+        // Usa o status do Kommo se não veio no payload
+        if (!statusId) {
+          statusId = kommoLead.status_id?.toString()
+        }
         
         const STATUS_VENDENDO_REUNIAO = "58498479"
         const STATUS_CONFIRMAR_REUNIAO = "67567420"
         
-        const statusAtual = lead.status_id?.toString()
+        // Busca dados do responsável (equipe, foto, nome)
+        const responsavelId = kommoLead.responsible_user_id?.toString()
+        let equipe = null
+        let fotoResponsavel = null
+        let nomeResponsavel = null
+        
+        if (responsavelId) {
+          const userData = await getUserDataFromKommo(responsavelId)
+          equipe = userData.equipe
+          fotoResponsavel = userData.foto
+          nomeResponsavel = userData.nome
+        }
         
         // Se chegou em "Vendendo Reunião", marca data_qualificacao (sem criar cartão)
-        if (statusAtual === STATUS_VENDENDO_REUNIAO) {
-          console.log("[v0] Lead em 'Vendendo Reunião':", lead.nome)
+        if (statusId === STATUS_VENDENDO_REUNIAO) {
+          console.log("[v0] Lead em 'Vendendo Reunião':", kommoLead.name)
           
-          // Busca dados completos do usuário (nome, equipe, foto)
-          let nomeResponsavel = lead.responsavel
-          let equipe = lead.equipe
-          
-          if (lead.responsavel_id) {
-            const userData = await getUserDataFromKommo(lead.responsavel_id.toString())
-            if (userData.nome) nomeResponsavel = userData.nome
-            if (userData.equipe) equipe = userData.equipe
-          }
-          
-          // Insere na tabela qualificacoes (não cria cartão no quadro)
           const qualificacaoData = {
-            kommo_id: lead.kommo_lead_id?.toString(),
-            kommo_lead_id: lead.kommo_lead_id?.toString(),
-            nome: lead.nome,
-            responsavel: nomeResponsavel,
-            responsavel_id: lead.responsavel_id?.toString(),
+            kommo_id: kommoLeadId,
+            kommo_lead_id: kommoLeadId,
+            nome: kommoLead.name,
+            responsavel: nomeResponsavel || cf["Responsável"],
+            responsavel_id: responsavelId,
             equipe: equipe,
-            origem: lead.origem,
-            data_qualificacao: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+            origem: cf["Origem"] || null,
+            data_qualificacao: tsToDate(cf["Qualifiquei"]) || new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
           }
           
           // Verifica se já existe
@@ -102,70 +198,42 @@ export async function POST(req: NextRequest) {
             await supabase.from("qualificacoes").insert([qualificacaoData])
           }
           
-          results.push({ action: "qualificado", lead_name: lead.nome, kommo_id: lead.kommo_lead_id, equipe: equipe })
+          results.push({ action: "qualificado", lead_name: kommoLead.name, kommo_id: kommoLeadId, equipe: equipe })
           continue
         }
         
         // Se chegou em "Confirmar Reunião", cria/atualiza o cartão
-        if (statusAtual !== STATUS_CONFIRMAR_REUNIAO) {
-          console.log("[v0] Lead ignorado - etapa:", lead.status_id)
-          results.push({ action: "ignored", reason: "etapa_incorreta", status_id: lead.status_id, lead_name: lead.nome })
+        if (statusId !== STATUS_CONFIRMAR_REUNIAO) {
+          console.log("[v0] Lead ignorado - etapa:", statusId)
+          results.push({ action: "ignored", reason: "etapa_incorreta", status_id: statusId, lead_name: kommoLead.name })
           continue
         }
 
-        // Busca dados do usuário do Kommo (equipe, foto, nome correto)
-        let equipe = lead.equipe
-        let fotoResponsavel = null
-        let nomeResponsavel = lead.responsavel
-        
-        if (lead.responsavel_id) {
-          const userData = await getUserDataFromKommo(lead.responsavel_id.toString())
-          if (!equipe) equipe = userData.equipe
-          fotoResponsavel = userData.foto
-          if (userData.nome) nomeResponsavel = userData.nome // Usa nome do Kommo se disponível
-        }
-
-        // Extrai data e hora do campo data_reuniao_raw (timestamp Unix)
-        // Converte para timezone de São Paulo (UTC-3)
-        let dataReuniao = null
-        let horaReuniao = null
-        if (lead.data_reuniao_raw) {
-          const timestamp = parseInt(lead.data_reuniao_raw) * 1000 // Unix timestamp em ms
-          const date = new Date(timestamp)
-          // Formata para timezone de São Paulo
-          dataReuniao = date.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) // "2026-04-15"
-          horaReuniao = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) // "18:00"
-        } else if (lead.data_reuniao) {
-          // Fallback para o campo formatado (se não tiver raw)
-          const partes = lead.data_reuniao.split(" ")
-          dataReuniao = partes[0]
-          horaReuniao = partes[1] || null
-        }
+        // Extrai data e hora da reunião
+        const dataReuniaoRaw = cf["Data da Reunião"]
+        const { data: dataReuniao, hora: horaReuniao } = tsToDateTime(dataReuniaoRaw)
 
         // Mapeia os campos do Kommo para as colunas da tabela leads
         const leadData: Record<string, any> = {
-          kommo_id: lead.kommo_lead_id?.toString(),
-          kommo_lead_id: lead.kommo_lead_id?.toString(),
-          nome: lead.nome,
-          responsavel: nomeResponsavel,
-          responsavel_id: lead.responsavel_id?.toString(),
+          kommo_id: kommoLeadId,
+          kommo_lead_id: kommoLeadId,
+          nome: kommoLead.name,
+          responsavel: nomeResponsavel || cf["Responsável"],
+          responsavel_id: responsavelId,
           equipe: equipe,
-          origem: lead.origem,
-          data: dataReuniao || lead.agendei || null,
+          origem: cf["Origem"] || null,
+          data: dataReuniao || tsToDate(cf["Agendei"]) || null,
           hora: horaReuniao || null,
           status: "pending",
-          tipo: lead.tipo || null,
-          tipo_reuniao: lead.tipo_reuniao || null,
+          tipo: cf["Tipo do Bem"] || null,
+          tipo_reuniao: cf["Tipo de Reunião"] || null,
           foto_responsavel: fotoResponsavel,
-          // Data de agendamento (quando chega na etapa Confirmar Reunião)
-          data_agendei: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
-          // Data original de reunião (não muda em remarcações)
-          data_original: dataReuniao || lead.agendei || null,
-          // Data de qualificação (se veio do campo qualifiquei do Kommo)
-          data_qualificacao: lead.qualifiquei ? new Date(lead.qualifiquei).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : null,
+          data_agendei: tsToDate(cf["Agendei"]) || new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }),
+          data_original: dataReuniao || tsToDate(cf["Agendei"]) || null,
+          data_qualificacao: tsToDate(cf["Qualifiquei"]) || null,
         }
         
-        // Remove campos undefined para não sobrescrever com null
+        // Remove campos undefined/null para não sobrescrever
         Object.keys(leadData).forEach(key => {
           if (leadData[key] === undefined) delete leadData[key]
         })
@@ -178,12 +246,11 @@ export async function POST(req: NextRequest) {
           .single()
 
         if (existing) {
-          // Se já existe, não sobrescreve data_original (foi a primeira data agendada)
+          // Se já existe, não sobrescreve data_original
           if (existing.data_original) {
             delete leadData.data_original
           }
           
-          // Atualiza o lead existente
           const { data, error } = await supabase
             .from("leads")
             .update(leadData)
@@ -191,25 +258,23 @@ export async function POST(req: NextRequest) {
             .select()
 
           if (error) throw error
-          results.push({ action: "updated", lead: data?.[0], kommo_id: lead.kommo_lead_id })
+          results.push({ action: "updated", lead: data?.[0], kommo_id: kommoLeadId })
           console.log("[v0] Lead atualizado:", leadData.nome)
         } else {
-          // Insere novo lead
           const { data, error } = await supabase
             .from("leads")
             .insert([leadData])
             .select()
 
           if (error) {
-            // Se der erro de duplicado, ignora (outro request já inseriu)
             if (error.code === "23505") {
               console.log("[v0] Lead já existe (inserido por outro request):", leadData.nome)
-              results.push({ action: "skipped_duplicate", kommo_id: lead.kommo_lead_id })
+              results.push({ action: "skipped_duplicate", kommo_id: kommoLeadId })
             } else {
               throw error
             }
           } else {
-            results.push({ action: "created", lead: data?.[0], kommo_id: lead.kommo_lead_id })
+            results.push({ action: "created", lead: data?.[0], kommo_id: kommoLeadId })
             console.log("[v0] Lead criado:", leadData.nome)
           }
         }
@@ -218,8 +283,7 @@ export async function POST(req: NextRequest) {
         console.error("[v0] Erro ao processar lead:", errorMsg)
         results.push({ 
           action: "error", 
-          lead_name: lead.nome,
-          kommo_id: lead.kommo_lead_id,
+          kommo_id: leadInput.kommo_lead_id,
           error: errorMsg
         })
       }
