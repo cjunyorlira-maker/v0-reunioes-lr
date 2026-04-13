@@ -790,7 +790,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
         {/* Funil de Conversão por Equipe */}
         <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
-          <EquipePerformance dateRange={activeRange} />
+          <EquipePerformance qualificados={qualificadosSemana} leads={allLeads} />
         </div>
       </div>
     </div>

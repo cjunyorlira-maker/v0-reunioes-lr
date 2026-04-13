@@ -1,10 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import useSWR from "swr"
 import { Lead } from "@/lib/types"
-
-const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 interface Qualificacao {
   id: string
@@ -16,7 +13,8 @@ interface Qualificacao {
 }
 
 interface EquipePerformanceProps {
-  dateRange?: { start: string; end: string }
+  qualificados: Qualificacao[]
+  leads: Lead[]
 }
 
 interface EquipeStats {
@@ -26,21 +24,7 @@ interface EquipeStats {
   taxa_conversao: number
 }
 
-export default function EquipePerformance({ dateRange }: EquipePerformanceProps) {
-  // Busca qualificados pela tabela qualificacoes (leads que entraram em "Vendendo Reunião")
-  const { data: qualificados } = useSWR<Qualificacao[]>(
-    dateRange ? `/api/qualificacoes?start=${dateRange.start}&end=${dateRange.end}` : null,
-    fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
-  )
-
-  // Busca leads agendados (leads que entraram em "Confirmar Reunião")
-  const { data: leads } = useSWR<Lead[]>(
-    dateRange ? `/api/leads?start=${dateRange.start}&end=${dateRange.end}` : null,
-    fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
-  )
-
+export default function EquipePerformance({ qualificados, leads }: EquipePerformanceProps) {
   const equipes = useMemo(() => {
     const stats: Record<string, EquipeStats> = {}
 
