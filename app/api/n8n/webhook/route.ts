@@ -104,7 +104,9 @@ function tsToDateTime(ts: number | string | null): { data: string | null, hora: 
 }
 
 // Extrai ID e Status do formato RAW do Kommo (leads[status][0][id] ou leads[update][0][id])
-function extractFromRawKommo(body: any): { leadId: string | null, statusId: string | null } {
+function extractFromRawKommo(data: any): { leadId: string | null, statusId: string | null } {
+  console.log("[v0] Tentando extrair do payload:", JSON.stringify(data).substring(0, 300))
+  
   // Tenta diferentes formatos que o Kommo pode enviar
   const formats = [
     // Formato quando muda status: leads[status][0][id]
@@ -115,25 +117,23 @@ function extractFromRawKommo(body: any): { leadId: string | null, statusId: stri
     { idKey: "leads[add][0][id]", statusKey: "leads[add][0][status_id]" },
   ]
   
-  // Se tem body.body (N8N passou o webhook completo)
-  const data = body.body || body
-  
   for (const format of formats) {
     const leadId = data[format.idKey]
     const statusId = data[format.statusKey]
     if (leadId) {
-      console.log("[v0] Extraído do formato RAW:", format.idKey, "->", leadId)
+      console.log("[v0] Extraído com sucesso -", format.idKey, ":", leadId, "Status:", statusId)
       return { leadId: leadId.toString(), statusId: statusId?.toString() || null }
     }
   }
   
+  console.log("[v0] Nenhum formato encontrado")
   return { leadId: null, statusId: null }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    console.log("[v0] N8N Webhook recebido:", JSON.stringify(body).substring(0, 500))
+    console.log("[v0] N8N Webhook recebido (objeto inteiro):", JSON.stringify(body).substring(0, 500))
 
     // Normaliza para array
     const leads = Array.isArray(body) ? body : [body]
@@ -142,30 +142,20 @@ export async function POST(req: NextRequest) {
 
     for (const leadInput of leads) {
       try {
+        console.log("[v0] Processando lead input:", JSON.stringify(leadInput).substring(0, 300))
+        
         // NOVA LÓGICA: Extrai ID e status de diferentes formatos
         let kommoLeadId = leadInput.kommo_lead_id?.toString() || leadInput.kommo_id?.toString()
         let statusId = leadInput.status_id?.toString()
         
-        // Se não tem o ID nos campos normais, tenta extrair do payload
-        if (!kommoLeadId && leadInput.id) {
-          kommoLeadId = leadInput.id.toString()
-        }
-        
-        // Se ainda não tem ID, tenta extrair do formato RAW do Kommo
+        // Se não tem o ID nos campos normais, tenta extrair do payload RAW
         if (!kommoLeadId) {
           const rawData = extractFromRawKommo(leadInput)
           kommoLeadId = rawData.leadId
           if (!statusId) statusId = rawData.statusId
         }
         
-        // Última tentativa: procurar em todos_campos
-        if (!kommoLeadId && leadInput.todos_campos) {
-          const raw = extractFromRawKommo(leadInput.todos_campos)
-          kommoLeadId = raw.leadId
-          if (!statusId) statusId = raw.statusId
-        }
-        
-        console.log("[v0] Lead ID:", kommoLeadId, "Status:", statusId)
+        console.log("[v0] Após extração - Lead ID:", kommoLeadId, "Status:", statusId)
         
         if (!kommoLeadId) {
           console.log("[v0] Lead sem ID, ignorando")
