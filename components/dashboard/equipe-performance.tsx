@@ -2,18 +2,10 @@
 
 import { useMemo } from "react"
 import { Lead } from "@/lib/types"
-
-interface Qualificacao {
-  id: string
-  kommo_id: string
-  nome: string
-  equipe: string | null
-  responsavel: string | null
-  data_qualificacao: string
-}
+import { LeadQualificado } from "@/hooks/use-qualificados"
 
 interface EquipePerformanceProps {
-  qualificados: Qualificacao[]
+  qualificados: LeadQualificado[]
   leads: Lead[]
 }
 
