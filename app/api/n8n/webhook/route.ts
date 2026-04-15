@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import Pusher from "pusher"
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.PUSHER_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.PUSHER_CLUSTER!,
+  useTLS: true,
+})
 
 // Criar cliente Supabase direto para webhooks
 function getSupabaseClient() {
@@ -336,6 +345,20 @@ export async function POST(req: NextRequest) {
           } else {
             results.push({ action: "created", lead: data?.[0], kommo_id: kommoLeadId })
             console.log("[v0] Lead criado:", leadData.nome)
+
+            // Dispara celebração via Pusher se tem data_agendei
+            if (leadData.data_agendei) {
+              try {
+                await pusher.trigger("celebrations", "agendamento", {
+                  nome: leadData.responsavel || leadData.nome,
+                  foto: leadData.foto_responsavel || null,
+                  timestamp: new Date().toISOString(),
+                })
+                console.log("[v0] Celebração disparada para:", leadData.responsavel)
+              } catch (pusherError) {
+                console.error("[v0] Erro ao disparar Pusher:", pusherError)
+              }
+            }
           }
         }
       } catch (error: any) {
