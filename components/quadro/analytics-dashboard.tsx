@@ -397,44 +397,34 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     return Object.values(agendeiPorDia.totalPorDia).reduce((acc, val) => acc + val, 0)
   }, [agendeiPorDia])
 
-  // Totais gerais — usa leadsAtivos + remarcados de allLeads
+  // Totais gerais — usa leadsAtivos diretamente (leads com data da reunião no período)
   const totals = useMemo(() => {
-    const veioCount = leadsAtivos.filter(l => l.status === "veio").length
-    const naoCount = leadsAtivos.filter(l => l.status === "nao" && !l.remarcado).length
-    
-    // Leads remarcados para outra semana contam como "Faltou" no período original
-    // Busca de allLeads porque o lead remarcado tem data de outra semana (não está em leadsAtivos)
-    const remarcadosOutraSemana = allLeads.filter(l => {
-      if (!l.remarcado) return false
-      // Filtra por equipe se selecionada - inclui leads sem equipe (null)
-      if (selectedEquipe && l.equipe && l.equipe !== selectedEquipe) return false
-      // Se data_original (ou data_agendei se data_original não existe) está no período
-      const dataOriginal = l.data_original || l.data_agendei
-      if (!dataOriginal) return false
-      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
-      // E a data atual da reunião está FORA do range (foi remarcado para outra semana)
-      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
-      return dentroDoRange && foraDoRange
-    }).length
-    
-    const naoTotal = naoCount + remarcadosOutraSemana
-    const vendasCount = leadsAtivos.filter(l => l.venda_fechada).length
-    const retornosCount = leadsAtivos.filter(l => l.retorno).length
-    
-    // Total inclui remarcados
-    const totalMarcados = leadsAtivos.length + remarcadosOutraSemana
+  const veioCount = leadsAtivos.filter(l => l.status === "veio").length
+  // Conta todos com status "nao", independente de remarcado
+  const naoCount = leadsAtivos.filter(l => l.status === "nao").length
+  const vendasCount = leadsAtivos.filter(l => l.venda_fechada).length
+  const retornosCount = leadsAtivos.filter(l => l.retorno).length
+  
+  // Total é simplesmente a quantidade de leads ativos
+  const totalMarcados = leadsAtivos.length
+
+    // Pendentes = total - veio - nao
+    const pendingCount = totalMarcados - veioCount - naoCount
+    // Remarcados = leads com flag remarcado = true
+    const remarcadosCount = leadsAtivos.filter(l => l.remarcado).length
 
     return {
       total: totalMarcados,
       veio: veioCount,
-      nao: naoTotal,
+      nao: naoCount,
       vendas: vendasCount,
       retornos: retornosCount,
-      remarcados: remarcadosOutraSemana,
-      taxaPresenca: (veioCount + naoTotal) > 0 ? Math.round((veioCount / (veioCount + naoTotal)) * 100) : 0,
+      remarcados: remarcadosCount,
+      pending: pendingCount,
+      taxaPresenca: (veioCount + naoCount) > 0 ? Math.round((veioCount / (veioCount + naoCount)) * 100) : 0,
       taxaConversao: veioCount > 0 ? Math.round((vendasCount / veioCount) * 100) : 0,
     }
-  }, [leadsAtivos, allLeads, activeRange, selectedEquipe])
+  }, [leadsAtivos])
 
   if (leads.length === 0) return null
 
