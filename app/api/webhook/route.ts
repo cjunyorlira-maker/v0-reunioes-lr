@@ -349,6 +349,7 @@ export async function POST(request: NextRequest) {
     const leadData = {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
       data: dataFinal || new Date().toISOString().split("T")[0],
+      data_agendei: dataFinal || new Date().toISOString().split("T")[0], // Campo para corrida/agendamentos
       hora: horaFinal || "09:00",
       // Usa dados do Kommo para responsável e equipe (usuário responsável e grupo)
       responsavel: responsavelNome || body.responsavel || body.responsible || "Não informado",
