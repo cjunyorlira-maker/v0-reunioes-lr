@@ -17,6 +17,121 @@ const META_QUALIFICADOS_SEMANA = META_QUALIFICADOS_DIA * 6
 type ViewMode = "dia" | "semana"
 type RaceType = "agendei" | "qualificados"
 
+// Fogos de artificio no topo da tela
+function FireworksBar() {
+  const fireworks = [
+    { x: 5,  colors: ["#f472b6","#fbbf24","#f87171"], delay: 0    },
+    { x: 13, colors: ["#60a5fa","#34d399","#a78bfa"], delay: 0.4  },
+    { x: 22, colors: ["#fbbf24","#f97316","#facc15"], delay: 0.8  },
+    { x: 31, colors: ["#f472b6","#e879f9","#fb7185"], delay: 0.2  },
+    { x: 40, colors: ["#34d399","#22d3ee","#60a5fa"], delay: 1.0  },
+    { x: 50, colors: ["#fbbf24","#f59e0b","#fde68a"], delay: 0.6  },
+    { x: 60, colors: ["#a78bfa","#8b5cf6","#c4b5fd"], delay: 0.3  },
+    { x: 69, colors: ["#f472b6","#fb923c","#fbbf24"], delay: 0.9  },
+    { x: 78, colors: ["#60a5fa","#38bdf8","#7dd3fc"], delay: 0.5  },
+    { x: 87, colors: ["#34d399","#f472b6","#fbbf24"], delay: 0.1  },
+    { x: 95, colors: ["#f87171","#fb923c","#fde68a"], delay: 0.7  },
+  ]
+
+  const rays = 14
+
+  return (
+    <>
+      <style>{`
+        @keyframes fw-shoot {
+          0%   { transform: scaleY(0) translateY(0); opacity: 0; }
+          20%  { transform: scaleY(1) translateY(0); opacity: 1; }
+          60%  { transform: scaleY(1) translateY(0); opacity: 1; }
+          100% { transform: scaleY(0) translateY(0); opacity: 0; }
+        }
+        @keyframes fw-burst {
+          0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+          50%  { transform: scale(1.3) rotate(15deg); opacity: 1; }
+          100% { transform: scale(2.2) rotate(30deg); opacity: 0; }
+        }
+        @keyframes fw-spark {
+          0%   { transform: translateY(0) scaleX(1); opacity: 1; }
+          100% { transform: translateY(40px) scaleX(0.3); opacity: 0; }
+        }
+        @keyframes fw-star {
+          0%,100% { transform: scale(1); opacity:1; }
+          50%      { transform: scale(1.6); opacity:0.6; }
+        }
+      `}</style>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+        {fireworks.map((fw, fi) => (
+          <g key={fi}>
+            {/* Trilha de subida */}
+            <line
+              x1={fw.x} y1={100}
+              x2={fw.x} y2={20}
+              stroke={fw.colors[0]}
+              strokeWidth="0.5"
+              strokeLinecap="round"
+              style={{
+                transformOrigin: `${fw.x}px 100px`,
+                animation: `fw-shoot 1.6s ease-out infinite`,
+                animationDelay: `${fw.delay}s`,
+              }}
+            />
+            {/* Explosao - raios em todas as direcoes */}
+            {Array.from({ length: rays }).map((_, ri) => {
+              const angle = (ri / rays) * 360
+              const len = 8 + (ri % 3) * 3
+              const color = fw.colors[ri % fw.colors.length]
+              const rad = (angle * Math.PI) / 180
+              return (
+                <line
+                  key={ri}
+                  x1={fw.x} y1={20}
+                  x2={fw.x + Math.cos(rad) * len}
+                  y2={20 + Math.sin(rad) * len}
+                  stroke={color}
+                  strokeWidth={0.6 + (ri % 2) * 0.3}
+                  strokeLinecap="round"
+                  style={{
+                    transformOrigin: `${fw.x}px 20px`,
+                    animation: `fw-burst 1.6s ease-out infinite`,
+                    animationDelay: `${fw.delay + 0.25}s`,
+                  }}
+                />
+              )
+            })}
+            {/* Faiscas caindo */}
+            {Array.from({ length: 8 }).map((_, si) => {
+              const spreadX = (si - 3.5) * 3
+              const color = fw.colors[si % fw.colors.length]
+              return (
+                <circle
+                  key={si}
+                  cx={fw.x + spreadX}
+                  cy={22}
+                  r={0.7}
+                  fill={color}
+                  style={{
+                    animation: `fw-spark 1.2s ease-in infinite`,
+                    animationDelay: `${fw.delay + 0.3 + si * 0.05}s`,
+                  }}
+                />
+              )
+            })}
+            {/* Estrela central brilhante */}
+            <circle
+              cx={fw.x} cy={20} r={1.8}
+              fill={fw.colors[0]}
+              style={{
+                filter: `blur(0.5px) drop-shadow(0 0 3px ${fw.colors[0]})`,
+                animation: `fw-star 1.6s ease-out infinite`,
+                animationDelay: `${fw.delay + 0.2}s`,
+              }}
+            />
+          </g>
+        ))}
+      </svg>
+    </>
+  )
+}
+
 // Componente de carro estilo Gran Turismo
 function RaceCar({ foto, nome, genero, progresso, position }: {
   foto?: string; nome: string; genero: "M" | "F"; progresso: number; position: number
@@ -713,6 +828,11 @@ export default function CorridaPage() {
             </div>
           </div>
         )}
+
+        {/* Fogos de artificio no topo */}
+        <div className="relative w-full overflow-hidden" style={{ height: "90px", pointerEvents: "none" }}>
+          <FireworksBar />
+        </div>
 
         {/* Meta */}
         <div className="px-4 pb-4 max-w-[1600px] mx-auto">
