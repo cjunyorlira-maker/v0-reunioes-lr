@@ -3,7 +3,6 @@
 import { Lead } from "@/lib/types"
 import { formatTimeDisplay } from "@/lib/date-utils"
 import { getFotoVendedor } from "@/lib/vendedor-fotos"
-import { ExternalLink } from "lucide-react"
 
 interface LeadCardProps {
   lead: Lead
@@ -185,10 +184,14 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-11 flex items-center justify-center rounded-lg border border-[rgba(212,175,55,0.2)] text-[#d4af37] bg-[rgba(212,175,55,0.05)] hover:bg-[rgba(212,175,55,0.15)] transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.3)] bg-[rgba(107,79,187,0.1)] hover:bg-[rgba(107,79,187,0.2)] transition-colors"
               title="Abrir no Kommo"
             >
-              <ExternalLink size={16} />
+              <img 
+                src="/images/kommo-logo.png" 
+                alt="Kommo" 
+                className="w-6 h-6"
+              />
             </a>
           )}
         </div>
