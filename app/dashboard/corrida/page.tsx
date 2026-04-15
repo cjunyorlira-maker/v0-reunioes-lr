@@ -265,34 +265,36 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
           </text>
         </svg>
 
-        {/* Foto do piloto na frente do carro */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 flex flex-col items-center">
+        {/* Foto do piloto acima do carro */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
           {foto ? (
-            <img
-              src={foto}
-              alt={nome}
-              className="w-16 h-16 rounded-full object-cover shadow-xl"
-              style={{ border: `3.5px solid ${primary}`, boxShadow: `0 0 18px rgba(${glow},0.7), inset 0 0 10px rgba(0,0,0,0.3)` }}
-            />
+            <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg border-2" style={{ borderColor: primary, boxShadow: `0 0 10px rgba(${glow},0.6)` }}>
+              <img
+                src={foto}
+                alt={nome}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: "center 20%" }}
+              />
+            </div>
           ) : (
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl"
-              style={{ background: primary, border: `3.5px solid ${accent}`, boxShadow: `0 0 18px rgba(${glow},0.7)` }}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg"
+              style={{ background: primary, border: `2px solid ${accent}`, boxShadow: `0 0 10px rgba(${glow},0.6)` }}
             >
               {nome.charAt(0)}
             </div>
           )}
           <div
-            className="text-[10px] font-bold mt-1.5 px-2 py-0.5 rounded-full whitespace-nowrap"
-            style={{ background: `rgba(${glow},0.3)`, color: primary, border: `1px solid rgba(${glow},0.5)` }}
+            className="text-[8px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full whitespace-nowrap"
+            style={{ background: `rgba(${glow},0.25)`, color: primary, border: `1px solid rgba(${glow},0.4)` }}
           >
             {nome.split(" ")[0]}
           </div>
         </div>
 
-        {/* Badge CHEGOU na frente */}
+        {/* Badge CHEGOU acima */}
         {finished && (
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-20 whitespace-nowrap px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[11px] font-bold text-black shadow-lg animate-bounce">
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[9px] font-bold text-black shadow-lg animate-bounce">
             META!
           </div>
         )}
