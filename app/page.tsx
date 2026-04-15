@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { Header } from "@/components/quadro/header"
 import { StatsCards } from "@/components/quadro/stats-cards"
@@ -34,6 +34,7 @@ export default function QuadroReunioes() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [isRemarcarModalOpen, setIsRemarcarModalOpen] = useState(false)
   const [pendingRemarcarLead, setPendingRemarcarLead] = useState<Lead | null>(null)
+  const [agendamentoCelebration, setAgendamentoCelebration] = useState<{ nome: string; foto?: string } | null>(null)
 
 
   useEffect(() => {
@@ -417,6 +418,27 @@ export default function QuadroReunioes() {
       {/* Efeito de fogos quando fecha venda */}
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
+      {/* Celebracao de agendamento */}
+      {agendamentoCelebration && (
+        <AgendamentoCelebration
+          nome={agendamentoCelebration.nome}
+          foto={agendamentoCelebration.foto}
+          onClose={() => setAgendamentoCelebration(null)}
+        />
+      )}
+
+      {/* BOTAO TEMPORARIO - Testar celebracao de agendamento */}
+      <button
+        onClick={() => setAgendamentoCelebration({
+          nome: "Amanda Souza",
+          foto: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-9Csu6tKWbtzEMt7nkHj7uGTu3K4ed6.jpeg"
+        })}
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-xs font-bold text-black"
+        style={{ background: "linear-gradient(135deg, #22d3ee, #3b82f6)", boxShadow: "0 0 15px rgba(34,211,238,0.5)" }}
+      >
+        Testar Agendamento
+      </button>
+
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
@@ -538,6 +560,173 @@ export default function QuadroReunioes() {
         currentData={pendingRemarcarLead?.data || ""}
         currentHora={pendingRemarcarLead?.hora || ""}
       />
+    </div>
+  )
+}
+
+// Celebracao de agendamento - canvas com confete azul/ciano
+function AgendamentoCelebration({ nome, foto, onClose }: { nome: string; foto?: string; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [audioPlayed, setAudioPlayed] = useState(false)
+
+  useEffect(() => {
+    // Som de sino/notificacao animado
+    if (!audioPlayed) {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const playChime = (time: number, freq: number) => {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = "sine"
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + time)
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + time)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + 0.8)
+          osc.start(ctx.currentTime + time)
+          osc.stop(ctx.currentTime + time + 0.8)
+        }
+        // Melodia de agendamento (acordes ascendentes)
+        playChime(0,    523) // Do
+        playChime(0.15, 659) // Mi
+        playChime(0.3,  784) // Sol
+        playChime(0.5,  1047) // Do alto
+        playChime(1.2,  523)
+        playChime(1.35, 659)
+        playChime(1.5,  784)
+        playChime(1.7,  1047)
+        playChime(2.8,  784)
+        playChime(2.95, 1047)
+        playChime(3.1,  1319)
+        setAudioPlayed(true)
+      } catch (e) {}
+    }
+    const t = setTimeout(onClose, 5000)
+    return () => clearTimeout(t)
+  }, [onClose, audioPlayed])
+
+  // Canvas confete
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    interface Piece {
+      x: number; y: number; vx: number; vy: number
+      color: string; size: number; angle: number; spin: number; shape: "rect" | "circle"
+    }
+
+    const colors = ["#22d3ee","#38bdf8","#60a5fa","#3b82f6","#6366f1","#a5f3fc","#e0f2fe","#ffffff","#34d399","#86efac"]
+    const pieces: Piece[] = Array.from({ length: 160 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 200,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 5 + Math.random() * 8,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.15,
+      shape: Math.random() > 0.5 ? "rect" : "circle",
+    }))
+
+    let frame: number
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      pieces.forEach(p => {
+        p.x += p.vx
+        p.y += p.vy
+        p.vy += 0.05
+        p.angle += p.spin
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.angle)
+        ctx.fillStyle = p.color
+        ctx.globalAlpha = p.y > canvas.height * 0.85 ? 1 - (p.y - canvas.height * 0.85) / (canvas.height * 0.15) : 1
+        if (p.shape === "rect") {
+          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
+        } else {
+          ctx.beginPath()
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2)
+          ctx.fill()
+        }
+        ctx.restore()
+        if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width }
+      })
+      frame = requestAnimationFrame(animate)
+    }
+    animate()
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
+  const primeiroNome = nome.split(" ")[0]
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/65" />
+
+      {/* Confete canvas */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+      {/* Card central */}
+      <div className="relative z-10 flex flex-col items-center" style={{ animation: "zoomIn 0.4s ease-out" }}>
+        {/* Icone calendario */}
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 shadow-2xl"
+          style={{ background: "linear-gradient(135deg, #22d3ee, #3b82f6)", boxShadow: "0 0 40px rgba(34,211,238,0.5)" }}
+        >
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="4" y="6" width="24" height="22" rx="3" fill="white" opacity="0.15" stroke="white" strokeWidth="2" />
+            <line x1="4" y1="13" x2="28" y2="13" stroke="white" strokeWidth="2" />
+            <line x1="10" y1="3" x2="10" y2="9" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="22" y1="3" x2="22" y2="9" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="11" cy="20" r="2" fill="white" />
+            <circle cx="16" cy="20" r="2" fill="white" />
+            <circle cx="21" cy="20" r="2" fill="white" />
+          </svg>
+        </div>
+
+        {/* Foto do vendedor */}
+        <div className="relative mb-5">
+          <div className="absolute inset-0 rounded-full blur-2xl opacity-60" style={{ background: "rgba(34,211,238,0.5)" }} />
+          {foto ? (
+            <img
+              src={foto}
+              alt={nome}
+              className="relative w-36 h-36 rounded-full object-cover shadow-2xl"
+              style={{ border: "4px solid #22d3ee", boxShadow: "0 0 35px rgba(34,211,238,0.6)" }}
+            />
+          ) : (
+            <div
+              className="relative w-36 h-36 rounded-full flex items-center justify-center text-4xl font-black text-white shadow-2xl"
+              style={{ background: "linear-gradient(135deg, #22d3ee, #3b82f6)", border: "4px solid #22d3ee" }}
+            >
+              {primeiroNome.charAt(0)}
+            </div>
+          )}
+        </div>
+
+        {/* Texto */}
+        <h2 className="text-4xl font-black text-white drop-shadow-lg tracking-wide">{nome.toUpperCase()}</h2>
+        <p className="text-2xl font-bold mt-2" style={{ color: "#22d3ee" }}>AGENDAMENTO CONFIRMADO!</p>
+        <div
+          className="mt-4 px-6 py-2 rounded-full text-base font-bold"
+          style={{ background: "linear-gradient(135deg, #22d3ee, #3b82f6)", color: "white", boxShadow: "0 0 20px rgba(34,211,238,0.4)" }}
+        >
+          + 1 Agendamento
+        </div>
+        <p className="text-white/30 text-sm mt-5">Grand Prix LR</p>
+      </div>
+
+      <style>{`
+        @keyframes zoomIn {
+          from { transform: scale(0.3); opacity: 0; }
+          to   { transform: scale(1);   opacity: 1; }
+        }
+      `}</style>
     </div>
   )
 }
