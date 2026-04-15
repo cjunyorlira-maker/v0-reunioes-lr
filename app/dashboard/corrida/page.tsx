@@ -28,6 +28,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
   const glow = isF ? "255,100,180" : "59,130,246"
   const moving = progresso > 0 && progresso < 100
   const finished = progresso >= 100
+  const struggling = position >= 15  // Do 15o para baixo: capô fumando + guincho
 
   return (
     <div
@@ -35,6 +36,48 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
       style={{ left: `calc(${Math.min(progresso, 90)}% - 50px)` }}
     >
       <div className="relative">
+
+        {/* Guincho na frente puxando o carro - apenas do 15o para baixo */}
+        {struggling && (
+          <div className="absolute left-full top-1/2 -translate-y-1/2 translate-x-1 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
+            {/* Cabo do guincho */}
+            <div className="relative" style={{ width: "54px", height: "12px" }}>
+              {/* Corrente/cabo tensionado com curvatura */}
+              <svg width="54" height="12" viewBox="0 0 54 12">
+                <path d="M 2 6 Q 20 2, 38 7 Q 46 9, 52 6" stroke="#a3a3a3" strokeWidth="1.5" fill="none" strokeDasharray="3,2" />
+                {/* Segmentos de corrente */}
+                {[6, 14, 22, 30, 38, 46].map(x => (
+                  <rect key={x} x={x - 2} y="4" width="4" height="4" rx="1" fill="#737373" stroke="#525252" strokeWidth="0.5" />
+                ))}
+              </svg>
+            </div>
+            {/* Caminhao do guincho */}
+            <svg width="40" height="28" viewBox="0 0 40 28" className="drop-shadow-lg">
+              {/* Corpo do caminhao */}
+              <rect x="2" y="10" width="36" height="14" rx="2" fill="#f59e0b" stroke="#d97706" strokeWidth="0.8" />
+              {/* Cabine */}
+              <rect x="22" y="4" width="15" height="10" rx="2" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
+              {/* Janela cabine */}
+              <rect x="24" y="6" width="9" height="6" rx="1" fill="#bae6fd" opacity="0.7" />
+              {/* Texto GUINCHO */}
+              <text x="10" y="20" fontSize="4" fontWeight="bold" fill="#92400e" textAnchor="middle">GUINCHO</text>
+              {/* Carretel do cabo */}
+              <circle cx="10" cy="15" r="5" fill="#d97706" stroke="#92400e" strokeWidth="0.8" />
+              <circle cx="10" cy="15" r="3" fill="#f59e0b" />
+              <circle cx="10" cy="15" r="1.5" fill="#92400e" />
+              {/* Luz de emergencia piscando */}
+              <circle cx="30" cy="4" r="2" fill="#ef4444" opacity="0.9" className="animate-pulse" />
+              {/* Roda dianteira */}
+              <circle cx="34" cy="24" r="4" fill="#1f2937" stroke="#374151" strokeWidth="0.5" />
+              <circle cx="34" cy="24" r="2" fill="#374151" />
+              {/* Roda traseira */}
+              <circle cx="8" cy="24" r="4" fill="#1f2937" stroke="#374151" strokeWidth="0.5" />
+              <circle cx="8" cy="24" r="2" fill="#374151" />
+              {/* Farol */}
+              <rect x="36" y="14" width="3" height="4" rx="1" fill="#fef3c7" opacity="0.9" />
+            </svg>
+          </div>
+        )}
 
         {/* Fumaca do escape - multiplas particulas animadas */}
         {moving && (
@@ -263,6 +306,21 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
           <text x="55" y="37" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#1f2937">
             #{position}
           </text>
+
+          {/* Fumaca do capo - apenas do 15o para baixo */}
+          {struggling && (
+            <g>
+              <circle cx="90" cy="18" r="5" fill="#d1d5db" opacity="0.55" className="animate-[exhaust1_0.9s_ease-out_infinite]" style={{ animationDelay: "0s" }} />
+              <circle cx="93" cy="12" r="7" fill="#e5e7eb" opacity="0.40" className="animate-[exhaust1_1.1s_ease-out_infinite]" style={{ animationDelay: "0.15s" }} />
+              <circle cx="88" cy="7"  r="9" fill="#f3f4f6" opacity="0.30" className="animate-[exhaust1_1.3s_ease-out_infinite]" style={{ animationDelay: "0.3s" }} />
+              <circle cx="95" cy="3"  r="11" fill="#9ca3af" opacity="0.20" className="animate-[exhaust1_1.5s_ease-out_infinite]" style={{ animationDelay: "0.45s" }} />
+              <circle cx="85" cy="-2" r="13" fill="#6b7280" opacity="0.12" className="animate-[exhaust1_1.7s_ease-out_infinite]" style={{ animationDelay: "0.6s" }} />
+              {/* Pequenas chispas de superaquecimento */}
+              <circle cx="92" cy="20" r="1.2" fill="#fbbf24" opacity="0.8" className="animate-pulse" />
+              <circle cx="88" cy="22" r="0.9" fill="#f97316" opacity="0.7" className="animate-pulse" style={{ animationDelay: "0.3s" }} />
+              <circle cx="94" cy="19" r="0.7" fill="#ef4444" opacity="0.6" className="animate-pulse" style={{ animationDelay: "0.6s" }} />
+            </g>
+          )}
         </svg>
 
         {/* Foto do piloto acima do carro */}
