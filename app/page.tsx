@@ -579,12 +579,12 @@ function TestMetaCelebration({ onClose }: { onClose: () => void }) {
           osc.start(ctx.currentTime + time)
           osc.stop(ctx.currentTime + time + 0.6)
         }
-        playHorn(0); playHorn(0.7); playHorn(1.4); playHorn(2.1); playHorn(2.8)
+        playHorn(0); playHorn(0.7); playHorn(1.4); playHorn(2.1); playHorn(2.8); playHorn(3.5); playHorn(4.2)
         setAudioPlayed(true)
       } catch (e) {}
     }
 
-    const t = setTimeout(onClose, 5000)
+    const t = setTimeout(onClose, 7000)
     return () => clearTimeout(t)
   }, [onClose, audioPlayed])
 
@@ -644,7 +644,7 @@ function TestMetaCelebration({ onClose }: { onClose: () => void }) {
         <div className="relative">
           <div className="absolute inset-0 rounded-full blur-2xl" style={{ background: "rgba(244,114,182,0.4)" }} />
           <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amanda-A8MBCF4rdXyJwhPF9LbAk9E51hAqbr.jpg"
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-9Csu6tKWbtzEMt7nkHj7uGTu3K4ed6.jpeg"
             alt="Amanda Souza"
             className="relative w-40 h-40 rounded-full object-cover shadow-2xl"
             style={{ border: "5px solid #f472b6", boxShadow: "0 0 40px rgba(244,114,182,0.6)" }}
