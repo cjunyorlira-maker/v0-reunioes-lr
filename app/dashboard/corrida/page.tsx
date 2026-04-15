@@ -39,42 +39,101 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
 
         {/* Guincho na frente puxando o carro - apenas do 15o para baixo */}
         {struggling && (
-          <div className="absolute left-full top-1/2 -translate-y-1/2 translate-x-1 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
-            {/* Cabo do guincho */}
-            <div className="relative" style={{ width: "54px", height: "12px" }}>
-              {/* Corrente/cabo tensionado com curvatura */}
-              <svg width="54" height="12" viewBox="0 0 54 12">
-                <path d="M 2 6 Q 20 2, 38 7 Q 46 9, 52 6" stroke="#a3a3a3" strokeWidth="1.5" fill="none" strokeDasharray="3,2" />
-                {/* Segmentos de corrente */}
-                {[6, 14, 22, 30, 38, 46].map(x => (
-                  <rect key={x} x={x - 2} y="4" width="4" height="4" rx="1" fill="#737373" stroke="#525252" strokeWidth="0.5" />
+          <div className="absolute left-full top-1/2 -translate-y-1/2 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
+            {/* Cabo/corrente tensionada */}
+            <svg width="35" height="20" viewBox="0 0 35 20" className="mr-[-2px]">
+              {/* Corrente com elos */}
+              <g>
+                {[0, 7, 14, 21, 28].map((x, i) => (
+                  <g key={i}>
+                    <ellipse cx={x + 3} cy="10" rx="4" ry="3" fill="none" stroke="#71717a" strokeWidth="2" />
+                    {i < 4 && <ellipse cx={x + 6.5} cy="10" rx="4" ry="3" fill="none" stroke="#52525b" strokeWidth="2" />}
+                  </g>
                 ))}
-              </svg>
-            </div>
-            {/* Caminhao do guincho */}
-            <svg width="40" height="28" viewBox="0 0 40 28" className="drop-shadow-lg">
-              {/* Corpo do caminhao */}
-              <rect x="2" y="10" width="36" height="14" rx="2" fill="#f59e0b" stroke="#d97706" strokeWidth="0.8" />
-              {/* Cabine */}
-              <rect x="22" y="4" width="15" height="10" rx="2" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
-              {/* Janela cabine */}
-              <rect x="24" y="6" width="9" height="6" rx="1" fill="#bae6fd" opacity="0.7" />
-              {/* Texto GUINCHO */}
-              <text x="10" y="20" fontSize="4" fontWeight="bold" fill="#92400e" textAnchor="middle">GUINCHO</text>
-              {/* Carretel do cabo */}
-              <circle cx="10" cy="15" r="5" fill="#d97706" stroke="#92400e" strokeWidth="0.8" />
-              <circle cx="10" cy="15" r="3" fill="#f59e0b" />
-              <circle cx="10" cy="15" r="1.5" fill="#92400e" />
-              {/* Luz de emergencia piscando */}
-              <circle cx="30" cy="4" r="2" fill="#ef4444" opacity="0.9" className="animate-pulse" />
+              </g>
+              {/* Tensao no cabo */}
+              <line x1="0" y1="10" x2="35" y2="10" stroke="#a1a1aa" strokeWidth="0.5" strokeDasharray="2,2" opacity="0.5" />
+            </svg>
+            
+            {/* Caminhao guincho realista */}
+            <svg width="90" height="55" viewBox="0 0 90 55" className="drop-shadow-xl">
+              {/* Sombra no chao */}
+              <ellipse cx="45" cy="52" rx="40" ry="3" fill="black" opacity="0.3" />
+              
+              {/* Chassi/base do caminhao */}
+              <rect x="5" y="35" width="80" height="8" rx="1" fill="#374151" />
+              
+              {/* Plataforma de carga inclinada */}
+              <polygon points="8,35 75,35 80,22 12,22" fill="#f59e0b" stroke="#d97706" strokeWidth="1" />
+              {/* Linhas da plataforma */}
+              <line x1="20" y1="22" x2="18" y2="35" stroke="#d97706" strokeWidth="0.5" />
+              <line x1="35" y1="22" x2="33" y2="35" stroke="#d97706" strokeWidth="0.5" />
+              <line x1="50" y1="22" x2="48" y2="35" stroke="#d97706" strokeWidth="0.5" />
+              <line x1="65" y1="22" x2="63" y2="35" stroke="#d97706" strokeWidth="0.5" />
+              
+              {/* Braco do guincho */}
+              <polygon points="10,22 18,22 22,8 14,8" fill="#78716c" stroke="#57534e" strokeWidth="1" />
+              <polygon points="14,8 22,8 18,2 12,2" fill="#a8a29e" stroke="#78716c" strokeWidth="0.8" />
+              {/* Polia na ponta */}
+              <circle cx="15" cy="4" r="3" fill="#525252" stroke="#404040" strokeWidth="0.5" />
+              <circle cx="15" cy="4" r="1.5" fill="#737373" />
+              
+              {/* Carretel do cabo no braco */}
+              <circle cx="16" cy="16" r="5" fill="#404040" stroke="#262626" strokeWidth="1" />
+              <circle cx="16" cy="16" r="3" fill="#525252" />
+              <circle cx="16" cy="16" r="1" fill="#262626" />
+              
+              {/* Cabine do caminhao */}
+              <rect x="58" y="12" width="28" height="23" rx="3" fill="#fbbf24" stroke="#d97706" strokeWidth="1.5" />
+              {/* Teto da cabine */}
+              <rect x="58" y="8" width="28" height="6" rx="2" fill="#f59e0b" stroke="#d97706" strokeWidth="1" />
+              {/* Para-brisa */}
+              <rect x="61" y="14" width="22" height="10" rx="2" fill="#0ea5e9" opacity="0.6" />
+              <rect x="62" y="15" width="20" height="8" rx="1" fill="#7dd3fc" opacity="0.4" />
+              {/* Porta */}
+              <rect x="61" y="25" width="10" height="9" rx="1" fill="#fbbf24" stroke="#d97706" strokeWidth="0.5" />
+              <circle cx="69" cy="29" r="1" fill="#78716c" />
+              {/* Janela da porta */}
+              <rect x="62" y="26" width="8" height="5" rx="1" fill="#7dd3fc" opacity="0.5" />
+              
+              {/* Luzes de emergencia no teto */}
+              <rect x="63" y="5" width="18" height="4" rx="2" fill="#1f2937" />
+              <circle cx="68" cy="7" r="2" fill="#ef4444" className="animate-pulse" />
+              <circle cx="76" cy="7" r="2" fill="#3b82f6" className="animate-pulse" style={{ animationDelay: "0.5s" }} />
+              
+              {/* Farol dianteiro */}
+              <rect x="84" y="20" width="4" height="8" rx="2" fill="#fef3c7" />
+              <rect x="85" y="21" width="2" height="6" rx="1" fill="#fde68a" opacity="0.8" />
+              
+              {/* Faixa amarela e preta de seguranca */}
+              <rect x="8" y="32" width="50" height="3" fill="url(#hazardStripes)" />
+              <defs>
+                <pattern id="hazardStripes" patternUnits="userSpaceOnUse" width="6" height="3">
+                  <rect width="3" height="3" fill="#fbbf24" />
+                  <rect x="3" width="3" height="3" fill="#1f2937" />
+                </pattern>
+              </defs>
+              
+              {/* Texto GUINCHO 24H */}
+              <rect x="25" y="24" width="30" height="8" rx="1" fill="#1f2937" />
+              <text x="40" y="30" fontSize="5" fontWeight="bold" fill="#fbbf24" textAnchor="middle">GUINCHO</text>
+              
+              {/* Rodas traseiras (duplas) */}
+              <circle cx="22" cy="46" r="7" fill="#1f2937" stroke="#404040" strokeWidth="1" />
+              <circle cx="22" cy="46" r="5" fill="#374151" />
+              <circle cx="22" cy="46" r="2" fill="#525252" />
+              <circle cx="30" cy="46" r="7" fill="#1f2937" stroke="#404040" strokeWidth="1" />
+              <circle cx="30" cy="46" r="5" fill="#374151" />
+              <circle cx="30" cy="46" r="2" fill="#525252" />
+              
               {/* Roda dianteira */}
-              <circle cx="34" cy="24" r="4" fill="#1f2937" stroke="#374151" strokeWidth="0.5" />
-              <circle cx="34" cy="24" r="2" fill="#374151" />
-              {/* Roda traseira */}
-              <circle cx="8" cy="24" r="4" fill="#1f2937" stroke="#374151" strokeWidth="0.5" />
-              <circle cx="8" cy="24" r="2" fill="#374151" />
-              {/* Farol */}
-              <rect x="36" y="14" width="3" height="4" rx="1" fill="#fef3c7" opacity="0.9" />
+              <circle cx="72" cy="46" r="7" fill="#1f2937" stroke="#404040" strokeWidth="1" />
+              <circle cx="72" cy="46" r="5" fill="#374151" />
+              <circle cx="72" cy="46" r="2" fill="#525252" />
+              
+              {/* Para-choque traseiro com gancho */}
+              <rect x="2" y="38" width="6" height="6" rx="1" fill="#52525b" />
+              <path d="M 0 41 Q -3 41, -3 44 L -3 46 Q -3 48, 0 48" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         )}
