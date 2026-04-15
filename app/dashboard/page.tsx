@@ -403,46 +403,52 @@ export default function DashboardPage() {
       <div className="relative z-10">
         {/* Header */}
         <header className="border-b border-white/5 backdrop-blur-xl bg-black/20 sticky top-0 z-40">
-          <div className="flex items-center justify-between px-6 py-4 max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-4 max-w-[1600px] mx-auto gap-3 md:gap-0">
+            <div className="flex items-center gap-3 md:gap-4">
               <Image
                 src="/images/logo-lr.png"
                 alt="LR Multimarcas"
                 width={160}
                 height={52}
-                className="h-[48px] w-auto object-contain"
+                className="h-[36px] md:h-[48px] w-auto object-contain"
               />
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                   Dashboard Executivo
                 </h1>
-                <p className="text-xs text-white/40">{weekLabel}</p>
+                <p className="text-[10px] md:text-xs text-white/40">{weekLabel}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 mt-3 md:mt-0">
+              <Link
+                href="/dashboard/corrida"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 hover:from-yellow-500/30 hover:to-orange-500/30 text-yellow-400 text-xs md:text-sm font-medium transition-all"
+              >
+                Corrida
+              </Link>
               <Link
                 href="/dashboard/vendedores"
-                className="px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-400 text-sm font-medium transition-all"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-400 text-xs md:text-sm font-medium transition-all"
               >
                 Lista Vendedores
               </Link>
               <Link
                 href="/dashboard/piores"
-                className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-all"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 text-xs md:text-sm font-medium transition-all"
               >
                 Piores
               </Link>
               <button
                 onClick={handleCopyReport}
                 disabled={copying}
-                className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-sm font-medium transition-all disabled:opacity-50"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-xs md:text-sm font-medium transition-all disabled:opacity-50"
               >
                 {copying ? "Copiando..." : "Copiar Relatorio"}
               </button>
               <Link
                 href="/"
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs md:text-sm font-medium transition-all"
               >
                 Voltar ao Quadro
               </Link>
@@ -923,20 +929,6 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          {/* Marcados */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-[#d4af37]/80">MARCADOS</span>
-                              <span className="text-sm text-[#d4af37]/60">{equipe.agendei > 0 ? Math.round((equipe.marcados / equipe.agendei) * 100) : 0}%</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-[#d4af37] to-yellow-400" style={{ width: equipe.agendei > 0 ? `${(equipe.marcados / equipe.agendei) * 100}%` : "0%" }}></div>
-                              </div>
-                              <span className="text-2xl font-bold text-[#d4af37] min-w-fit">{equipe.marcados}</span>
-                            </div>
-                          </div>
-
                           {/* Vieram */}
                           <div>
                             <div className="flex items-center justify-between mb-2">
@@ -945,7 +937,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: equipe.marcados > 0 ? `${(equipe.veio / equipe.marcados) * 100}%` : "0%" }}></div>
+                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: equipe.agendei > 0 ? `${(equipe.veio / equipe.agendei) * 100}%` : "0%" }}></div>
                               </div>
                               <span className="text-2xl font-bold text-emerald-400 min-w-fit">{equipe.veio}</span>
                             </div>

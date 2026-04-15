@@ -70,6 +70,48 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Janaína Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
 }
 
+// Mapa de genero dos vendedores (M = masculino, F = feminino)
+export const VENDEDOR_GENERO: Record<string, "M" | "F"> = {
+  "Luis Henrique": "M",
+  "Leonardo Freitas": "M",
+  "Alex Negreiros": "M",
+  "Bianca Simoes": "F",
+  "Bianca Isabela": "F",
+  "Yuri Pereira": "M",
+  "Lucas Dionisio": "M",
+  "Kleinver Seabra": "M",
+  "Rogerio Martins": "M",
+  "Nathan Caue": "M",
+  "Amanda Souza": "F",
+  "Emily Machado": "F",
+  "Nicolas Moraes": "M",
+  "Emilaine Lins": "F",
+  "Rafaella Antunes": "F",
+  "Gisely Leal": "F",
+  "Lidiane Fonseca": "F",
+  "Brayan Bertolai": "M",
+  "Brayan": "M",
+  "Alexia Cunha": "F",
+  "Janaina Dantas": "F",
+  "Ana Gabrielly": "F",
+  "Ana Beatriz": "F",
+  "Willy Santana": "M",
+  "Joao Victor": "M",
+  "João Victor": "M",
+  "Gabrielly Pereira": "F",
+  "Isabelly Ribeiro": "F",
+  "Evelyn Rodrigues": "F",
+  "Joao Lucas": "M",
+  "João Lucas": "M",
+}
+
+// Funcao para obter genero do vendedor
+export function getVendedorGenero(nome: string): "M" | "F" {
+  if (!nome) return "M"
+  const normalizado = normalizeVendedorNome(nome.trim())
+  return VENDEDOR_GENERO[normalizado] || "M" // default masculino se nao encontrar
+}
+
 // Mapa de nomes que devem ser unificados (nome curto -> nome completo)
 const VENDEDOR_ALIAS: Record<string, string> = {
   "Alexia": "Alexia Cunha",
