@@ -28,7 +28,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
   const glow = isF ? "255,100,180" : "59,130,246"
   const moving = progresso > 0 && progresso < 100
   const finished = progresso >= 100
-  const struggling = position >= 15  // Do 15o para baixo: capô fumando + guincho
+  const struggling = position >= 10  // Do 10o para baixo: capô fumando + guincho
 
   return (
     <div
@@ -37,7 +37,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
     >
       <div className="relative">
 
-        {/* Guincho na frente puxando o carro - apenas do 15o para baixo */}
+        {/* Guincho na frente puxando o carro - apenas do 10o para baixo */}
         {struggling && (
           <div className="absolute left-full top-1/2 -translate-y-1/2 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
             {/* Cabo/corrente tensionada */}
@@ -90,11 +90,18 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
               {/* Para-brisa */}
               <rect x="61" y="14" width="22" height="10" rx="2" fill="#0ea5e9" opacity="0.6" />
               <rect x="62" y="15" width="20" height="8" rx="1" fill="#7dd3fc" opacity="0.4" />
+              {/* Foto do motorista (você!) na janela da cabine */}
+              <image href="/images/guincho-motorista.jpg" x="64" y="14" width="14" height="14" preserveAspectRatio="xMidYMid slice" clip-path="url(#circleMask)" />
+              <defs>
+                <clipPath id="circleMask">
+                  <circle cx="71" cy="21" r="7" />
+                </clipPath>
+              </defs>
+              {/* Circulo ao redor da foto */}
+              <circle cx="71" cy="21" r="7" fill="none" stroke="#d97706" strokeWidth="1" />
               {/* Porta */}
               <rect x="61" y="25" width="10" height="9" rx="1" fill="#fbbf24" stroke="#d97706" strokeWidth="0.5" />
               <circle cx="69" cy="29" r="1" fill="#78716c" />
-              {/* Janela da porta */}
-              <rect x="62" y="26" width="8" height="5" rx="1" fill="#7dd3fc" opacity="0.5" />
               
               {/* Luzes de emergencia no teto */}
               <rect x="63" y="5" width="18" height="4" rx="2" fill="#1f2937" />
