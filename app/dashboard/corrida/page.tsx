@@ -39,9 +39,20 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
 
         {/* Guincho na frente puxando o carro - apenas do 10o para baixo */}
         {struggling && (
-          <div className="absolute left-full top-1/2 -translate-y-1/2 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
-            {/* Cabo/corrente tensionada */}
-            <svg width="35" height="20" viewBox="0 0 35 20" className="mr-[-2px]">
+          <div className="absolute left-full top-1/2 -translate-y-1/2 flex flex-col items-start pointer-events-none" style={{ zIndex: 30 }}>
+            {/* Foto grande acima do guincho */}
+            <div className="mb-2 ml-3">
+              <img
+                src="/images/guincho-motorista.jpg"
+                alt="Motorista Guincho"
+                className="w-24 h-24 rounded-full object-cover shadow-xl border-4 border-amber-400"
+                style={{ boxShadow: "0 0 20px rgba(251, 191, 36, 0.6)" }}
+              />
+            </div>
+
+            <div className="flex items-center">
+              {/* Cabo/corrente tensionada */}
+              <svg width="35" height="20" viewBox="0 0 35 20" className="mr-[-2px]">
               {/* Corrente com elos */}
               <g>
                 {[0, 7, 14, 21, 28].map((x, i) => (
@@ -142,6 +153,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
               <rect x="2" y="38" width="6" height="6" rx="1" fill="#52525b" />
               <path d="M 0 41 Q -3 41, -3 44 L -3 46 Q -3 48, 0 48" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" />
             </svg>
+            </div>
           </div>
         )}
 
