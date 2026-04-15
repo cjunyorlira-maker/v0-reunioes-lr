@@ -86,11 +86,16 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
     isLoading: loadingQualificados
   } = useQualificados(dateRange)
   
-  // Filtra qualificados pelo dia selecionado
+  // Filtra qualificados pelo dia selecionado E pela equipe selecionada
   const qualificadosAtivos = useMemo(() => {
-    if (!selectedDay) return qualificadosSemana
-    return qualificadosSemana.filter(q => q.data_qualificacao === selectedDay)
-  }, [qualificadosSemana, selectedDay])
+    return qualificadosSemana.filter(q => {
+      // Filtra por dia se selecionado
+      const matchesDay = !selectedDay || q.data_qualificacao === selectedDay
+      // Filtra por equipe se selecionada
+      const matchesEquipe = !selectedEquipe || q.equipe === selectedEquipe
+      return matchesDay && matchesEquipe
+    })
+  }, [qualificadosSemana, selectedDay, selectedEquipe])
 
   // Kommo IDs que já têm reunião marcada no nosso sistema (usa allLeads)
   const kommoIdsNoAgendei = useMemo(() => {
@@ -518,12 +523,19 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="bg-black/20 rounded-lg p-3">
             <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Qualificados Semana</p>
             <p className="text-[32px] font-bold text-cyan-400">{totalQualificadosSemana}</p>
             <p className="text-[10px] text-[#8a8070]">qualificados nesta semana</p>
           </div>
+          {selectedDay && (
+            <div className="bg-black/20 rounded-lg p-3 border border-violet-500/30">
+              <p className="text-[10px] text-violet-400 uppercase tracking-wider mb-1">Qualificados do Dia</p>
+              <p className="text-[32px] font-bold text-violet-400">{qualificadosAtivos.length}</p>
+              <p className="text-[10px] text-[#8a8070]">no dia selecionado</p>
+            </div>
+          )}
           <div className="bg-black/20 rounded-lg p-3">
             <p className="text-[10px] text-[#8a8070] uppercase tracking-wider mb-1">Entraram no Agendei</p>
             <p className="text-[32px] font-bold text-emerald-400">{qualificadosNoAgendei.length}</p>
