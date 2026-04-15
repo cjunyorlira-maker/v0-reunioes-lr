@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import Pusher from "pusher"
+
+// Inicializa Pusher para celebracoes em tempo real
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.PUSHER_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.PUSHER_CLUSTER!,
+  useTLS: true,
+})
 
 // Função para buscar dados do usuário no Kommo
 async function getKommoUser(userId: string | number) {
@@ -422,6 +432,18 @@ export async function POST(request: NextRequest) {
     
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    // Dispara celebracao via Pusher para todos os PCs conectados
+    try {
+      await pusher.trigger("celebrations", "agendamento", {
+        nome: leadData.responsavel || leadData.nome,
+        foto: leadData.foto_responsavel || null,
+        timestamp: new Date().toISOString(),
+      })
+      console.log("[v0] Celebracao disparada para:", leadData.responsavel)
+    } catch (pusherError) {
+      console.error("[v0] Erro ao disparar Pusher:", pusherError)
     }
     
     return NextResponse.json({ 
