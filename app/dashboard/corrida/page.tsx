@@ -41,7 +41,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
         {struggling && (
           <div className="absolute left-full top-1/2 -translate-y-1/2 flex items-center pointer-events-none" style={{ zIndex: 30 }}>
             {/* Foto sutil acima do guincho */}
-            <div className="absolute -top-16 left-20">
+            <div className="absolute -top-6 left-20">
               <img
                 src="/images/guincho-motorista.jpg"
                 alt="Motorista Guincho"
@@ -877,84 +877,6 @@ export default function CorridaPage() {
                 <RaceTrack key={vendedor.nome} vendedor={vendedor} index={index} />
               ))
             )}
-          </div>
-
-          {/* Pessoas rindo na lateral da pista */}
-          <div className="fixed left-0 top-1/3 pointer-events-none z-0">
-            {/* Pessoa 1 */}
-            <svg width="40" height="50" viewBox="0 0 40 50" className="ml-2 mb-3">
-              {/* Cabeça */}
-              <circle cx="20" cy="12" r="7" fill="#f4a460" stroke="#d2691e" strokeWidth="0.5" />
-              {/* Olhos rindo */}
-              <circle cx="17" cy="11" r="1.2" fill="#1f2937" />
-              <circle cx="23" cy="11" r="1.2" fill="#1f2937" />
-              <path d="M 17 11 Q 17 13 19 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              <path d="M 23 11 Q 23 13 21 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              {/* Boca rindo - grande */}
-              <ellipse cx="20" cy="14" rx="3" ry="2.5" fill="#d2691e" />
-              <path d="M 17 14 Q 20 16, 23 14" stroke="#1f2937" fill="none" strokeWidth="1" />
-              {/* Corpo */}
-              <rect x="14" y="22" width="12" height="15" rx="2" fill="#e74c3c" />
-              {/* Braços */}
-              <rect x="6" y="24" width="8" height="3" rx="1.5" fill="#f4a460" transform="rotate(-25 10 25.5)" />
-              <rect x="26" y="24" width="8" height="3" rx="1.5" fill="#f4a460" transform="rotate(25 30 25.5)" />
-              {/* Pernas */}
-              <rect x="16" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              <rect x="21" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              {/* Sapatos */}
-              <ellipse cx="17.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-              <ellipse cx="22.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-            </svg>
-
-            {/* Pessoa 2 */}
-            <svg width="40" height="50" viewBox="0 0 40 50" className="ml-12" style={{ marginTop: "-10px" }}>
-              {/* Cabeça */}
-              <circle cx="20" cy="12" r="7" fill="#fdbcb4" stroke="#d2691e" strokeWidth="0.5" />
-              {/* Olhos rindo */}
-              <circle cx="17" cy="11" r="1.2" fill="#1f2937" />
-              <circle cx="23" cy="11" r="1.2" fill="#1f2937" />
-              <path d="M 17 11 Q 17 13 19 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              <path d="M 23 11 Q 23 13 21 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              {/* Boca rindo */}
-              <ellipse cx="20" cy="14" rx="3" ry="2.5" fill="#d2691e" />
-              <path d="M 17 14 Q 20 16, 23 14" stroke="#1f2937" fill="none" strokeWidth="1" />
-              {/* Corpo */}
-              <rect x="14" y="22" width="12" height="15" rx="2" fill="#3498db" />
-              {/* Braços */}
-              <rect x="6" y="24" width="8" height="3" rx="1.5" fill="#fdbcb4" transform="rotate(-25 10 25.5)" />
-              <rect x="26" y="24" width="8" height="3" rx="1.5" fill="#fdbcb4" transform="rotate(25 30 25.5)" />
-              {/* Pernas */}
-              <rect x="16" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              <rect x="21" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              {/* Sapatos */}
-              <ellipse cx="17.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-              <ellipse cx="22.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-            </svg>
-
-            {/* Pessoa 3 */}
-            <svg width="40" height="50" viewBox="0 0 40 50" className="ml-24 -mt-4">
-              {/* Cabeça */}
-              <circle cx="20" cy="12" r="7" fill="#f4a460" stroke="#d2691e" strokeWidth="0.5" />
-              {/* Olhos rindo */}
-              <circle cx="17" cy="11" r="1.2" fill="#1f2937" />
-              <circle cx="23" cy="11" r="1.2" fill="#1f2937" />
-              <path d="M 17 11 Q 17 13 19 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              <path d="M 23 11 Q 23 13 21 13" stroke="#1f2937" fill="none" strokeWidth="0.5" />
-              {/* Boca rindo */}
-              <ellipse cx="20" cy="14" rx="3" ry="2.5" fill="#d2691e" />
-              <path d="M 17 14 Q 20 16, 23 14" stroke="#1f2937" fill="none" strokeWidth="1" />
-              {/* Corpo */}
-              <rect x="14" y="22" width="12" height="15" rx="2" fill="#27ae60" />
-              {/* Braços levantados */}
-              <rect x="6" y="22" width="8" height="3" rx="1.5" fill="#f4a460" transform="rotate(-45 10 23.5)" />
-              <rect x="26" y="22" width="8" height="3" rx="1.5" fill="#f4a460" transform="rotate(45 30 23.5)" />
-              {/* Pernas */}
-              <rect x="16" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              <rect x="21" y="38" width="3" height="10" rx="1.5" fill="#3b3b3b" />
-              {/* Sapatos */}
-              <ellipse cx="17.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-              <ellipse cx="22.5" cy="48" rx="2.5" ry="1.5" fill="#1f2937" />
-            </svg>
           </div>
 
           {/* Legenda */}
