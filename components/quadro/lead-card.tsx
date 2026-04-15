@@ -3,6 +3,7 @@
 import { Lead } from "@/lib/types"
 import { formatTimeDisplay } from "@/lib/date-utils"
 import { getFotoVendedor } from "@/lib/vendedor-fotos"
+import { ExternalLink } from "lucide-react"
 
 interface LeadCardProps {
   lead: Lead
@@ -179,6 +180,17 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           >
             Remarcar
           </button>
+          {lead.kommo_id && (
+            <a
+              href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-11 flex items-center justify-center rounded-lg border border-[rgba(212,175,55,0.2)] text-[#d4af37] bg-[rgba(212,175,55,0.05)] hover:bg-[rgba(212,175,55,0.15)] transition-colors"
+              title="Abrir no Kommo"
+            >
+              <ExternalLink size={16} />
+            </a>
+          )}
         </div>
         {/* Botões de Venda Fechada e Retorno - sempre disponíveis se status for "veio" */}
         {lead.status === "veio" && (
