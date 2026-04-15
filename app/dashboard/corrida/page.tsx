@@ -266,7 +266,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
         </svg>
 
         {/* Foto do piloto na frente do carro */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 flex flex-col items-center">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 flex flex-col items-center">
           {foto ? (
             <img
               src={foto}
@@ -292,7 +292,7 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
 
         {/* Badge CHEGOU na frente */}
         {finished && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-20 whitespace-nowrap px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[11px] font-bold text-black shadow-lg animate-bounce">
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-20 whitespace-nowrap px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[11px] font-bold text-black shadow-lg animate-bounce">
             META!
           </div>
         )}
