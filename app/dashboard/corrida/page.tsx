@@ -59,7 +59,7 @@ function FireworksBar() {
       fireworks.push({
         x, y: canvas.height,
         targetY,
-        vy: -8 - Math.random() * 4,
+        vy: -5 - Math.random() * 2.5,
         color: colors[Math.floor(Math.random() * colors.length)],
         exploded: false,
         particles: []
@@ -70,7 +70,7 @@ function FireworksBar() {
       const particleCount = 80 + Math.floor(Math.random() * 60)
       for (let i = 0; i < particleCount; i++) {
         const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.3
-        const speed = 2 + Math.random() * 6
+        const speed = 1.2 + Math.random() * 3.5
         const hueShift = Math.random() > 0.7 ? colors[Math.floor(Math.random() * colors.length)] : fw.color
         fw.particles.push({
           x: fw.x, y: fw.y,
@@ -79,14 +79,14 @@ function FireworksBar() {
           color: hueShift,
           alpha: 1,
           size: 1.5 + Math.random() * 2,
-          decay: 0.012 + Math.random() * 0.015,
+          decay: 0.006 + Math.random() * 0.008,
           trail: []
         })
       }
       // Adiciona particulas de brilho central
       for (let i = 0; i < 20; i++) {
         const angle = Math.random() * Math.PI * 2
-        const speed = Math.random() * 2
+        const speed = Math.random() * 1
         fw.particles.push({
           x: fw.x, y: fw.y,
           vx: Math.cos(angle) * speed,
@@ -94,7 +94,7 @@ function FireworksBar() {
           color: "#ffffff",
           alpha: 1,
           size: 3 + Math.random() * 2,
-          decay: 0.03 + Math.random() * 0.02,
+          decay: 0.015 + Math.random() * 0.01,
           trail: []
         })
       }
@@ -107,9 +107,9 @@ function FireworksBar() {
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Cria novos fogos
-      if (Date.now() - lastFirework > 400 + Math.random() * 600) {
+      if (Date.now() - lastFirework > 900 + Math.random() * 1200) {
         createFirework()
-        if (Math.random() > 0.5) createFirework() // Fogos duplos as vezes
+        if (Math.random() > 0.6) createFirework() // Fogos duplos as vezes
         lastFirework = Date.now()
       }
 
@@ -119,7 +119,7 @@ function FireworksBar() {
         if (!fw.exploded) {
           // Foguete subindo
           fw.y += fw.vy
-          fw.vy += 0.12 // gravidade
+          fw.vy += 0.08 // gravidade reduzida
 
           // Trilha do foguete
           ctx.beginPath()
@@ -157,8 +157,8 @@ function FireworksBar() {
 
             p.x += p.vx
             p.y += p.vy
-            p.vy += 0.06 // gravidade nas particulas
-            p.vx *= 0.98 // friccao
+            p.vy += 0.03 // gravidade leve nas particulas
+            p.vx *= 0.985 // friccao
             p.alpha -= p.decay
 
             if (p.alpha <= 0) {
