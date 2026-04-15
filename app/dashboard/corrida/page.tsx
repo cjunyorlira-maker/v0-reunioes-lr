@@ -17,118 +17,201 @@ const META_QUALIFICADOS_SEMANA = META_QUALIFICADOS_DIA * 6
 type ViewMode = "dia" | "semana"
 type RaceType = "agendei" | "qualificados"
 
-// Fogos de artificio no topo da tela
+// Fogos de artificio reais estilo reveillon com Canvas
 function FireworksBar() {
-  const fireworks = [
-    { x: 5,  colors: ["#f472b6","#fbbf24","#f87171"], delay: 0    },
-    { x: 13, colors: ["#60a5fa","#34d399","#a78bfa"], delay: 0.4  },
-    { x: 22, colors: ["#fbbf24","#f97316","#facc15"], delay: 0.8  },
-    { x: 31, colors: ["#f472b6","#e879f9","#fb7185"], delay: 0.2  },
-    { x: 40, colors: ["#34d399","#22d3ee","#60a5fa"], delay: 1.0  },
-    { x: 50, colors: ["#fbbf24","#f59e0b","#fde68a"], delay: 0.6  },
-    { x: 60, colors: ["#a78bfa","#8b5cf6","#c4b5fd"], delay: 0.3  },
-    { x: 69, colors: ["#f472b6","#fb923c","#fbbf24"], delay: 0.9  },
-    { x: 78, colors: ["#60a5fa","#38bdf8","#7dd3fc"], delay: 0.5  },
-    { x: 87, colors: ["#34d399","#f472b6","#fbbf24"], delay: 0.1  },
-    { x: 95, colors: ["#f87171","#fb923c","#fde68a"], delay: 0.7  },
-  ]
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const rays = 14
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * 2
+      canvas.height = canvas.offsetHeight * 2
+    }
+    resize()
+    window.addEventListener("resize", resize)
+
+    interface Particle {
+      x: number; y: number; vx: number; vy: number
+      color: string; alpha: number; size: number; decay: number
+      trail: { x: number; y: number }[]
+    }
+
+    interface Firework {
+      x: number; y: number; targetY: number; vy: number
+      color: string; exploded: boolean; particles: Particle[]
+    }
+
+    const colors = [
+      "#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#ff6bd6", 
+      "#ffa94d", "#69db7c", "#748ffc", "#f783ac", "#fcc419",
+      "#63e6be", "#da77f2", "#ff8787", "#ffe066", "#8ce99a"
+    ]
+
+    const fireworks: Firework[] = []
+
+    const createFirework = () => {
+      const x = Math.random() * canvas.width
+      const targetY = canvas.height * 0.15 + Math.random() * canvas.height * 0.35
+      fireworks.push({
+        x, y: canvas.height,
+        targetY,
+        vy: -8 - Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        exploded: false,
+        particles: []
+      })
+    }
+
+    const explode = (fw: Firework) => {
+      const particleCount = 80 + Math.floor(Math.random() * 60)
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (Math.PI * 2 / particleCount) * i + Math.random() * 0.3
+        const speed = 2 + Math.random() * 6
+        const hueShift = Math.random() > 0.7 ? colors[Math.floor(Math.random() * colors.length)] : fw.color
+        fw.particles.push({
+          x: fw.x, y: fw.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: hueShift,
+          alpha: 1,
+          size: 1.5 + Math.random() * 2,
+          decay: 0.012 + Math.random() * 0.015,
+          trail: []
+        })
+      }
+      // Adiciona particulas de brilho central
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2
+        const speed = Math.random() * 2
+        fw.particles.push({
+          x: fw.x, y: fw.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: "#ffffff",
+          alpha: 1,
+          size: 3 + Math.random() * 2,
+          decay: 0.03 + Math.random() * 0.02,
+          trail: []
+        })
+      }
+      fw.exploded = true
+    }
+
+    let lastFirework = 0
+    const animate = () => {
+      ctx.fillStyle = "rgba(10, 10, 15, 0.15)"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Cria novos fogos
+      if (Date.now() - lastFirework > 400 + Math.random() * 600) {
+        createFirework()
+        if (Math.random() > 0.5) createFirework() // Fogos duplos as vezes
+        lastFirework = Date.now()
+      }
+
+      for (let fi = fireworks.length - 1; fi >= 0; fi--) {
+        const fw = fireworks[fi]
+
+        if (!fw.exploded) {
+          // Foguete subindo
+          fw.y += fw.vy
+          fw.vy += 0.12 // gravidade
+
+          // Trilha do foguete
+          ctx.beginPath()
+          ctx.arc(fw.x, fw.y, 2, 0, Math.PI * 2)
+          ctx.fillStyle = fw.color
+          ctx.shadowBlur = 15
+          ctx.shadowColor = fw.color
+          ctx.fill()
+          ctx.shadowBlur = 0
+
+          // Faiscas da cauda
+          for (let s = 0; s < 3; s++) {
+            ctx.beginPath()
+            ctx.arc(
+              fw.x + (Math.random() - 0.5) * 6,
+              fw.y + 10 + Math.random() * 15,
+              Math.random() * 1.5,
+              0, Math.PI * 2
+            )
+            ctx.fillStyle = `rgba(255, ${180 + Math.random() * 75}, 50, ${0.5 + Math.random() * 0.5})`
+            ctx.fill()
+          }
+
+          if (fw.y <= fw.targetY) {
+            explode(fw)
+          }
+        } else {
+          // Particulas da explosao
+          for (let pi = fw.particles.length - 1; pi >= 0; pi--) {
+            const p = fw.particles[pi]
+            
+            // Salva posicao para trilha
+            p.trail.push({ x: p.x, y: p.y })
+            if (p.trail.length > 6) p.trail.shift()
+
+            p.x += p.vx
+            p.y += p.vy
+            p.vy += 0.06 // gravidade nas particulas
+            p.vx *= 0.98 // friccao
+            p.alpha -= p.decay
+
+            if (p.alpha <= 0) {
+              fw.particles.splice(pi, 1)
+              continue
+            }
+
+            // Desenha trilha
+            if (p.trail.length > 1) {
+              ctx.beginPath()
+              ctx.moveTo(p.trail[0].x, p.trail[0].y)
+              for (let t = 1; t < p.trail.length; t++) {
+                ctx.lineTo(p.trail[t].x, p.trail[t].y)
+              }
+              ctx.strokeStyle = p.color.replace(")", `, ${p.alpha * 0.3})`).replace("rgb", "rgba").replace("#", "")
+              ctx.lineWidth = p.size * 0.5
+              ctx.stroke()
+            }
+
+            // Desenha particula com glow
+            ctx.beginPath()
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+            ctx.fillStyle = p.color
+            ctx.globalAlpha = p.alpha
+            ctx.shadowBlur = 8
+            ctx.shadowColor = p.color
+            ctx.fill()
+            ctx.shadowBlur = 0
+            ctx.globalAlpha = 1
+          }
+
+          if (fw.particles.length === 0) {
+            fireworks.splice(fi, 1)
+          }
+        }
+      }
+
+      requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      window.removeEventListener("resize", resize)
+    }
+  }, [])
 
   return (
-    <>
-      <style>{`
-        @keyframes fw-shoot {
-          0%   { transform: scaleY(0) translateY(0); opacity: 0; }
-          20%  { transform: scaleY(1) translateY(0); opacity: 1; }
-          60%  { transform: scaleY(1) translateY(0); opacity: 1; }
-          100% { transform: scaleY(0) translateY(0); opacity: 0; }
-        }
-        @keyframes fw-burst {
-          0%   { transform: scale(0) rotate(0deg); opacity: 1; }
-          50%  { transform: scale(1.3) rotate(15deg); opacity: 1; }
-          100% { transform: scale(2.2) rotate(30deg); opacity: 0; }
-        }
-        @keyframes fw-spark {
-          0%   { transform: translateY(0) scaleX(1); opacity: 1; }
-          100% { transform: translateY(40px) scaleX(0.3); opacity: 0; }
-        }
-        @keyframes fw-star {
-          0%,100% { transform: scale(1); opacity:1; }
-          50%      { transform: scale(1.6); opacity:0.6; }
-        }
-      `}</style>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-        {fireworks.map((fw, fi) => (
-          <g key={fi}>
-            {/* Trilha de subida */}
-            <line
-              x1={fw.x} y1={100}
-              x2={fw.x} y2={20}
-              stroke={fw.colors[0]}
-              strokeWidth="0.5"
-              strokeLinecap="round"
-              style={{
-                transformOrigin: `${fw.x}px 100px`,
-                animation: `fw-shoot 1.6s ease-out infinite`,
-                animationDelay: `${fw.delay}s`,
-              }}
-            />
-            {/* Explosao - raios em todas as direcoes */}
-            {Array.from({ length: rays }).map((_, ri) => {
-              const angle = (ri / rays) * 360
-              const len = 8 + (ri % 3) * 3
-              const color = fw.colors[ri % fw.colors.length]
-              const rad = (angle * Math.PI) / 180
-              return (
-                <line
-                  key={ri}
-                  x1={fw.x} y1={20}
-                  x2={fw.x + Math.cos(rad) * len}
-                  y2={20 + Math.sin(rad) * len}
-                  stroke={color}
-                  strokeWidth={0.6 + (ri % 2) * 0.3}
-                  strokeLinecap="round"
-                  style={{
-                    transformOrigin: `${fw.x}px 20px`,
-                    animation: `fw-burst 1.6s ease-out infinite`,
-                    animationDelay: `${fw.delay + 0.25}s`,
-                  }}
-                />
-              )
-            })}
-            {/* Faiscas caindo */}
-            {Array.from({ length: 8 }).map((_, si) => {
-              const spreadX = (si - 3.5) * 3
-              const color = fw.colors[si % fw.colors.length]
-              return (
-                <circle
-                  key={si}
-                  cx={fw.x + spreadX}
-                  cy={22}
-                  r={0.7}
-                  fill={color}
-                  style={{
-                    animation: `fw-spark 1.2s ease-in infinite`,
-                    animationDelay: `${fw.delay + 0.3 + si * 0.05}s`,
-                  }}
-                />
-              )
-            })}
-            {/* Estrela central brilhante */}
-            <circle
-              cx={fw.x} cy={20} r={1.8}
-              fill={fw.colors[0]}
-              style={{
-                filter: `blur(0.5px) drop-shadow(0 0 3px ${fw.colors[0]})`,
-                animation: `fw-star 1.6s ease-out infinite`,
-                animationDelay: `${fw.delay + 0.2}s`,
-              }}
-            />
-          </g>
-        ))}
-      </svg>
-    </>
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{ background: "transparent" }}
+    />
   )
 }
 
