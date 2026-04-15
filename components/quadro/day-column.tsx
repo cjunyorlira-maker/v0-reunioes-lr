@@ -21,6 +21,7 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
     .filter((lead) => lead.data === formatDateForDB(day.date))
     .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
 
+  const naoVieram = dayLeads.filter((lead) => lead.status === "nao").length
   const isToday = day.isToday
 
   return (
@@ -55,15 +56,24 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
           </div>
         </div>
         
-        {/* Count */}
-        <div className={`px-2.5 py-1 rounded-lg ${
-          dayLeads.length > 0 
-            ? "bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)]" 
-            : "bg-[rgba(255,255,255,0.03)]"
-        }`}>
-          <span className={`text-[14px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
-            {dayLeads.length}
-          </span>
+        {/* Counts */}
+        <div className="flex flex-col items-end gap-1">
+          <div className={`px-2.5 py-0.5 rounded-lg ${
+            dayLeads.length > 0 
+              ? "bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)]" 
+              : "bg-[rgba(255,255,255,0.03)]"
+          }`}>
+            <span className={`text-[13px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
+              {dayLeads.length} marc.
+            </span>
+          </div>
+          {naoVieram > 0 && (
+            <div className="px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/25">
+              <span className="text-[12px] font-bold text-red-400">
+                {naoVieram} faltou
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
