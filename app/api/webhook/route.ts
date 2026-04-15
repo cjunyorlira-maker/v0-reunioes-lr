@@ -415,6 +415,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
       
+      // Dispara celebracao via Pusher quando lead é atualizado com data_agendei
+      if (leadData.data_agendei) {
+        try {
+          await pusher.trigger("celebrations", "agendamento", {
+            nome: leadData.responsavel || leadData.nome,
+            foto: leadData.foto_responsavel || null,
+            timestamp: new Date().toISOString(),
+          })
+          console.log("[v0] Celebracao disparada (update) para:", leadData.responsavel)
+        } catch (pusherError) {
+          console.error("[v0] Erro ao disparar Pusher (update):", pusherError)
+        }
+      }
+      
       return NextResponse.json({ 
         success: true, 
         action: isRemarcado ? "remarked" : "updated",
@@ -434,16 +448,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    // Dispara celebracao via Pusher para todos os PCs conectados
-    try {
-      await pusher.trigger("celebrations", "agendamento", {
-        nome: leadData.responsavel || leadData.nome,
-        foto: leadData.foto_responsavel || null,
-        timestamp: new Date().toISOString(),
-      })
-      console.log("[v0] Celebracao disparada para:", leadData.responsavel)
-    } catch (pusherError) {
-      console.error("[v0] Erro ao disparar Pusher:", pusherError)
+    // Dispara celebracao via Pusher para todos os PCs conectados (apenas se tem data_agendei)
+    if (leadData.data_agendei) {
+      try {
+        await pusher.trigger("celebrations", "agendamento", {
+          nome: leadData.responsavel || leadData.nome,
+          foto: leadData.foto_responsavel || null,
+          timestamp: new Date().toISOString(),
+        })
+        console.log("[v0] Celebracao disparada (create) para:", leadData.responsavel)
+      } catch (pusherError) {
+        console.error("[v0] Erro ao disparar Pusher:", pusherError)
+      }
     }
     
     return NextResponse.json({ 
