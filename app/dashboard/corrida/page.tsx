@@ -265,34 +265,34 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
           </text>
         </svg>
 
-        {/* Foto do piloto acima do carro */}
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
+        {/* Foto do piloto na frente do carro */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 flex flex-col items-center">
           {foto ? (
             <img
               src={foto}
               alt={nome}
-              className="w-14 h-14 rounded-full object-cover shadow-xl"
-              style={{ border: `3px solid ${primary}`, boxShadow: `0 0 15px rgba(${glow},0.6)` }}
+              className="w-16 h-16 rounded-full object-cover shadow-xl"
+              style={{ border: `3.5px solid ${primary}`, boxShadow: `0 0 18px rgba(${glow},0.7), inset 0 0 10px rgba(0,0,0,0.3)` }}
             />
           ) : (
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-xl"
-              style={{ background: primary, border: `3px solid ${accent}`, boxShadow: `0 0 15px rgba(${glow},0.6)` }}
+              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl"
+              style={{ background: primary, border: `3.5px solid ${accent}`, boxShadow: `0 0 18px rgba(${glow},0.7)` }}
             >
               {nome.charAt(0)}
             </div>
           )}
           <div
-            className="text-[11px] font-bold mt-1 px-2.5 py-1 rounded-full whitespace-nowrap"
-            style={{ background: `rgba(${glow},0.25)`, color: primary, border: `1px solid rgba(${glow},0.4)` }}
+            className="text-[10px] font-bold mt-1.5 px-2 py-0.5 rounded-full whitespace-nowrap"
+            style={{ background: `rgba(${glow},0.3)`, color: primary, border: `1px solid rgba(${glow},0.5)` }}
           >
             {nome.split(" ")[0]}
           </div>
         </div>
 
-        {/* Badge CHEGOU */}
+        {/* Badge CHEGOU na frente */}
         {finished && (
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[10px] font-bold text-black shadow-lg animate-bounce">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-20 whitespace-nowrap px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-[11px] font-bold text-black shadow-lg animate-bounce">
             META!
           </div>
         )}
