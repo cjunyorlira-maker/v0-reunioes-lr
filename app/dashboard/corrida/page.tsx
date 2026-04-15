@@ -253,7 +253,7 @@ export default function CorridaPage() {
                         : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
                     }`}
                   >
-                    {day.name.slice(0, 3)} {day.date.getDate()}
+                    {day.dayName.slice(0, 3)} {day.date.getDate()}
                   </button>
                 )
               })}
