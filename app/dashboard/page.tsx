@@ -76,31 +76,16 @@ export default function DashboardPage() {
     })
   }, [leads, activeRange])
 
-  // Leads remarcados para OUTRA semana (tinham data_original no range mas data atual fora)
-  // Usa allLeads porque o lead remarcado pode ter data fora do range atual
-  const remarcadosOutraSemana = useMemo(() => {
-    return allLeads.filter((l: any) => {
-      if (!l.remarcado) return false
-      // Se data_original (ou data_agendei) estava no período mas data foi remarcada para fora
-      const dataOriginal = l.data_original || l.data_agendei
-      if (!dataOriginal) return false
-      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
-      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
-      return dentroDoRange && foraDoRange
-    })
-  }, [allLeads, activeRange])
-
   // Estatisticas gerais (sem retornos)
   const stats = useMemo(() => {
     const veio = leadsAtivos.filter((l: any) => l.status === "veio").length
-    const naoComum = leadsAtivos.filter((l: any) => l.status === "nao" && !l.remarcado).length
-    // Remarcados para outra semana contam como "Faltou" no período original
-    const nao = naoComum + remarcadosOutraSemana.length
-    const remarcados = remarcadosOutraSemana.length
+    // Conta todos com status "nao", independente de remarcado
+    const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
+    const remarcados = leadsAtivos.filter((l: any) => l.remarcado).length
     const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
     
-    // Total inclui remarcados para outra semana
-    const total = leadsAtivos.length + remarcadosOutraSemana.length
+    // Total é simplesmente a quantidade de leads ativos
+    const total = leadsAtivos.length
     // Pendentes = total - veio - nao
     const pendentes = total - veio - nao
 
@@ -114,7 +99,7 @@ export default function DashboardPage() {
       taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
       taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
     }
-  }, [leadsAtivos, remarcadosOutraSemana])
+  }, [leadsAtivos])
 
   // Agendei por vendedor (leads com data_agendei no periodo)
   // Usa allLeads para pegar leads que foram agendados nesta semana mas remarcados para outra
@@ -183,32 +168,13 @@ export default function DashboardPage() {
       }
       map[vendedor].marcados++
       if (lead.status === "veio") map[vendedor].veio++
-      if (lead.status === "nao" && !lead.remarcado) map[vendedor].nao++
+      if (lead.status === "nao") map[vendedor].nao++
+      if (lead.remarcado) map[vendedor].remarcados++
       if (lead.venda_fechada) map[vendedor].vendas++
     })
 
-    // Adiciona remarcados para outra semana como "Faltou"
-    remarcadosOutraSemana.forEach((lead: any) => {
-      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
-      if (!map[vendedor]) {
-        map[vendedor] = {
-          nome: vendedor,
-          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
-          equipe: lead.equipe || "Sem equipe",
-          marcados: 0,
-          veio: 0,
-          nao: 0,
-          remarcados: 0,
-          vendas: 0,
-        }
-      }
-      map[vendedor].marcados++
-      map[vendedor].nao++
-      map[vendedor].remarcados++
-    })
-
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
-  }, [leadsAtivos, remarcadosOutraSemana])
+  }, [leadsAtivos])
 
   // Origens dos leads marcados e vendas
   const origensMarcados = useMemo(() => {
@@ -270,13 +236,13 @@ export default function DashboardPage() {
       }
       map[equipe].marcados++
       if (lead.status === "veio") map[equipe].veio++
-      if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
+      if (lead.status === "nao") map[equipe].nao++
       if (lead.remarcado) map[equipe].remarcados++
       if (lead.venda_fechada) map[equipe].vendas++
     })
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
-  }, [qualificados, allLeads, leadsAtivos, remarcadosOutraSemana, activeRange])
+  }, [qualificados, allLeads, leadsAtivos, activeRange])
 
   // Conversao Qualifiquei -> Agendei por vendedor
   const conversaoQualAgendei = useMemo(() => {

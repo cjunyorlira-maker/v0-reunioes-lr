@@ -58,18 +58,6 @@ export default function PioresDesempenhoPage() {
     })
   }, [leads, activeRange])
 
-  // Leads remarcados para OUTRA semana (tinham data_original no range mas data atual fora)
-  const remarcadosOutraSemana = useMemo(() => {
-    return leads.filter((l: any) => {
-      if (!l.remarcado) return false
-      const dataOriginal = l.data_original || l.data_agendei
-      if (!dataOriginal) return false
-      const dentroDoRange = dataOriginal >= activeRange.start && dataOriginal <= activeRange.end
-      const foraDoRange = l.data && (l.data < activeRange.start || l.data > activeRange.end)
-      return dentroDoRange && foraDoRange
-    })
-  }, [leads, activeRange])
-
   // Piores por EQUIPE
   const pioresPorEquipe = useMemo(() => {
     const map: Record<string, {
@@ -112,17 +100,7 @@ export default function PioresDesempenhoPage() {
       }
       map[equipe].marcados++
       if (lead.status === "veio") map[equipe].veio++
-      if (lead.status === "nao" && !lead.remarcado) map[equipe].nao++
-    })
-
-    // Adiciona remarcados para outra semana como "Faltou"
-    remarcadosOutraSemana.forEach((lead: any) => {
-      const equipe = lead.equipe || "Sem equipe"
-      if (!map[equipe]) {
-        map[equipe] = { nome: equipe, agendei: 0, qualificados: 0, marcados: 0, veio: 0, nao: 0, taxaPresenca: 0 }
-      }
-      map[equipe].marcados++
-      map[equipe].nao++
+      if (lead.status === "nao") map[equipe].nao++
     })
 
     // Calcula taxa de presenca
@@ -132,7 +110,7 @@ export default function PioresDesempenhoPage() {
     })
 
     return Object.values(map)
-  }, [qualificados, leads, leadsAtivos, activeRange, remarcadosOutraSemana])
+  }, [qualificados, leads, leadsAtivos, activeRange])
 
   // Piores por VENDEDOR
   const pioresPorVendedor = useMemo(() => {
@@ -193,22 +171,7 @@ export default function PioresDesempenhoPage() {
       }
       map[vendedor].marcados++
       if (lead.status === "veio") map[vendedor].veio++
-      if (lead.status === "nao" && !lead.remarcado) map[vendedor].nao++
-    })
-
-    // Adiciona remarcados para outra semana como "Faltou"
-    remarcadosOutraSemana.forEach((lead: any) => {
-      const vendedor = normalizeVendedorNome(lead.responsavel || "Nao informado")
-      if (!map[vendedor]) {
-        map[vendedor] = { 
-          nome: vendedor, 
-          foto: lead.foto_responsavel || getFotoVendedor(vendedor) || null,
-          equipe: lead.equipe || "Sem equipe",
-          agendei: 0, qualificados: 0, marcados: 0, veio: 0, nao: 0, taxaPresenca: 0 
-        }
-      }
-      map[vendedor].marcados++
-      map[vendedor].nao++
+      if (lead.status === "nao") map[vendedor].nao++
     })
 
     // Calcula taxa de presenca
@@ -218,7 +181,7 @@ export default function PioresDesempenhoPage() {
     })
 
     return Object.values(map)
-  }, [qualificados, leads, leadsAtivos, activeRange, remarcadosOutraSemana])
+  }, [qualificados, leads, leadsAtivos, activeRange])
 
   // Dados ativos baseado no modo
   const data = viewMode === "equipe" ? pioresPorEquipe : pioresPorVendedor

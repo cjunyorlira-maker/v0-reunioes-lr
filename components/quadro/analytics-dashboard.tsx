@@ -206,7 +206,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       
       if (lead.status === "veio") {
         stats[vendedor].veio++
-      } else if (lead.status === "nao" && !lead.remarcado) {
+      } else if (lead.status === "nao") {
         stats[vendedor].nao++
       } else {
         stats[vendedor].pending++
@@ -294,7 +294,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
       stats[equipe].total++
       if (lead.status === "veio") stats[equipe].veio++
-      if (lead.status === "nao" && !lead.remarcado) stats[equipe].nao++
+      if (lead.status === "nao") stats[equipe].nao++
       if (lead.venda_fechada) stats[equipe].vendas++
     })
 
@@ -328,7 +328,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
 
       stats[origem].total++
       if (lead.status === "veio") stats[origem].veio++
-      if (lead.status === "nao" && !lead.remarcado) stats[origem].nao++
+      if (lead.status === "nao") stats[origem].nao++
     })
 
     // Adiciona remarcados para outra semana como "Faltou"
