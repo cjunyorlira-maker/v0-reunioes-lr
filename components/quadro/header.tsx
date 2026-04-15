@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, LogOut } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, LogOut, Trophy } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface HeaderProps {
@@ -74,6 +74,20 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Novo Lead</span>
         </button>
+
+        {/* Corrida button */}
+        <Link
+          href="/dashboard/corrida"
+          className="flex items-center gap-1.5 text-[12px] font-bold px-4 py-2.5 rounded-lg transition-all shadow-lg"
+          style={{
+            background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+            boxShadow: "0 0 12px rgba(245,158,11,0.3)",
+            color: "white"
+          }}
+        >
+          <Trophy className="h-4 w-4" />
+          <span className="hidden sm:inline">Corrida</span>
+        </Link>
 
         {/* Dashboard button */}
         <Link
