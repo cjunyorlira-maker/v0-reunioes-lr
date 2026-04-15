@@ -34,6 +34,7 @@ export default function QuadroReunioes() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [isRemarcarModalOpen, setIsRemarcarModalOpen] = useState(false)
   const [pendingRemarcarLead, setPendingRemarcarLead] = useState<Lead | null>(null)
+  const [testCelebration, setTestCelebration] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -415,6 +416,21 @@ export default function QuadroReunioes() {
     <div className="relative min-h-screen bg-[#0a0a0a] z-[1]">
       {/* Efeito de fogos quando fecha venda */}
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
+
+      {/* BOTAO TEMPORARIO - Testar celebracao de meta */}
+      <button
+        onClick={() => setTestCelebration(true)}
+        className="fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-xs font-bold text-black"
+        style={{ background: "linear-gradient(135deg, #fbbf24, #f97316)", boxShadow: "0 0 15px rgba(251,191,36,0.5)" }}
+      >
+        Testar Meta Amanda
+      </button>
+
+      {/* Celebracao de meta - teste */}
+      {testCelebration && (
+        <TestMetaCelebration onClose={() => setTestCelebration(false)} />
+      )}
+
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
@@ -536,6 +552,129 @@ export default function QuadroReunioes() {
         currentData={pendingRemarcarLead?.data || ""}
         currentHora={pendingRemarcarLead?.hora || ""}
       />
+    </div>
+  )
+}
+
+// Componente de celebracao de meta - TEMPORARIO PARA TESTE
+function TestMetaCelebration({ onClose }: { onClose: () => void }) {
+  const [audioPlayed, setAudioPlayed] = useState(false)
+
+  useEffect(() => {
+    // Som de buzina via Web Audio API
+    if (!audioPlayed) {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const playHorn = (time: number) => {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = "sawtooth"
+          osc.frequency.setValueAtTime(220, ctx.currentTime + time)
+          osc.frequency.setValueAtTime(330, ctx.currentTime + time + 0.2)
+          osc.frequency.setValueAtTime(220, ctx.currentTime + time + 0.4)
+          gain.gain.setValueAtTime(0.4, ctx.currentTime + time)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + 0.6)
+          osc.start(ctx.currentTime + time)
+          osc.stop(ctx.currentTime + time + 0.6)
+        }
+        playHorn(0); playHorn(0.7); playHorn(1.4); playHorn(2.1); playHorn(2.8)
+        setAudioPlayed(true)
+      } catch (e) {}
+    }
+
+    const t = setTimeout(onClose, 5000)
+    return () => clearTimeout(t)
+  }, [onClose, audioPlayed])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+      {/* Overlay escuro */}
+      <div className="absolute inset-0 bg-black/70" />
+
+      {/* Fogos de artifício SVG animados */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 600">
+        {[
+          { cx: 150, cy: 100, color: "#f472b6", delay: 0 },
+          { cx: 650, cy: 80, color: "#60a5fa", delay: 0.2 },
+          { cx: 400, cy: 60, color: "#fbbf24", delay: 0.4 },
+          { cx: 100, cy: 250, color: "#34d399", delay: 0.6 },
+          { cx: 700, cy: 220, color: "#f472b6", delay: 0.8 },
+          { cx: 300, cy: 150, color: "#a78bfa", delay: 1.0 },
+          { cx: 550, cy: 300, color: "#fb923c", delay: 0.3 },
+          { cx: 200, cy: 400, color: "#f472b6", delay: 0.5 },
+          { cx: 600, cy: 380, color: "#60a5fa", delay: 0.7 },
+          { cx: 350, cy: 480, color: "#fbbf24", delay: 0.9 },
+          { cx: 500, cy: 120, color: "#ef4444", delay: 1.1 },
+          { cx: 250, cy: 320, color: "#22d3ee", delay: 1.3 },
+        ].map((fw, i) => (
+          <g key={i}>
+            {Array.from({ length: 16 }).map((_, j) => {
+              const angle = (j * 22.5 * Math.PI) / 180
+              const len = 50 + Math.random() * 40
+              return (
+                <line
+                  key={j}
+                  x1={fw.cx}
+                  y1={fw.cy}
+                  x2={fw.cx + Math.cos(angle) * len}
+                  y2={fw.cy + Math.sin(angle) * len}
+                  stroke={fw.color}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  style={{
+                    animation: `firework 1.2s ease-out infinite`,
+                    animationDelay: `${fw.delay + j * 0.02}s`
+                  }}
+                />
+              )
+            })}
+            <circle cx={fw.cx} cy={fw.cy} r="8" fill={fw.color} style={{
+              animation: `pulse 0.8s ease-out infinite`,
+              animationDelay: `${fw.delay}s`
+            }} />
+          </g>
+        ))}
+      </svg>
+
+      {/* Card central */}
+      <div className="relative z-10 flex flex-col items-center animate-[zoomIn_0.5s_ease-out]">
+        <div className="text-6xl mb-4">🏆</div>
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full blur-2xl" style={{ background: "rgba(244,114,182,0.4)" }} />
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amanda-A8MBCF4rdXyJwhPF9LbAk9E51hAqbr.jpg"
+            alt="Amanda Souza"
+            className="relative w-40 h-40 rounded-full object-cover shadow-2xl"
+            style={{ border: "5px solid #f472b6", boxShadow: "0 0 40px rgba(244,114,182,0.6)" }}
+          />
+        </div>
+        <h2 className="text-4xl font-black text-white mt-6 drop-shadow-lg">AMANDA SOUZA</h2>
+        <p className="text-2xl font-bold mt-2" style={{ color: "#fbbf24" }}>BATEU A META!</p>
+        <div className="flex gap-2 mt-4">
+          <span className="px-4 py-2 rounded-full text-lg font-bold" style={{ background: "linear-gradient(135deg, #fbbf24, #f97316)", color: "black" }}>
+            10 Qualificados
+          </span>
+        </div>
+        <p className="text-white/40 text-sm mt-6">Grand Prix LR</p>
+      </div>
+
+      <style>{`
+        @keyframes firework {
+          0% { stroke-dasharray: 0 100; opacity: 1; }
+          50% { stroke-dasharray: 50 50; opacity: 1; }
+          100% { stroke-dasharray: 100 0; opacity: 0; }
+        }
+        @keyframes zoomIn {
+          from { transform: scale(0.3); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.5); opacity: 0.5; }
+        }
+      `}</style>
     </div>
   )
 }

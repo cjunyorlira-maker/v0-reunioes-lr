@@ -266,25 +266,25 @@ function RaceCar({ foto, nome, genero, progresso, position }: {
         </svg>
 
         {/* Foto do piloto acima do carro */}
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
           {foto ? (
             <img
               src={foto}
               alt={nome}
-              className="w-10 h-10 rounded-full object-cover shadow-xl"
-              style={{ border: `2.5px solid ${primary}`, boxShadow: `0 0 10px rgba(${glow},0.5)` }}
+              className="w-14 h-14 rounded-full object-cover shadow-xl"
+              style={{ border: `3px solid ${primary}`, boxShadow: `0 0 15px rgba(${glow},0.6)` }}
             />
           ) : (
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-xl"
-              style={{ background: primary, border: `2.5px solid ${accent}`, boxShadow: `0 0 10px rgba(${glow},0.5)` }}
+              className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-xl"
+              style={{ background: primary, border: `3px solid ${accent}`, boxShadow: `0 0 15px rgba(${glow},0.6)` }}
             >
               {nome.charAt(0)}
             </div>
           )}
           <div
-            className="text-[9px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full"
-            style={{ background: `rgba(${glow},0.2)`, color: primary, border: `1px solid rgba(${glow},0.3)` }}
+            className="text-[11px] font-bold mt-1 px-2.5 py-1 rounded-full whitespace-nowrap"
+            style={{ background: `rgba(${glow},0.25)`, color: primary, border: `1px solid rgba(${glow},0.4)` }}
           >
             {nome.split(" ")[0]}
           </div>
@@ -310,20 +310,20 @@ function RaceTrack({ vendedor, index }: { vendedor: any; index: number }) {
   return (
     <div className="flex items-center gap-3">
       {/* Info do piloto */}
-      <div className="w-32 md:w-44 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-xl flex-shrink-0 ${
+      <div className="w-40 md:w-56 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-black text-lg md:text-xl shadow-xl flex-shrink-0 ${
             index === 0 ? "bg-gradient-to-br from-yellow-300 to-yellow-600 text-black" :
             index === 1 ? "bg-gradient-to-br from-gray-200 to-gray-500 text-black" :
             index === 2 ? "bg-gradient-to-br from-amber-500 to-orange-700 text-white" :
             "bg-white/10 text-white/60"
-          }`} style={index < 3 ? { boxShadow: `0 0 12px ${index === 0 ? "rgba(234,179,8,0.5)" : index === 1 ? "rgba(156,163,175,0.3)" : "rgba(245,158,11,0.4)"}` } : {}}>
+          }`} style={index < 3 ? { boxShadow: `0 0 16px ${index === 0 ? "rgba(234,179,8,0.6)" : index === 1 ? "rgba(156,163,175,0.4)" : "rgba(245,158,11,0.5)"}` } : {}}>
             {index + 1}°
           </div>
           <div className="min-w-0">
-            <p className="text-xs md:text-sm font-bold text-white truncate">{vendedor.nome.split(" ")[0]}</p>
-            <p className="text-[10px] font-bold" style={{ color: primary }}>
-              {vendedor.valor}<span className="text-white/30">/{vendedor.meta}</span>
+            <p className="text-sm md:text-lg font-black text-white truncate">{vendedor.nome.split(" ")[0]}</p>
+            <p className="text-sm md:text-base font-bold" style={{ color: primary }}>
+              {vendedor.valor}<span className="text-white/40 text-xs md:text-sm">/{vendedor.meta}</span>
             </p>
           </div>
         </div>
@@ -602,11 +602,13 @@ export default function CorridaPage() {
           muted
           loop
           playsInline
-          className="w-full h-full object-cover opacity-20"
-          src="https://assets.mixkit.co/videos/preview/mixkit-race-car-driving-on-a-road-at-high-speed-2055-large.mp4"
-        />
+          className="w-full h-full object-cover"
+          style={{ opacity: 0.15 }}
+        >
+          <source src="https://cdn.pixabay.com/video/2020/05/25/40026-424930959_large.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0" style={{
-          background: "linear-gradient(180deg, rgba(10,10,15,0.7) 0%, rgba(10,10,15,0.5) 50%, rgba(10,10,15,0.9) 100%)"
+          background: "linear-gradient(180deg, rgba(10,10,15,0.8) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.95) 100%)"
         }} />
       </div>
 
