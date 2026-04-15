@@ -427,18 +427,6 @@ export default function QuadroReunioes() {
         />
       )}
 
-      {/* BOTAO TEMPORARIO - Testar celebracao de agendamento */}
-      <button
-        onClick={() => setAgendamentoCelebration({
-          nome: "Amanda Souza",
-          foto: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-9Csu6tKWbtzEMt7nkHj7uGTu3K4ed6.jpeg"
-        })}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-xs font-bold text-black"
-        style={{ background: "linear-gradient(135deg, #22d3ee, #3b82f6)", boxShadow: "0 0 15px rgba(34,211,238,0.5)" }}
-      >
-        Testar Agendamento
-      </button>
-
       <Header
         weekLabel={weekLabel}
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
