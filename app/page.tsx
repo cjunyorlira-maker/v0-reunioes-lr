@@ -18,7 +18,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { Confetti } from "@/components/ui/confetti"
 import type { WeekDay } from "@/lib/types"
 import { getFotoVendedor } from "@/lib/vendedor-fotos"
-import Pusher from "pusher-js"
 
 export default function QuadroReunioes() {
   const [weekOffset, setWeekOffset] = useState(0)
@@ -41,27 +40,6 @@ export default function QuadroReunioes() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
-
-  // Escuta eventos do Pusher para disparar celebracao em tempo real
-  useEffect(() => {
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-      forceTLS: true,
-    })
-
-    const channel = pusher.subscribe("celebrations")
-
-    channel.bind("agendamento", (data: { nome: string; foto?: string }) => {
-      const foto = getFotoVendedor(data.nome) || data.foto
-      setAgendamentoCelebration({ nome: data.nome, foto })
-    })
-
-    return () => {
-      channel.unbind_all()
-      pusher.unsubscribe("celebrations")
-      pusher.disconnect()
-    }
   }, [])
 
   useEffect(() => {
