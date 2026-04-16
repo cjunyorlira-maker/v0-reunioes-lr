@@ -348,8 +348,8 @@ export async function POST(request: NextRequest) {
     // Monta dados do lead
     const leadData = {
       nome: body.nome || body.name || body.lead_name || body.contact_name || kommoLead?.name,
-      data: dataFinal || new Date().toISOString().split("T")[0],
-      data_agendei: dataFinal || new Date().toISOString().split("T")[0], // Campo para corrida/agendamentos
+      data: dataFinal || null,
+      data_agendei: dataFinal || null, // Campo para corrida/agendamentos
       hora: horaFinal || "09:00",
       // Usa dados do Kommo para responsável e equipe (usuário responsável e grupo)
       responsavel: responsavelNome || body.responsavel || body.responsible || "Não informado",
@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
       retorno: false,
     }
     
-    // Validação básica - apenas nome é obrigatório
+    // Validação b��sica - apenas nome é obrigatório
     if (!leadData.nome) {
       return NextResponse.json(
         { 
