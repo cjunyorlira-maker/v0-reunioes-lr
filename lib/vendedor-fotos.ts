@@ -6,14 +6,16 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Luís Henrique":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Luis-Henrique-r9vpDqJDGutJsK9HS89B4ucV0yGVKD.jpeg",
   
   // Leonardo Freitas
-  "Leonardo Freitas":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Leonardo-Freitas-w1qU7SbMjNYHLHqGc66c8oAFmYDRlC.jpeg",
+  "Leonardo Freitas":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Leonardo%20Freitas-9VntjVWUWKVOW9Ui6mnEbUBympmsz9.jpg",
   
   // Alex Negreiros
   "Alex Negreiros":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alex-Negreiros-j089DeDxr4GcRwXJHWk3eVVDD97TDV.jpeg",
   
-  // Bianca Simoes
-  "Bianca Simoes":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-PNhWqPH7wEmgmhRFV3nnN9mjHS1X1G.jpeg",
-  "Bianca Simões":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Simoes-PNhWqPH7wEmgmhRFV3nnN9mjHS1X1G.jpeg",
+  // Bianca Isabela
+  "Bianca Simoes":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
+  "Bianca Simões":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
+  "Bianca Isabela":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
+  "Bianca":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
   
   // Yuri Pereira
   "Yuri Pereira":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Yuri-Pereira-DjE5KadXSFgcLiTFQ7ascxSpCiw39Z.jpeg",
@@ -34,10 +36,12 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Nathan Cauê":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nathan-Caue-9Mp8yQMlehkE5CT59n8pF2qlms1LaU.jpeg",
   
   // Amanda Souza
-  "Amanda Souza":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda-Souza-9Csu6tKWbtzEMt7nkHj7uGTu3K4ed6.jpeg",
+  "Amanda Souza":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda%20Souza-1HMrXeurRX4qnrKYqhyyoQuPJ7EY2p.jpg",
+  "Amanda":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Amanda%20Souza-1HMrXeurRX4qnrKYqhyyoQuPJ7EY2p.jpg",
   
   // Emily Machado
-  "Emily Machado":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emily%20Machado-D4i7BojDN5YdDB6nkiVqjYlEIMmAWS.jpeg",
+  "Emily Machado":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emily%20Machado-27Zc8hYWxnRmxhnK7Cg4X2chDMF8Ru.jpg",
+  "Emily":             "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Emily%20Machado-27Zc8hYWxnRmxhnK7Cg4X2chDMF8Ru.jpg",
   
   // Nicolas Moraes
   "Nicolas Moraes":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Nicolas-Moraes-FcFICPMQ1AH0ZiDhQM6w2kirOEKvAz.jpeg",
@@ -68,6 +72,31 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   // Janaina Dantas
   "Janaina Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
   "Janaína Dantas":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
+  "Janaina":           "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Janaina-Dantas-kEM2mc4xBxIcHDLswwjmIP1bkikLCT.jpeg",
+  
+  // João Victor
+  "Joao Victor":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Joa%CC%83o%20Victor-bBUe5rnyPI3K8geaOJ3ogjr9BdF2PA.jpg",
+  "João Victor":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Joa%CC%83o%20Victor-bBUe5rnyPI3K8geaOJ3ogjr9BdF2PA.jpg",
+  
+  // João Lucas
+  "Joao Lucas":        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Joa%CC%83o%20Lucas-EDJYyhCKFrfU52YN7l4y8Q7NA3HwZw.jpg",
+  "João Lucas":        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Joa%CC%83o%20Lucas-EDJYyhCKFrfU52YN7l4y8Q7NA3HwZw.jpg",
+  
+  // Gabrielly Pereira
+  "Gabrielly Pereira": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gabrielly%20Pereira-40UDz4LdgabncEPZhxE2fphwu7ce1D.jpg",
+  "Gabrielly":         "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gabrielly%20Pereira-40UDz4LdgabncEPZhxE2fphwu7ce1D.jpg",
+  
+  // Ana Beatriz
+  "Ana Beatriz":       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Ana%20Beatriz-6JZl8jN6gsjR12Ci2Kdr962xM8Kgii.jpg",
+  "Ana":               "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Ana%20Beatriz-6JZl8jN6gsjR12Ci2Kdr962xM8Kgii.jpg",
+  
+  // Willy Santana
+  "Willy Santana":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Willy%20Santana-ABi4HNtBbyCtO4Vh7zvMbbbqEJFw5r.jpg",
+  "Willy":             "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Willy%20Santana-ABi4HNtBbyCtO4Vh7zvMbbbqEJFw5r.jpg",
+  
+  // Isabelly Ribeiro
+  "Isabelly Ribeiro":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Isabelly-fXqFzPrCMB7SX4oVX5vY0p9GEsLTNX.jpg",
+  "Isabelly":          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Isabelly-fXqFzPrCMB7SX4oVX5vY0p9GEsLTNX.jpg",
 }
 
 // Mapa de genero dos vendedores (M = masculino, F = feminino)
