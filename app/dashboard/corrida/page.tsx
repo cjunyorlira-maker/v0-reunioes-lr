@@ -670,7 +670,9 @@ export default function CorridaPage() {
     end: formatDateForDB(weekDays[weekDays.length - 1].date),
   }), [weekDays])
 
-  const { data: leadsData } = useSWR(`/api/leads?startDate=${dateRange.start}&endDate=${dateRange.end}`, fetcher, { refreshInterval: 10000 })
+  // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
+  // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
+  const { data: leadsData } = useSWR(`/api/leads`, fetcher, { refreshInterval: 10000 })
   const { data: qualificadosData } = useSWR(`/api/leads/qualificados?startDate=${dateRange.start}&endDate=${dateRange.end}`, fetcher, { refreshInterval: 10000 })
 
   const leads = leadsData || []
@@ -679,22 +681,16 @@ export default function CorridaPage() {
   const vendedoresData = useMemo(() => {
     const map: Record<string, any> = {}
 
-    // Debug temporário
-    if (leads.length > 0) {
-      console.log("[v0] selectedDay:", selectedDay)
-      console.log("[v0] Exemplo lead.data:", leads[0]?.data)
-      console.log("[v0] Total leads:", leads.length)
-      const leadsHoje = leads.filter((l: any) => l.data === selectedDay)
-      console.log("[v0] Leads do dia selecionado:", leadsHoje.length)
-    }
-
+    // Usa data_agendei igual ao dashboard principal (data que o lead entrou em Confirmar Reunião)
     leads.forEach((lead: any) => {
-      if (!lead.data || !lead.responsavel) return
+      if (!lead.data_agendei || !lead.responsavel) return
+      // Verifica se data_agendei está dentro do range da semana
+      if (lead.data_agendei < dateRange.start || lead.data_agendei > dateRange.end) return
       const v = normalizeVendedorNome(lead.responsavel)
       if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v), genero: getVendedorGenero(v), agendeiDia: 0, agendeiSemana: 0, qualificadosDia: 0, qualificadosSemana: 0 }
       map[v].agendeiSemana++
-      // Comparação igual ao dashboard principal (lead.data já vem no formato YYYY-MM-DD)
-      if (lead.data === selectedDay) map[v].agendeiDia++
+      // Compara data_agendei com o dia selecionado
+      if (lead.data_agendei === selectedDay) map[v].agendeiDia++
     })
 
     qualificados.forEach((q: any) => {
