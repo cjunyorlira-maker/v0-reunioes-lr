@@ -60,8 +60,9 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Lidiane":           "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lidiane-qKbhEkmCjgITPygHkG2KADsq0kBgSm.jpeg",
   "Lidiane Fonseca":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lidiane-qKbhEkmCjgITPygHkG2KADsq0kBgSm.jpeg",
   
-  // Brayan Bertolai
-  "Brayan Bertolai":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-Bertolai-iQkh1Fk7JH76kgAGhY2pFFVOONIiEs.jpeg",
+  // Brayan
+  "Brayan Bertolai":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-pSRTc7vsVv29GvqQCVsjwweabUoSrt.jpeg",
+  "Brayan":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brayan-pSRTc7vsVv29GvqQCVsjwweabUoSrt.jpeg",
   
   // Alexia Cunha (variações)
   "Alexia":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Alexia%20Cunha-v7SE61pG9nEJqarwMpM4OKfEeNMcEv.jpeg",
