@@ -679,23 +679,16 @@ export default function CorridaPage() {
   const vendedoresData = useMemo(() => {
     const map: Record<string, any> = {}
 
-    // Debug: log dos dados recebidos
-    console.log("[v0] Corrida - selectedDay:", selectedDay)
-    console.log("[v0] Corrida - leads recebidos:", leads.length)
-    leads.slice(0, 3).forEach(l => console.log("[v0] Lead exemplo:", { nome: l.nome, data: l.data, responsavel: l.responsavel }))
-
     leads.forEach((lead: any) => {
       if (!lead.data || !lead.responsavel) return
       const v = normalizeVendedorNome(lead.responsavel)
       if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v), genero: getVendedorGenero(v), agendeiDia: 0, agendeiSemana: 0, qualificadosDia: 0, qualificadosSemana: 0 }
       map[v].agendeiSemana++
-      if (lead.data === selectedDay) {
-        console.log("[v0] Agendei encontrado para dia:", { vendedor: v, data: lead.data })
-        map[v].agendeiDia++
-      }
+      // Normaliza ambas as datas para comparação (remove horário se tiver)
+      const dataLead = lead.data?.split('T')[0] || lead.data
+      const dataSelecionada = selectedDay?.split('T')[0] || selectedDay
+      if (dataLead === dataSelecionada) map[v].agendeiDia++
     })
-
-    console.log("[v0] Corrida - resultado:", Object.values(map).map((v: any) => ({ nome: v.nome, agendeiDia: v.agendeiDia, agendeiSemana: v.agendeiSemana })))
 
     qualificados.forEach((q: any) => {
       if (!q.responsavel) return
