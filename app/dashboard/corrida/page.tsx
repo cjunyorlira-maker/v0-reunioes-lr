@@ -736,6 +736,26 @@ export default function CorridaPage() {
 
   const weekLabel = `${weekDays[0].date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} - ${weekDays[weekDays.length - 1].date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
 
+  // Calcula totais de agendei e qualificados
+  const totais = useMemo(() => {
+    const totalAgendeiDia = vendedoresData.reduce((sum, v) => sum + v.agendeiDia, 0)
+    const totalAgendeiSemana = vendedoresData.reduce((sum, v) => sum + v.agendeiSemana, 0)
+    const totalQualificadosDia = vendedoresData.reduce((sum, v) => sum + v.qualificadosDia, 0)
+    const totalQualificadosSemana = vendedoresData.reduce((sum, v) => sum + v.qualificadosSemana, 0)
+    return { totalAgendeiDia, totalAgendeiSemana, totalQualificadosDia, totalQualificadosSemana }
+  }, [vendedoresData])
+
+  // Lista de quem está na oficina "Tá difícil"
+  const oficina = useMemo(() => {
+    if (viewMode === "dia") {
+      // No dia: quem tem 0 em agendei OU 0 em qualificados
+      return vendedoresData.filter(v => v.agendeiDia === 0 || v.qualificadosDia === 0)
+    } else {
+      // Na semana: quem tem menos de 5 em agendei E menos de 20 em qualificados
+      return vendedoresData.filter(v => v.agendeiSemana < 5 && v.qualificadosSemana < 20)
+    }
+  }, [vendedoresData, viewMode])
+
   return (
     <div className="min-h-screen text-white overflow-x-hidden" style={{ background: "#0a0a0f" }}>
       {/* Video de fundo */}
@@ -857,21 +877,57 @@ export default function CorridaPage() {
 
         {/* Meta */}
         <div className="px-4 pb-4 max-w-[1600px] mx-auto">
-          <div className="flex justify-center mb-6">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-2xl" style={{
-              background: "linear-gradient(135deg,rgba(239,68,68,0.15),rgba(245,158,11,0.15))",
-              border: "1px solid rgba(239,68,68,0.25)",
-              boxShadow: "0 0 20px rgba(239,68,68,0.1)"
-            }}>
-              <Flag size={20} className="text-red-400" />
-              <div>
-                <span className="text-xs text-white/50 block uppercase tracking-wider">Meta da Corrida</span>
-                <span className="text-3xl font-black text-white">{meta}</span>
-                <span className="text-sm text-white/40 ml-2">{raceType === "qualificados" ? "qualificados" : "agendados"}</span>
+            {/* Totais e Meta */}
+            <div className="flex flex-wrap justify-center gap-4 mb-6">
+              {/* Total Qualificados */}
+              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
+                background: "linear-gradient(135deg,rgba(14,165,233,0.15),rgba(59,130,246,0.15))",
+                border: "1px solid rgba(14,165,233,0.25)",
+                boxShadow: "0 0 20px rgba(14,165,233,0.1)"
+              }}>
+                <Target size={18} className="text-cyan-400" />
+                <div>
+                  <span className="text-xs text-white/50 block uppercase tracking-wider">
+                    Qualificados {viewMode === "dia" ? "Hoje" : "Semana"}
+                  </span>
+                  <span className="text-2xl font-black text-cyan-400">
+                    {viewMode === "dia" ? totais.totalQualificadosDia : totais.totalQualificadosSemana}
+                  </span>
+                </div>
               </div>
-              <Zap size={20} className="text-yellow-400 animate-pulse" />
+
+              {/* Total Agendei */}
+              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
+                background: "linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.15))",
+                border: "1px solid rgba(139,92,246,0.25)",
+                boxShadow: "0 0 20px rgba(139,92,246,0.1)"
+              }}>
+                <Calendar size={18} className="text-purple-400" />
+                <div>
+                  <span className="text-xs text-white/50 block uppercase tracking-wider">
+                    Agendei {viewMode === "dia" ? "Hoje" : "Semana"}
+                  </span>
+                  <span className="text-2xl font-black text-purple-400">
+                    {viewMode === "dia" ? totais.totalAgendeiDia : totais.totalAgendeiSemana}
+                  </span>
+                </div>
+              </div>
+
+              {/* Meta da Corrida */}
+              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
+                background: "linear-gradient(135deg,rgba(239,68,68,0.15),rgba(245,158,11,0.15))",
+                border: "1px solid rgba(239,68,68,0.25)",
+                boxShadow: "0 0 20px rgba(239,68,68,0.1)"
+              }}>
+                <Flag size={18} className="text-red-400" />
+                <div>
+                  <span className="text-xs text-white/50 block uppercase tracking-wider">Meta da Corrida</span>
+                  <span className="text-2xl font-black text-white">{meta}</span>
+                  <span className="text-sm text-white/40 ml-2">{raceType === "qualificados" ? "qualif." : "agend."}</span>
+                </div>
+                <Zap size={16} className="text-yellow-400 animate-pulse" />
+              </div>
             </div>
-          </div>
 
           {/* Pistas */}
           <div className="space-y-5">
@@ -902,6 +958,129 @@ export default function CorridaPage() {
               <span className="text-xs text-white/40">Meta</span>
             </div>
           </div>
+
+          {/* Oficina "Tá difícil" */}
+          {oficina.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-white/5">
+              <div className="relative rounded-3xl overflow-hidden" style={{
+                background: "linear-gradient(180deg, #1a1a1f 0%, #0d0d12 100%)",
+                border: "1px solid rgba(255,255,255,0.08)"
+              }}>
+                {/* Header da oficina */}
+                <div className="relative px-6 py-4 flex items-center justify-between" style={{
+                  background: "linear-gradient(90deg, rgba(239,68,68,0.15) 0%, rgba(245,158,11,0.1) 50%, rgba(239,68,68,0.15) 100%)",
+                  borderBottom: "1px solid rgba(239,68,68,0.2)"
+                }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{
+                      background: "linear-gradient(135deg, #ef4444, #f97316)",
+                      boxShadow: "0 0 20px rgba(239,68,68,0.4)"
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-white tracking-tight">Oficina: Tá difícil</h3>
+                      <p className="text-xs text-white/40">
+                        {viewMode === "dia" 
+                          ? "Pilotos com 0 em agendei ou qualificados hoje" 
+                          : "Pilotos com menos de 5 agendei e menos de 20 qualificados na semana"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 rounded-xl" style={{
+                    background: "rgba(239,68,68,0.2)",
+                    border: "1px solid rgba(239,68,68,0.3)"
+                  }}>
+                    <span className="text-2xl font-black text-red-400">{oficina.length}</span>
+                    <span className="text-xs text-white/40 ml-1">carros</span>
+                  </div>
+                </div>
+
+                {/* Area da oficina com carros quebrados */}
+                <div className="relative p-6" style={{
+                  background: "repeating-linear-gradient(90deg, transparent 0px, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 80px)"
+                }}>
+                  {/* Piso da oficina */}
+                  <div className="absolute inset-0" style={{
+                    background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%)"
+                  }} />
+                  
+                  {/* Carros quebrados */}
+                  <div className="relative flex flex-wrap gap-6 justify-center">
+                    {oficina.map((v, idx) => {
+                      const isF = v.genero === "F"
+                      return (
+                        <div key={v.nome} className="flex flex-col items-center gap-2">
+                          {/* Carro quebrado com fumaca */}
+                          <div className="relative">
+                            {/* Fumaca do capo */}
+                            <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                              {[...Array(3)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className="absolute rounded-full"
+                                  style={{
+                                    width: 8 + i * 4,
+                                    height: 8 + i * 4,
+                                    background: `rgba(150,150,150,${0.6 - i * 0.15})`,
+                                    left: -4 - i * 2,
+                                    top: -i * 8,
+                                    animation: `smoke ${1.5 + i * 0.3}s ease-out infinite`,
+                                    animationDelay: `${i * 0.2}s`
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            
+                            {/* Carro SVG simplificado */}
+                            <svg width="80" height="45" viewBox="0 0 80 45" style={{ opacity: 0.7 }}>
+                              {/* Sombra */}
+                              <ellipse cx="40" cy="42" rx="35" ry="3" fill="black" opacity="0.4" />
+                              {/* Corpo */}
+                              <path d="M10,30 L15,18 Q20,12 30,12 L50,12 Q60,12 65,18 L70,30 Q72,35 70,38 L10,38 Q8,35 10,30 Z" 
+                                fill={isF ? "#be185d" : "#1e40af"} opacity="0.6" />
+                              {/* Capo aberto */}
+                              <path d="M15,18 L30,5 L45,5 L35,18 Z" fill={isF ? "#9f1239" : "#1e3a8a"} opacity="0.8" />
+                              {/* Rodas */}
+                              <circle cx="22" cy="38" r="6" fill="#1f1f1f" />
+                              <circle cx="58" cy="38" r="6" fill="#1f1f1f" />
+                              {/* Rodas - furadas */}
+                              <ellipse cx="22" cy="40" rx="6" ry="4" fill="#1f1f1f" />
+                              <ellipse cx="58" cy="40" rx="6" ry="4" fill="#1f1f1f" />
+                            </svg>
+                            
+                            {/* Foto do piloto */}
+                            <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full overflow-hidden border-2"
+                              style={{ borderColor: isF ? "#f472b6" : "#3b82f6", boxShadow: `0 0 10px ${isF ? "rgba(244,114,182,0.5)" : "rgba(59,130,246,0.5)"}` }}>
+                              {v.foto ? (
+                                <img src={v.foto} alt={v.nome} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                                  style={{ background: isF ? "#be185d" : "#1e40af" }}>
+                                  {v.nome.charAt(0)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Nome e stats */}
+                          <div className="text-center">
+                            <p className="text-sm font-semibold text-white/70">{v.nome.split(" ")[0]}</p>
+                            <div className="flex gap-2 text-xs text-white/40">
+                              <span className="text-purple-400">{viewMode === "dia" ? v.agendeiDia : v.agendeiSemana} ag.</span>
+                              <span className="text-cyan-400">{viewMode === "dia" ? v.qualificadosDia : v.qualificadosSemana} qf.</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -909,6 +1088,11 @@ export default function CorridaPage() {
         @keyframes exhaust1 {
           0% { opacity: 0.7; transform: translateX(0) scale(0.8); }
           100% { opacity: 0; transform: translateX(-25px) scale(1.8); }
+        }
+        @keyframes smoke {
+          0% { opacity: 0.6; transform: translateY(0) scale(1); }
+          50% { opacity: 0.4; transform: translateY(-15px) scale(1.5); }
+          100% { opacity: 0; transform: translateY(-30px) scale(2); }
         }
       `}</style>
     </div>
