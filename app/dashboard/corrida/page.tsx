@@ -680,11 +680,11 @@ export default function CorridaPage() {
     const map: Record<string, any> = {}
 
     leads.forEach((lead: any) => {
-      if (!lead.data_agendei || !lead.responsavel) return
+      if (!lead.data || !lead.responsavel) return
       const v = normalizeVendedorNome(lead.responsavel)
       if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v), genero: getVendedorGenero(v), agendeiDia: 0, agendeiSemana: 0, qualificadosDia: 0, qualificadosSemana: 0 }
       map[v].agendeiSemana++
-      if (lead.data_agendei === selectedDay) map[v].agendeiDia++
+      if (lead.data === selectedDay) map[v].agendeiDia++
     })
 
     qualificados.forEach((q: any) => {
