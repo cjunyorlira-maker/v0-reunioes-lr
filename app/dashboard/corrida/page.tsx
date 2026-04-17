@@ -5,6 +5,7 @@ import Link from "next/link"
 import useSWR from "swr"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 import { getFotoVendedor, normalizeVendedorNome, getVendedorGenero } from "@/lib/vendedor-fotos"
+import { useQualificados } from "@/hooks/use-qualificados"
 import { Trophy, Flag, Target, ArrowLeft, Calendar, Zap } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
@@ -670,13 +671,14 @@ export default function CorridaPage() {
     end: formatDateForDB(weekDays[weekDays.length - 1].date),
   }), [weekDays])
 
-  // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
-  // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
+  // Busca TODOS os leads sem filtro de data (igual dashboard principal)
+  // data_agendei pode ser desta semana mas data da reunião pode ser outra semana
   const { data: leadsData } = useSWR(`/api/leads`, fetcher, { refreshInterval: 10000 })
-  const { data: qualificadosData } = useSWR(`/api/leads/qualificados?startDate=${dateRange.start}&endDate=${dateRange.end}`, fetcher, { refreshInterval: 10000 })
+
+  // Busca qualificados com o mesmo hook e parâmetros do dashboard principal
+  const { qualificadosSemana: qualificados } = useQualificados(dateRange)
 
   const leads = leadsData || []
-  const qualificados = qualificadosData?.leads || []
 
   const vendedoresData = useMemo(() => {
     const map: Record<string, any> = {}
