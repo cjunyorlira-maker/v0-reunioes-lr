@@ -679,15 +679,22 @@ export default function CorridaPage() {
   const vendedoresData = useMemo(() => {
     const map: Record<string, any> = {}
 
+    // Debug temporário
+    if (leads.length > 0) {
+      console.log("[v0] selectedDay:", selectedDay)
+      console.log("[v0] Exemplo lead.data:", leads[0]?.data)
+      console.log("[v0] Total leads:", leads.length)
+      const leadsHoje = leads.filter((l: any) => l.data === selectedDay)
+      console.log("[v0] Leads do dia selecionado:", leadsHoje.length)
+    }
+
     leads.forEach((lead: any) => {
       if (!lead.data || !lead.responsavel) return
       const v = normalizeVendedorNome(lead.responsavel)
       if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v), genero: getVendedorGenero(v), agendeiDia: 0, agendeiSemana: 0, qualificadosDia: 0, qualificadosSemana: 0 }
       map[v].agendeiSemana++
-      // Normaliza ambas as datas para comparação (remove horário se tiver)
-      const dataLead = lead.data?.split('T')[0] || lead.data
-      const dataSelecionada = selectedDay?.split('T')[0] || selectedDay
-      if (dataLead === dataSelecionada) map[v].agendeiDia++
+      // Comparação igual ao dashboard principal (lead.data já vem no formato YYYY-MM-DD)
+      if (lead.data === selectedDay) map[v].agendeiDia++
     })
 
     qualificados.forEach((q: any) => {
