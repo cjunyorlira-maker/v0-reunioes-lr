@@ -18,13 +18,13 @@ export interface Venda {
 }
 
 export function useVendas() {
-  const { data, isLoading, error, mutate } = useSWR<Venda[]>(
+  const { data, isLoading, error, mutate } = useSWR<{ vendas: Venda[] }>(
     "/api/vendas",
     (url) => fetch(url).then((res) => res.json()),
     { refreshInterval: 30000 }
   )
 
-  const vendas = data || []
+  const vendas = data?.vendas || []
 
   // TOP 1 Vendedor (maior quantidade de vendas)
   const top1Vendedor = useMemo(() => {
