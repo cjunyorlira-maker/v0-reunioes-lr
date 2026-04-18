@@ -32,7 +32,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:from-white/[0.1] hover:to-white/[0.05] transition-all cursor-pointer group"
+      className="glass-card rounded-xl overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
       onClick={() => onEdit(lead)}
     >
       <div className="p-3.5 relative">
@@ -163,19 +163,19 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         <div className="flex gap-1.5 mb-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
+            className="glow-btn glow-green flex-1 text-[11px] py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.25)] font-semibold backdrop-blur-sm"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 font-semibold transition-colors"
+            className="glow-btn glow-red flex-1 text-[11px] py-2.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] font-semibold backdrop-blur-sm"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-colors"
+            className="glow-btn glow-pink flex-1 text-[11px] py-2.5 rounded-xl border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-[rgba(243,190,255,0.1)] hover:bg-[rgba(243,190,255,0.2)] hover:border-[rgba(243,190,255,0.5)] hover:shadow-[0_0_20px_rgba(243,190,255,0.25)] font-semibold backdrop-blur-sm"
           >
             Remarcar
           </button>
@@ -184,7 +184,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-11 h-11 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.3)] bg-[rgba(107,79,187,0.1)] hover:bg-[rgba(107,79,187,0.2)] transition-colors"
+              className="glow-btn glow-purple w-11 h-11 flex items-center justify-center rounded-xl border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_20px_rgba(107,79,187,0.3)] backdrop-blur-sm"
               title="Abrir no Kommo"
             >
               <img 
@@ -195,21 +195,21 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             </a>
           )}
         </div>
-        {/* Botões de Venda Fechada e Retorno - sempre disponíveis se status for "veio" */}
+        {/* Botoes de Venda Fechada e Retorno - sempre disponiveis se status for "veio" */}
         {lead.status === "veio" && (
           <div className="flex gap-1.5 mb-1.5">
             {lead.venda_fechada && onVendaFechada && (
               <button
                 onClick={() => onVendaFechada(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 font-semibold transition-colors"
+                className="glow-btn glow-green flex-1 text-[10px] py-2 rounded-xl border border-emerald-500/40 text-emerald-400 bg-emerald-500/20 hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] font-semibold backdrop-blur-sm"
               >
-                ✓ Venda Fechada
+                Venda Fechada
               </button>
             )}
             {!lead.venda_fechada && onVendaFechada && (
               <button
                 onClick={() => onVendaFechada(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
+                className="glow-btn glow-green flex-1 text-[10px] py-2 rounded-xl border border-emerald-500/25 text-emerald-400 bg-emerald-500/8 hover:bg-emerald-500/18 hover:border-emerald-500/45 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)] font-semibold backdrop-blur-sm"
               >
                 Venda Fechada
               </button>
@@ -217,15 +217,15 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             {lead.retorno && onRetorno && (
               <button
                 onClick={() => onRetorno(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/15 hover:bg-cyan-500/25 font-semibold transition-colors"
+                className="glow-btn glow-cyan flex-1 text-[10px] py-2 rounded-xl border border-cyan-500/40 text-cyan-400 bg-cyan-500/20 hover:bg-cyan-500/30 hover:border-cyan-500/60 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] font-semibold backdrop-blur-sm"
               >
-                ✓ Retorno
+                Retorno
               </button>
             )}
             {!lead.retorno && onRetorno && (
               <button
                 onClick={() => onRetorno(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 font-semibold transition-colors"
+                className="glow-btn glow-cyan flex-1 text-[10px] py-2 rounded-xl border border-cyan-500/25 text-cyan-400 bg-cyan-500/8 hover:bg-cyan-500/18 hover:border-cyan-500/45 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] font-semibold backdrop-blur-sm"
               >
                 Marcar Retorno
               </button>
@@ -235,7 +235,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         {onSync && (
           <button
             onClick={() => onSync(lead.id)}
-            className="w-7 h-7 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] flex items-center justify-center transition-colors ml-auto"
+            className="glow-btn glow-gold w-8 h-8 rounded-xl border border-[rgba(212,175,55,0.25)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.12)] hover:border-[rgba(212,175,55,0.5)] hover:shadow-[0_0_15px_rgba(212,175,55,0.25)] flex items-center justify-center ml-auto backdrop-blur-sm"
             title="Sincronizar com Kommo"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

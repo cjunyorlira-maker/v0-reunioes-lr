@@ -60,12 +60,13 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 animate-slide-up overflow-hidden cursor-default"
         style={{ animationDelay: '300ms' }}
       >
-        {/* Glass background with gradient border */}
+        {/* Glass background with gradient border - mais transparente */}
         <div 
-          className="absolute inset-0 rounded-2xl transition-all duration-500"
+          className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
           style={{
-            background: `linear-gradient(145deg, ${glow.replace('0.3', '0.12')} 0%, rgba(255,255,255,0.02) 50%, ${glow.replace('0.3', '0.08')} 100%)`,
-            border: `1px solid ${borderColor}`,
+            background: `linear-gradient(145deg, ${glow.replace('0.3', '0.08')} 0%, transparent 50%, ${glow.replace('0.3', '0.05')} 100%)`,
+            border: `1px solid ${borderColor.replace('0.4', '0.25')}`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
           }}
         />
         
@@ -175,12 +176,13 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             animationFillMode: 'backwards',
           }}
         >
-          {/* Glass background */}
+          {/* Glass background - mais transparente */}
           <div 
-            className="absolute inset-0 rounded-2xl backdrop-blur-xl transition-all duration-500"
+            className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
             style={{
-              background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.08')} 0%, rgba(255,255,255,0.02) 50%, ${card.glow.replace('0.3', '0.05')} 100%)`,
-              border: `1px solid ${card.glow.replace('0.3', '0.2')}`,
+              background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.05')} 0%, transparent 50%, ${card.glow.replace('0.3', '0.03')} 100%)`,
+              border: `1px solid ${card.glow.replace('0.3', '0.15')}`,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
             }}
           />
           

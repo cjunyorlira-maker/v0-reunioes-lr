@@ -146,9 +146,96 @@ body::before {
   animation: pulse-dot 1s infinite;
 }
 
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Glass morphism cards */
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 
+    0 4px 24px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.glass-card:hover {
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+  border-color: rgba(212,175,55,0.25);
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.3),
+    0 0 20px rgba(212,175,55,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* Glowing buttons */
+.glow-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.glow-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-btn:hover::before {
+  opacity: 1;
+}
+
+.glow-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.glow-btn:hover::after {
+  left: 100%;
+}
+
+/* Button glow variants */
+.glow-green::before { background: radial-gradient(circle at center, rgba(34,197,94,0.3) 0%, transparent 70%); }
+.glow-red::before { background: radial-gradient(circle at center, rgba(239,68,68,0.3) 0%, transparent 70%); }
+.glow-pink::before { background: radial-gradient(circle at center, rgba(243,190,255,0.3) 0%, transparent 70%); }
+.glow-gold::before { background: radial-gradient(circle at center, rgba(212,175,55,0.3) 0%, transparent 70%); }
+.glow-cyan::before { background: radial-gradient(circle at center, rgba(34,211,238,0.3) 0%, transparent 70%); }
+.glow-purple::before { background: radial-gradient(circle at center, rgba(139,92,246,0.3) 0%, transparent 70%); }
+
 /* Smooth transitions */
 * {
-  transition-property: background-color, border-color, box-shadow;
-  transition-duration: 150ms;
+  transition-property: background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
