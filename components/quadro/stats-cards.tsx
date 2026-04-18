@@ -377,7 +377,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         {top1Agendei && (
           <TopCard 
             person={top1Agendei} 
-            label="Top Agendei" 
+            label="Top Agendei Semana" 
             color="text-[#d4af37]" 
             glow="rgba(212,175,55,0.3)"
           />
@@ -386,7 +386,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         {top1Veio && (
           <TopCard 
             person={top1Veio} 
-            label="Top Veio" 
+            label="Top Veio Semana" 
             color="text-emerald-400" 
             glow="rgba(16,185,129,0.3)"
           />
