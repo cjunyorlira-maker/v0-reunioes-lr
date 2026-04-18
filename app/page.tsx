@@ -59,35 +59,58 @@ export default function QuadroReunioes() {
   const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
   const allLeads = allLeadsData || []
 
-  // TOP 1 Agendei (usa data_agendei no período da semana - igual ao dashboard)
+  // TOP 1 Agendei (usa data_agendei no período da semana)
+  // Desempate: quem tiver mais "veio" na semana fica em primeiro
   const top1Agendei = useMemo(() => {
     if (!dateRange.start || !dateRange.end) return null
-    const count: Record<string, { total: number; foto?: string }> = {}
+    const count: Record<string, { total: number; veio: number; foto?: string }> = {}
+    
+    // Conta agendamentos no período
     allLeads.forEach((lead: Lead) => {
       const agendeiDate = (lead as any).data_agendei
       if (!agendeiDate) return
       if (agendeiDate < dateRange.start || agendeiDate > dateRange.end) return
       
       const nome = lead.responsavel || "Sem nome"
-      if (!count[nome]) count[nome] = { total: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
+      if (!count[nome]) count[nome] = { total: 0, veio: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
       count[nome].total++
     })
-    const sorted = Object.entries(count).sort((a, b) => b[1].total - a[1].total)
-    if (sorted.length === 0) return null
-    return { nome: sorted[0][0], total: sorted[0][1].total, foto: sorted[0][1].foto }
-  }, [allLeads, dateRange])
-
-  // TOP 1 Veio (mais clientes que vieram por responsavel na semana)
-  const top1Veio = useMemo(() => {
-    const count: Record<string, { total: number; foto?: string }> = {}
+    
+    // Conta "veio" na semana para desempate
     leads.filter(l => l.status === "veio").forEach(lead => {
       const nome = lead.responsavel || "Sem nome"
-      if (!count[nome]) count[nome] = { total: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
-      count[nome].total++
+      if (count[nome]) count[nome].veio++
     })
-    const sorted = Object.entries(count).sort((a, b) => b[1].total - a[1].total)
+    
+    // Ordena: primeiro por total de agendamentos, depois por veio (desempate)
+    const sorted = Object.entries(count).sort((a, b) => {
+      if (b[1].total !== a[1].total) return b[1].total - a[1].total
+      return b[1].veio - a[1].veio // Desempate por veio
+    })
     if (sorted.length === 0) return null
     return { nome: sorted[0][0], total: sorted[0][1].total, foto: sorted[0][1].foto }
+  }, [allLeads, dateRange, leads])
+
+  // TOP 1 Veio (mais clientes que vieram por responsavel na semana)
+  // Desempate: quem tiver melhor taxa de conversão (menos "não veio") fica em primeiro
+  const top1Veio = useMemo(() => {
+    const count: Record<string, { veio: number; nao: number; foto?: string }> = {}
+    
+    // Conta veio e nao veio por responsavel
+    leads.forEach(lead => {
+      const nome = lead.responsavel || "Sem nome"
+      if (!count[nome]) count[nome] = { veio: 0, nao: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
+      if (lead.status === "veio") count[nome].veio++
+      else if (lead.status === "nao") count[nome].nao++
+    })
+    
+    // Ordena: primeiro por veio, depois por menor número de "não veio" (melhor conversão)
+    const sorted = Object.entries(count).sort((a, b) => {
+      if (b[1].veio !== a[1].veio) return b[1].veio - a[1].veio
+      return a[1].nao - b[1].nao // Desempate: menos "não veio" = melhor
+    })
+    if (sorted.length === 0) return null
+    return { nome: sorted[0][0], total: sorted[0][1].veio, foto: sorted[0][1].foto }
   }, [leads])
 
   // Lista de equipes únicas

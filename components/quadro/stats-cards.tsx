@@ -238,7 +238,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
               {person.total}
             </span>
             <span className="text-[10px] text-white/50 font-semibold">
-              {label === "Top Agendei" ? "agendados" : "vieram"}
+              {label.includes("Agendei") ? "agendei" : "vieram"}
             </span>
           </div>
         </div>
