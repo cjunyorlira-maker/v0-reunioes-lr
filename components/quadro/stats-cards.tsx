@@ -50,94 +50,183 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     },
   ]
 
-  const TopCard = ({ person, label, color, glow }: { person: Top1Person; label: string; color: string; glow: string }) => (
-    <div 
-      className="group relative flex flex-col items-center justify-center gap-2 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-md border transition-all duration-300 hover:scale-105 hover:-translate-y-1 animate-slide-up overflow-hidden"
-      style={{
-        background: `linear-gradient(135deg, ${glow} 0%, rgba(255,255,255,0.02) 100%)`,
-        borderColor: color === "text-[#d4af37]" ? "rgba(212,175,55,0.3)" : color === "text-emerald-400" ? "rgba(16,185,129,0.3)" : "rgba(14,165,233,0.3)",
-      }}
-    >
-      {/* Glow on hover */}
+  const TopCard = ({ person, label, color, glow }: { person: Top1Person; label: string; color: string; glow: string }) => {
+    const isGold = color === "text-[#d4af37]"
+    const primaryColor = isGold ? "#d4af37" : "#10b981"
+    const borderColor = isGold ? "rgba(212,175,55,0.4)" : "rgba(16,185,129,0.4)"
+    
+    return (
       <div 
-        className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10"
-        style={{ background: glow }}
-      />
-      
-      {/* Troféu */}
-      <div className="text-2xl" style={{ filter: `drop-shadow(0 0 8px ${glow})` }}>
-        🏆
-      </div>
-
-      {/* Foto grande */}
-      <div className="relative">
-        {person.foto ? (
-          <img
-            src={person.foto}
-            alt={person.nome}
-            className="w-16 h-16 rounded-full object-cover object-top border-2 transition-all duration-300 group-hover:scale-110 shadow-lg"
-            style={{
-              borderColor: color === "text-[#d4af37]" ? "rgba(212,175,55,0.6)" : "rgba(16,185,129,0.6)",
-              boxShadow: `0 0 20px ${glow}`,
-            }}
+        className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 animate-slide-up overflow-hidden cursor-default"
+        style={{ animationDelay: '300ms' }}
+      >
+        {/* Glass background with gradient border */}
+        <div 
+          className="absolute inset-0 rounded-2xl transition-all duration-500"
+          style={{
+            background: `linear-gradient(145deg, ${glow.replace('0.3', '0.12')} 0%, rgba(255,255,255,0.02) 50%, ${glow.replace('0.3', '0.08')} 100%)`,
+            border: `1px solid ${borderColor}`,
+          }}
+        />
+        
+        {/* Animated outer glow */}
+        <div 
+          className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
+          style={{ background: `radial-gradient(ellipse at center, ${glow}, transparent 70%)` }}
+        />
+        
+        {/* Rotating shimmer on hover */}
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+          <div 
+            className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }}
           />
-        ) : (
-          <div
-            className="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all duration-300 group-hover:scale-110 font-bold text-xl"
-            style={{
-              background: color === "text-[#d4af37]" ? "rgba(212,175,55,0.15)" : "rgba(16,185,129,0.15)",
-              borderColor: color === "text-[#d4af37]" ? "rgba(212,175,55,0.4)" : "rgba(16,185,129,0.4)",
-              color: color === "text-[#d4af37]" ? "#d4af37" : "#10b981",
+        </div>
+        
+        {/* Trophy with pulse animation */}
+        <div className="relative z-10 flex flex-col items-center">
+          <div 
+            className="text-3xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12"
+            style={{ 
+              filter: `drop-shadow(0 0 12px ${glow}) drop-shadow(0 0 20px ${glow.replace('0.3', '0.5')})`,
             }}
           >
-            {person.nome.charAt(0)}
+            🏆
           </div>
-        )}
-        {/* Badge TOP 1 */}
-        <span 
-          className="absolute -top-2 -right-2 text-[10px] font-black px-2 py-1 rounded-full leading-none text-white shadow-lg"
-          style={{ background: color === "text-[#d4af37]" ? "#d4af37" : "#10b981" }}
-        >
-          TOP 1
-        </span>
-      </div>
+        </div>
 
-      {/* Info */}
-      <div className="text-center">
-        <span className="text-[9px] font-black uppercase tracking-widest block mb-1" style={{ color: color === "text-[#d4af37]" ? "#d4af37" : "#10b981" }}>
-          {label}
-        </span>
-        <span className="text-sm font-bold text-[#f5f0e8] block leading-tight line-clamp-2">{person.nome}</span>
-        <span className={`text-xs font-semibold mt-1 ${color}`}>{person.total} {label === "Top Agendei" ? "agendados" : "vieram"}</span>
+        {/* Foto grande com borda animada */}
+        <div className="relative z-10">
+          <div 
+            className="absolute -inset-1 rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500 blur-sm"
+            style={{ background: `linear-gradient(135deg, ${primaryColor}, transparent, ${primaryColor})` }}
+          />
+          {person.foto ? (
+            <img
+              src={person.foto}
+              alt={person.nome}
+              className="relative w-14 h-14 rounded-full object-cover object-top border-2 transition-all duration-500 group-hover:scale-110"
+              style={{
+                borderColor: primaryColor,
+                boxShadow: `0 0 25px ${glow}, 0 4px 15px rgba(0,0,0,0.3)`,
+              }}
+            />
+          ) : (
+            <div
+              className="relative w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all duration-500 group-hover:scale-110 font-black text-xl"
+              style={{
+                background: `linear-gradient(135deg, ${glow.replace('0.3', '0.2')}, ${glow.replace('0.3', '0.1')})`,
+                borderColor: primaryColor,
+                color: primaryColor,
+                boxShadow: `0 0 25px ${glow}`,
+              }}
+            >
+              {person.nome.charAt(0)}
+            </div>
+          )}
+          {/* Badge TOP 1 com pulse */}
+          <span 
+            className="absolute -top-1 -right-1 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none text-black shadow-lg transition-transform duration-300 group-hover:scale-110"
+            style={{ 
+              background: `linear-gradient(135deg, ${primaryColor}, ${isGold ? '#f5d742' : '#34d399'})`,
+              boxShadow: `0 2px 10px ${glow}`,
+            }}
+          >
+            TOP 1
+          </span>
+        </div>
+
+        {/* Info com animacoes */}
+        <div className="relative z-10 flex flex-col min-w-0">
+          <span 
+            className="text-[9px] font-black uppercase tracking-widest mb-0.5 transition-all duration-300"
+            style={{ color: primaryColor, textShadow: `0 0 20px ${glow}` }}
+          >
+            {label}
+          </span>
+          <span className="text-sm font-bold text-white truncate max-w-[120px] transition-colors duration-300 group-hover:text-white">
+            {person.nome}
+          </span>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span 
+              className="text-lg font-black transition-all duration-300 group-hover:scale-110"
+              style={{ color: primaryColor, textShadow: `0 0 15px ${glow}` }}
+            >
+              {person.total}
+            </span>
+            <span className="text-[10px] text-white/50 font-semibold">
+              {label === "Top Agendei" ? "agendados" : "vieram"}
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="flex items-center gap-4 px-4 md:px-6 mb-6 overflow-x-auto pb-2">
-      {/* Stats inline - formato compacto horizontal */}
-      <div className="flex items-center gap-1 backdrop-blur-md bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-        {cards.map((card, index) => (
-          <div key={card.label} className="flex items-center">
-            <div className="flex items-center gap-2 px-3 py-1 group cursor-default">
-              <span 
-                className={`text-2xl font-black ${card.color} transition-all duration-300 group-hover:scale-110`}
-                style={{ textShadow: `0 0 20px ${card.glow}` }}
-              >
-                {card.value}
-              </span>
-              <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider">{card.label}</span>
-            </div>
-            {index < cards.length - 1 && (
-              <div className="w-px h-6 bg-gradient-to-b from-transparent via-white/15 to-transparent" />
-            )}
+      {/* Stats Cards - Premium Glass Design */}
+      {cards.map((card, index) => (
+        <div
+          key={card.label}
+          className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 animate-slide-up overflow-hidden"
+          style={{
+            animationDelay: `${index * 80}ms`,
+            animationFillMode: 'backwards',
+          }}
+        >
+          {/* Glass background */}
+          <div 
+            className="absolute inset-0 rounded-2xl backdrop-blur-xl transition-all duration-500"
+            style={{
+              background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.08')} 0%, rgba(255,255,255,0.02) 50%, ${card.glow.replace('0.3', '0.05')} 100%)`,
+              border: `1px solid ${card.glow.replace('0.3', '0.2')}`,
+            }}
+          />
+          
+          {/* Animated glow ring on hover */}
+          <div 
+            className="absolute -inset-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md -z-10"
+            style={{ background: `linear-gradient(135deg, ${card.glow}, transparent, ${card.glow})` }}
+          />
+          
+          {/* Shimmer effect on hover */}
+          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+            <div 
+              className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}
+            />
           </div>
-        ))}
-      </div>
+          
+          {/* Number with animated glow */}
+          <div className="relative z-10 flex flex-col items-center justify-center min-w-[48px]">
+            <span 
+              className={`text-3xl font-black ${card.color} transition-all duration-500 group-hover:scale-110`}
+              style={{ 
+                textShadow: `0 0 30px ${card.glow}, 0 0 60px ${card.glow.replace('0.3', '0.2')}`,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              }}
+            >
+              {card.value}
+            </span>
+          </div>
+          
+          {/* Label with subtle animation */}
+          <div className="relative z-10 flex flex-col">
+            <span className="text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
+              {card.label}
+            </span>
+            <div 
+              className="h-0.5 w-0 group-hover:w-full mt-1 rounded-full transition-all duration-500 ease-out"
+              style={{ background: `linear-gradient(90deg, ${card.glow}, transparent)` }}
+            />
+          </div>
+        </div>
+      ))}
 
       {/* Separator to TOP 1 */}
       {(top1Agendei || top1Veio) && (
-        <div className="w-px h-14 bg-gradient-to-b from-transparent via-white/15 to-transparent flex-shrink-0" />
+        <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0 mx-2" />
       )}
 
       {/* TOP 1 Cards */}
@@ -146,7 +235,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
           person={top1Agendei} 
           label="Top Agendei" 
           color="text-[#d4af37]" 
-          glow="rgba(212,175,55,0.2)"
+          glow="rgba(212,175,55,0.3)"
         />
       )}
 
@@ -155,7 +244,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
           person={top1Veio} 
           label="Top Veio" 
           color="text-emerald-400" 
-          glow="rgba(16,185,129,0.2)"
+          glow="rgba(16,185,129,0.3)"
         />
       )}
     </div>
