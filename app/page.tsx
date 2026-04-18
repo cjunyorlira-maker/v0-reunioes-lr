@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
+import useSWR from "swr"
 import { toast } from "sonner"
 import { Header } from "@/components/quadro/header"
 import { StatsCards } from "@/components/quadro/stats-cards"
@@ -53,7 +54,10 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
   const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
-  const { leads: allLeads } = useLeads("", "") // Todos os leads para calcular Agendei corretamente
+  
+  // Busca TODOS os leads para calcular Agendei corretamente (igual ao dashboard)
+  const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
+  const allLeads = allLeadsData || []
 
   // Sincronização automática com Kommo a cada 5 minutos
   // Sincronização automática removida - agora é apenas manual via botão de refresh no card
