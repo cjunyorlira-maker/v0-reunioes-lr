@@ -114,44 +114,30 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   )
 
   return (
-    <div className="flex gap-3 px-4 md:px-6 mb-6 overflow-x-auto pb-2">
-      {/* Stats Cards */}
-      {cards.map((card, index) => (
-        <div
-          key={card.label}
-          className="group relative flex items-center gap-3 backdrop-blur-md border rounded-2xl px-5 py-4 min-w-fit transition-all duration-300 hover:scale-105 hover:-translate-y-1 animate-slide-up overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${card.glow} 0%, rgba(255,255,255,0.02) 100%)`,
-            borderColor: card.border,
-            animationDelay: `${index * 100}ms`,
-            animationFillMode: 'backwards',
-          }}
-        >
-          {/* Glow on hover */}
-          <div 
-            className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10"
-            style={{ background: card.glow }}
-          />
-          
-          {/* Icon */}
-          <div 
-            className="relative w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-            style={{
-              background: card.bg,
-              boxShadow: `0 4px 15px ${card.glow}`,
-            }}
-          >
-            <span className={`text-lg font-black ${card.color}`}>{card.value}</span>
+    <div className="flex items-center gap-4 px-4 md:px-6 mb-6 overflow-x-auto pb-2">
+      {/* Stats inline - formato compacto horizontal */}
+      <div className="flex items-center gap-1 backdrop-blur-md bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        {cards.map((card, index) => (
+          <div key={card.label} className="flex items-center">
+            <div className="flex items-center gap-2 px-3 py-1 group cursor-default">
+              <span 
+                className={`text-2xl font-black ${card.color} transition-all duration-300 group-hover:scale-110`}
+                style={{ textShadow: `0 0 20px ${card.glow}` }}
+              >
+                {card.value}
+              </span>
+              <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider">{card.label}</span>
+            </div>
+            {index < cards.length - 1 && (
+              <div className="w-px h-6 bg-gradient-to-b from-transparent via-white/15 to-transparent" />
+            )}
           </div>
-          
-          {/* Label */}
-          <span className="text-xs text-[#8a8070] font-semibold uppercase tracking-wider">{card.label}</span>
-        </div>
-      ))}
+        ))}
+      </div>
 
-      {/* Separator */}
+      {/* Separator to TOP 1 */}
       {(top1Agendei || top1Veio) && (
-        <div className="w-px h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent mx-2 flex-shrink-0" />
+        <div className="w-px h-14 bg-gradient-to-b from-transparent via-white/15 to-transparent flex-shrink-0" />
       )}
 
       {/* TOP 1 Cards */}
