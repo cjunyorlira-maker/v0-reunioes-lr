@@ -397,30 +397,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         ))}
       </div>
 
-      {/* Linha 2: TOP Agendei, TOP Veio, TOP Vendedor, TOP Equipe */}
+      {/* Linha 2: TOP Vendas, TOP Equipe, TOP Agendei, TOP Veio */}
       <div className="flex items-center gap-4 overflow-x-auto pb-2">
-        {top1Agendei && (
-          <TopCard 
-            person={top1Agendei} 
-            label="Top Agendei" 
-            color="text-[#d4af37]" 
-            glow="rgba(212,175,55,0.3)"
-          />
-        )}
-
-        {top1Veio && (
-          <TopCard 
-            person={top1Veio} 
-            label="Top Veio" 
-            color="text-emerald-400" 
-            glow="rgba(16,185,129,0.3)"
-          />
-        )}
-
-        {(top1Agendei || top1Veio) && (top1VendedorMes || top1EquipeMes) && (
-          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0" />
-        )}
-
         {top1VendedorMes && (
           <TopCardVenda
             venda={top1VendedorMes}
@@ -438,6 +416,28 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             primaryColor="#fb923c"
             glow="rgba(251,146,60,0.3)"
             badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
+          />
+        )}
+
+        {(top1VendedorMes || top1EquipeMes) && (top1Agendei || top1Veio) && (
+          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0" />
+        )}
+
+        {top1Agendei && (
+          <TopCard 
+            person={top1Agendei} 
+            label="Top Agendei" 
+            color="text-[#d4af37]" 
+            glow="rgba(212,175,55,0.3)"
+          />
+        )}
+
+        {top1Veio && (
+          <TopCard 
+            person={top1Veio} 
+            label="Top Veio" 
+            color="text-emerald-400" 
+            glow="rgba(16,185,129,0.3)"
           />
         )}
       </div>
