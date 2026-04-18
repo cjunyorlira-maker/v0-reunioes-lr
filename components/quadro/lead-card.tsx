@@ -156,6 +156,43 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             </span>
           )}
         </div>
+
+        {/* Kommo actions */}
+        <div className="flex items-center gap-2 mt-2">
+          {/* Botao Sincronizar com Kommo */}
+          {onSync && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onSync(lead.id)
+              }}
+              className="flex items-center gap-1 text-[9px] font-semibold px-2 py-1 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all duration-300"
+              title="Sincronizar com Kommo"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Sync
+            </button>
+          )}
+          
+          {/* Link para abrir no Kommo */}
+          {lead.kommo_lead_id && (
+            <a
+              href={`https://lrmultimarcas.kommo.com/leads/detail/${lead.kommo_lead_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-[9px] font-semibold px-2 py-1 rounded-md bg-[#4595e7]/10 text-[#4595e7] border border-[#4595e7]/20 hover:bg-[#4595e7]/20 transition-all duration-300"
+              title="Abrir no Kommo"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+              </svg>
+              Kommo
+            </a>
+          )}
+        </div>
       </div>
       
       {/* Actions */}
