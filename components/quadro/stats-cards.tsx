@@ -55,25 +55,29 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     return { nome, valor: info.valor, vendas: info.total, foto: getFotoVendedor(nome) }
   }, [data])
 
+  const equipeLogos: Record<string, string> = {
+    "TDM": "/equipes/tdm.jpg",
+  }
+
+  const vendedorEquipe: Record<string, string> = {
+    "Nicolas Moraes": "Legado",
+    "Bianca Isabela": "TDM",
+    "Ana Beatriz": "TDM",
+    "Alex Negreiros": "Lobos",
+    "Amanda Souza": "TDM",
+    "Isabelly Ribeiro": "Lobos",
+    "Ana Gabrielly": "Lobos",
+    "Alexia Cunha": "Legado",
+    "João Victor": "Samurais",
+    "Emily Machado": "TDM",
+  }
+
   const top1EquipeMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
-    // Mapeamento de vendedor para equipe
-    const vendedorEquipe: Record<string, string> = {
-      "Nicolas Moraes": "Legado",
-      "Bianca Isabela": "TDM",
-      "Ana Beatriz": "TDM",
-      "Alex Negreiros": "Lobos",
-      "Amanda Souza": "TDM",
-      "Isabelly Ribeiro": "Lobos",
-      "Ana Gabrielly": "Lobos",
-      "Alexia Cunha": "Legado",
-      "João Victor": "Samurais",
-      "Emily Machado": "TDM",
-    }
 
     if (vendas.length === 0) {
       // Fallback - TDM é TOP 1 com R$ 2.084.261 (4 vendas)
-      return { nome: "TDM", valor: 2084261, vendas: 4, foto: undefined }
+      return { nome: "TDM", valor: 2084261, vendas: 4, foto: "/equipes/tdm.jpg" }
     }
 
     const byEquipe: Record<string, { valor: number; total: number }> = {}
@@ -91,7 +95,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
       nome,
       valor: info.valor,
       vendas: info.total,
-      foto: undefined,
+      foto: equipeLogos[nome] || undefined,
     }
   }, [data])
   const cards = [
@@ -343,120 +347,100 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   }
 
   return (
-    <div className="space-y-4 px-4 md:px-6 mb-6">
-      {/* Linha 1: Stats + TOP Agendei/Veio */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-2">
-      {/* Stats Cards - Premium Glass Design */}
-      {cards.map((card, index) => (
-        <div
-          key={card.label}
-          className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 animate-slide-up overflow-hidden"
-          style={{
-            animationDelay: `${index * 80}ms`,
-            animationFillMode: 'backwards',
-          }}
-        >
-          {/* Glass background - mais transparente */}
-          <div 
-            className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
-            style={{
-              background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.05')} 0%, transparent 50%, ${card.glow.replace('0.3', '0.03')} 100%)`,
-              border: `1px solid ${card.glow.replace('0.3', '0.15')}`,
-              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
-            }}
-          />
-          
-          {/* Animated glow ring on hover */}
-          <div 
-            className="absolute -inset-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md -z-10"
-            style={{ background: `linear-gradient(135deg, ${card.glow}, transparent, ${card.glow})` }}
-          />
-          
-          {/* Shimmer effect on hover */}
-          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+    <div className="space-y-3 px-4 md:px-6 mb-6">
+      {/* Linha 1: apenas os 4 stats - Total, Vieram, Faltaram, Pendentes */}
+      <div className="flex items-center gap-4 overflow-x-auto pb-1">
+        {cards.map((card, index) => (
+          <div
+            key={card.label}
+            className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden"
+          >
             <div 
-              className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}
-            />
-          </div>
-          
-          {/* Number with animated glow */}
-          <div className="relative z-10 flex flex-col items-center justify-center min-w-[48px]">
-            <span 
-              className={`text-3xl font-black ${card.color} transition-all duration-500 group-hover:scale-110`}
-              style={{ 
-                textShadow: `0 0 30px ${card.glow}, 0 0 60px ${card.glow.replace('0.3', '0.2')}`,
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+              style={{
+                background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.05')} 0%, transparent 50%, ${card.glow.replace('0.3', '0.03')} 100%)`,
+                border: `1px solid ${card.glow.replace('0.3', '0.15')}`,
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
               }}
-            >
-              {card.value}
-            </span>
-          </div>
-          
-          {/* Label with subtle animation */}
-          <div className="relative z-10 flex flex-col">
-            <span className="text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
-              {card.label}
-            </span>
-            <div 
-              className="h-0.5 w-0 group-hover:w-full mt-1 rounded-full transition-all duration-500 ease-out"
-              style={{ background: `linear-gradient(90deg, ${card.glow}, transparent)` }}
             />
+            <div 
+              className="absolute -inset-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md -z-10"
+              style={{ background: `linear-gradient(135deg, ${card.glow}, transparent, ${card.glow})` }}
+            />
+            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+              <div 
+                className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}
+              />
+            </div>
+            <div className="relative z-10 flex flex-col items-center justify-center min-w-[48px]">
+              <span 
+                className={`text-3xl font-black ${card.color} transition-all duration-500 group-hover:scale-110`}
+                style={{ 
+                  textShadow: `0 0 30px ${card.glow}, 0 0 60px ${card.glow.replace('0.3', '0.2')}`,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                }}
+              >
+                {card.value}
+              </span>
+            </div>
+            <div className="relative z-10 flex flex-col">
+              <span className="text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
+                {card.label}
+              </span>
+              <div 
+                className="h-0.5 w-0 group-hover:w-full mt-1 rounded-full transition-all duration-500 ease-out"
+                style={{ background: `linear-gradient(90deg, ${card.glow}, transparent)` }}
+              />
+            </div>
           </div>
-        </div>
-      ))}
-
-      {/* Separator to TOP 1 */}
-      {(top1Agendei || top1Veio) && (
-        <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0 mx-2" />
-      )}
-
-      {/* TOP 1 Cards */}
-      {top1Agendei && (
-        <TopCard 
-          person={top1Agendei} 
-          label="Top Agendei" 
-          color="text-[#d4af37]" 
-          glow="rgba(212,175,55,0.3)"
-        />
-      )}
-
-      {top1Veio && (
-        <TopCard 
-          person={top1Veio} 
-          label="Top Veio" 
-          color="text-emerald-400" 
-          glow="rgba(16,185,129,0.3)"
-        />
-      )}
+        ))}
       </div>
 
-      {/* Linha 2: TOP Vendas */}
-      {(top1VendedorMes || top1EquipeMes) && (
-        <div className="flex items-center gap-4 overflow-x-auto pb-2">
-          {/* TOP 1 Vendedor Mes */}
-          {top1VendedorMes && (
-            <TopCardVenda
-              venda={top1VendedorMes}
-              label="Top Vendas Mes"
-              primaryColor="#a78bfa"
-              glow="rgba(167,139,250,0.3)"
-              badgeGradient="linear-gradient(135deg, #a78bfa, #c4b5fd)"
-            />
-          )}
+      {/* Linha 2: TOP Agendei, TOP Veio, TOP Vendedor, TOP Equipe */}
+      <div className="flex items-center gap-4 overflow-x-auto pb-2">
+        {top1Agendei && (
+          <TopCard 
+            person={top1Agendei} 
+            label="Top Agendei" 
+            color="text-[#d4af37]" 
+            glow="rgba(212,175,55,0.3)"
+          />
+        )}
 
-          {/* TOP 1 Equipe Mes */}
-          {top1EquipeMes && (
-            <TopCardVenda
-              venda={top1EquipeMes}
-              label="Top Equipe Mes"
-              primaryColor="#fb923c"
-              glow="rgba(251,146,60,0.3)"
-              badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
-            />
-          )}
-        </div>
-      )}
+        {top1Veio && (
+          <TopCard 
+            person={top1Veio} 
+            label="Top Veio" 
+            color="text-emerald-400" 
+            glow="rgba(16,185,129,0.3)"
+          />
+        )}
+
+        {(top1Agendei || top1Veio) && (top1VendedorMes || top1EquipeMes) && (
+          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0" />
+        )}
+
+        {top1VendedorMes && (
+          <TopCardVenda
+            venda={top1VendedorMes}
+            label="Top Vendas Mes"
+            primaryColor="#a78bfa"
+            glow="rgba(167,139,250,0.3)"
+            badgeGradient="linear-gradient(135deg, #a78bfa, #c4b5fd)"
+          />
+        )}
+
+        {top1EquipeMes && (
+          <TopCardVenda
+            venda={top1EquipeMes}
+            label="Top Equipe Mes"
+            primaryColor="#fb923c"
+            glow="rgba(251,146,60,0.3)"
+            badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
+          />
+        )}
+      </div>
     </div>
   )
 }
