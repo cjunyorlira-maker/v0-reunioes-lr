@@ -39,8 +39,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   const top1VendedorMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
     if (vendas.length === 0) {
-      // Fallback - Alex Negreiros é TOP 1 com R$ 563.314
-      return { nome: "Alex Negreiros", valor: 563314, vendas: 1, foto: getFotoVendedor("Alex Negreiros") }
+      // Fallback - Nicolas Moraes é TOP 1 com R$ 791.564 (2 vendas)
+      return { nome: "Nicolas Moraes", valor: 791564, vendas: 2, foto: getFotoVendedor("Nicolas Moraes") }
     }
     const byVendedor: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
@@ -57,15 +57,40 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
   const top1EquipeMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
-    if (vendas.length === 0) {
-      // Fallback - Total R$ 2.745.548 (13 vendas)
-      return { nome: "Grupo LR", valor: 2745548, vendas: 13, foto: undefined }
+    // Mapeamento de vendedor para equipe
+    const vendedorEquipe: Record<string, string> = {
+      "Nicolas Moraes": "Legado",
+      "Bianca Isabela": "TDM",
+      "Ana Beatriz": "TDM",
+      "Alex Negreiros": "Lobos",
+      "Amanda Souza": "TDM",
+      "Isabelly Ribeiro": "Lobos",
+      "Ana Gabrielly": "Lobos",
+      "Alexia Cunha": "Legado",
+      "João Victor": "Samurais",
+      "Emily Machado": "TDM",
     }
-    const totalValor = vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
+
+    if (vendas.length === 0) {
+      // Fallback - TDM é TOP 1 com R$ 2.084.261 (4 vendas)
+      return { nome: "TDM", valor: 2084261, vendas: 4, foto: undefined }
+    }
+
+    const byEquipe: Record<string, { valor: number; total: number }> = {}
+    vendas.forEach((v) => {
+      const equipe = vendedorEquipe[v.responsavel] || "Outro"
+      if (!byEquipe[equipe]) byEquipe[equipe] = { valor: 0, total: 0 }
+      byEquipe[equipe].valor += Number(v.valor_venda)
+      byEquipe[equipe].total++
+    })
+
+    const sorted = Object.entries(byEquipe).sort((a, b) => b[1].valor - a[1].valor)
+    if (sorted.length === 0) return null
+    const [nome, info] = sorted[0]
     return {
-      nome: "Grupo LR",
-      valor: totalValor,
-      vendas: vendas.length,
+      nome,
+      valor: info.valor,
+      vendas: info.total,
       foto: undefined,
     }
   }, [data])
