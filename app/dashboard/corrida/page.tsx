@@ -789,58 +789,92 @@ export default function CorridaPage() {
       )}
 
       <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-white/10 backdrop-blur-xl sticky top-0 z-40" style={{ background: "rgba(10,10,15,0.85)" }}>
+        {/* Header com glassmorphism */}
+        <header className="border-b border-white/10 backdrop-blur-2xl sticky top-0 z-40 transition-all duration-500" style={{ 
+          background: "linear-gradient(180deg, rgba(10,10,15,0.95) 0%, rgba(10,10,15,0.85) 100%)",
+          boxShadow: "0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)"
+        }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-4 max-w-[1600px] mx-auto gap-3">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-                <ArrowLeft size={20} />
+              <Link href="/dashboard" className="group p-2.5 rounded-xl transition-all duration-300 hover:scale-105" style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                backdropFilter: "blur(10px)"
+              }}>
+                <ArrowLeft size={20} className="transition-transform duration-300 group-hover:-translate-x-0.5" />
               </Link>
               <div className="flex items-center gap-3">
-                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center" style={{
+                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center animate-pulse" style={{
                   background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-                  boxShadow: "0 0 20px rgba(239,68,68,0.4)"
+                  boxShadow: "0 0 30px rgba(239,68,68,0.5), 0 0 60px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.2)"
                 }}>
-                  <Trophy size={24} className="text-white" />
+                  <Trophy size={24} className="text-white drop-shadow-lg" />
+                  <div className="absolute inset-0 rounded-xl" style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)"
+                  }} />
                 </div>
                 <div>
-                  <h1 className="text-xl md:text-2xl font-black" style={{
-                    background: "linear-gradient(90deg, #fbbf24, #f97316, #ef4444)",
+                  <h1 className="text-xl md:text-2xl font-black drop-shadow-lg" style={{
+                    background: "linear-gradient(90deg, #fbbf24, #f97316, #ef4444, #fbbf24)",
+                    backgroundSize: "200% auto",
                     WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent"
+                    WebkitTextFillColor: "transparent",
+                    animation: "shimmer 3s linear infinite"
                   }}>Grand Prix LR</h1>
-                  <p className="text-xs text-white/40">{weekLabel}</p>
+                  <p className="text-xs text-white/50 font-medium">{weekLabel}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Race type toggle */}
-              <div className="flex rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Race type toggle - glassmorphism */}
+              <div className="flex rounded-2xl p-1.5 transition-all duration-300" style={{ 
+                background: "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)"
+              }}>
                 {[
-                  { key: "qualificados", label: "Qualificados", icon: Target },
-                  { key: "agendei", label: "Agendei", icon: Calendar }
-                ].map(({ key, label, icon: Icon }) => (
+                  { key: "qualificados", label: "Qualificados", icon: Target, color: "#0ea5e9" },
+                  { key: "agendei", label: "Agendei", icon: Calendar, color: "#8b5cf6" }
+                ].map(({ key, label, icon: Icon, color }) => (
                   <button key={key} onClick={() => setRaceType(key as RaceType)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 hover:scale-105"
                     style={raceType === key ? {
-                      background: key === "qualificados" ? "linear-gradient(135deg,#0ea5e9,#3b82f6)" : "linear-gradient(135deg,#8b5cf6,#7c3aed)",
-                      color: "white", boxShadow: "0 0 12px rgba(59,130,246,0.4)"
-                    } : { color: "rgba(255,255,255,0.5)" }}>
-                    <Icon size={13} />{label}
+                      background: key === "qualificados" 
+                        ? "linear-gradient(135deg,#0ea5e9,#3b82f6)" 
+                        : "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+                      color: "white", 
+                      boxShadow: `0 0 20px ${color}66, 0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)`,
+                      transform: "translateY(-1px)"
+                    } : { 
+                      color: "rgba(255,255,255,0.5)",
+                      background: "transparent"
+                    }}>
+                    <Icon size={14} className={raceType === key ? "drop-shadow-lg" : ""} />{label}
                   </button>
                 ))}
               </div>
 
-              {/* View mode toggle */}
-              <div className="flex rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              {/* View mode toggle - glassmorphism */}
+              <div className="flex rounded-2xl p-1.5 transition-all duration-300" style={{ 
+                background: "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)"
+              }}>
                 {["dia", "semana"].map(mode => (
                   <button key={mode} onClick={() => setViewMode(mode as ViewMode)}
-                    className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize"
+                    className="px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 capitalize hover:scale-105"
                     style={viewMode === mode ? {
                       background: "linear-gradient(135deg,#10b981,#059669)",
-                      color: "white", boxShadow: "0 0 12px rgba(16,185,129,0.4)"
-                    } : { color: "rgba(255,255,255,0.5)" }}>
+                      color: "white", 
+                      boxShadow: "0 0 20px rgba(16,185,129,0.5), 0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      transform: "translateY(-1px)"
+                    } : { 
+                      color: "rgba(255,255,255,0.5)",
+                      background: "transparent"
+                    }}>
                     {mode === "dia" ? "Hoje" : "Semana"}
                   </button>
                 ))}
@@ -849,25 +883,39 @@ export default function CorridaPage() {
           </div>
         </header>
 
-        {/* Seletor de dia */}
+        {/* Seletor de dia com glassmorphism */}
         {viewMode === "dia" && (
-          <div className="px-4 py-3 max-w-[1600px] mx-auto">
-            <div className="flex flex-wrap gap-2 justify-center">
+          <div className="px-4 py-4 max-w-[1600px] mx-auto">
+            <div className="flex flex-wrap gap-3 justify-center">
               {weekDays.map(day => {
                 const dateStr = formatDateForDB(day.date)
                 const isSelected = dateStr === selectedDay
                 return (
                   <button key={dateStr} onClick={() => setSelectedDay(dateStr)}
-                    className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                    className="group relative px-5 py-3 rounded-2xl text-sm font-bold transition-all duration-300 hover:scale-105 overflow-hidden"
                     style={isSelected ? {
                       background: "linear-gradient(135deg,#f59e0b,#f97316)",
-                      color: "white", boxShadow: "0 0 16px rgba(245,158,11,0.4)"
+                      color: "white", 
+                      boxShadow: "0 0 30px rgba(245,158,11,0.5), 0 8px 25px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)",
+                      transform: "translateY(-2px)"
                     } : day.isToday ? {
-                      background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399"
+                      background: "rgba(16,185,129,0.1)", 
+                      backdropFilter: "blur(10px)",
+                      border: "1px solid rgba(16,185,129,0.4)", 
+                      color: "#34d399",
+                      boxShadow: "0 0 20px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.05)"
                     } : {
-                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)"
+                      background: "rgba(255,255,255,0.03)", 
+                      backdropFilter: "blur(10px)",
+                      border: "1px solid rgba(255,255,255,0.08)", 
+                      color: "rgba(255,255,255,0.6)",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)"
                     }}>
-                    {day.dayName.slice(0, 3)} {day.date.getDate()}
+                    {/* Efeito de brilho no hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{
+                      background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%)"
+                    }} />
+                    <span className="relative z-10">{day.dayName.slice(0, 3)} {day.date.getDate()}</span>
                   </button>
                 )
               })}
@@ -876,56 +924,84 @@ export default function CorridaPage() {
         )}
 
         {/* Meta */}
-        <div className="px-4 pb-4 max-w-[1600px] mx-auto">
-            {/* Totais e Meta */}
-            <div className="flex flex-wrap justify-center gap-4 mb-6">
+        <div className="px-4 pb-6 max-w-[1600px] mx-auto">
+            {/* Totais e Meta - Glassmorphism cards */}
+            <div className="flex flex-wrap justify-center gap-5 mb-8">
               {/* Total Qualificados */}
-              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
-                background: "linear-gradient(135deg,rgba(14,165,233,0.15),rgba(59,130,246,0.15))",
-                border: "1px solid rgba(14,165,233,0.25)",
-                boxShadow: "0 0 20px rgba(14,165,233,0.1)"
+              <div className="group relative flex items-center gap-4 px-6 py-4 rounded-3xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 overflow-hidden" style={{
+                background: "linear-gradient(135deg,rgba(14,165,233,0.1),rgba(59,130,246,0.05))",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(14,165,233,0.2)",
+                boxShadow: "0 8px 32px rgba(14,165,233,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset"
               }}>
-                <Target size={18} className="text-cyan-400" />
-                <div>
-                  <span className="text-xs text-white/50 block uppercase tracking-wider">
+                {/* Glow effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center" style={{
+                  background: "linear-gradient(135deg, #0ea5e9, #3b82f6)",
+                  boxShadow: "0 0 25px rgba(14,165,233,0.5), inset 0 1px 0 rgba(255,255,255,0.2)"
+                }}>
+                  <Target size={22} className="text-white drop-shadow-lg" />
+                </div>
+                <div className="relative">
+                  <span className="text-xs text-white/60 block uppercase tracking-widest font-semibold">
                     Qualificados {viewMode === "dia" ? "Hoje" : "Semana"}
                   </span>
-                  <span className="text-2xl font-black text-cyan-400">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 drop-shadow-lg">
                     {viewMode === "dia" ? totais.totalQualificadosDia : totais.totalQualificadosSemana}
                   </span>
                 </div>
               </div>
 
               {/* Total Agendei */}
-              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
-                background: "linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.15))",
-                border: "1px solid rgba(139,92,246,0.25)",
-                boxShadow: "0 0 20px rgba(139,92,246,0.1)"
+              <div className="group relative flex items-center gap-4 px-6 py-4 rounded-3xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 overflow-hidden" style={{
+                background: "linear-gradient(135deg,rgba(139,92,246,0.1),rgba(124,58,237,0.05))",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(139,92,246,0.2)",
+                boxShadow: "0 8px 32px rgba(139,92,246,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset"
               }}>
-                <Calendar size={18} className="text-purple-400" />
-                <div>
-                  <span className="text-xs text-white/50 block uppercase tracking-wider">
+                {/* Glow effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center" style={{
+                  background: "linear-gradient(135deg, #8b5cf6, #7c3aed)",
+                  boxShadow: "0 0 25px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.2)"
+                }}>
+                  <Calendar size={22} className="text-white drop-shadow-lg" />
+                </div>
+                <div className="relative">
+                  <span className="text-xs text-white/60 block uppercase tracking-widest font-semibold">
                     Agendei {viewMode === "dia" ? "Hoje" : "Semana"}
                   </span>
-                  <span className="text-2xl font-black text-purple-400">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-violet-400 drop-shadow-lg">
                     {viewMode === "dia" ? totais.totalAgendeiDia : totais.totalAgendeiSemana}
                   </span>
                 </div>
               </div>
 
               {/* Meta da Corrida */}
-              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl" style={{
-                background: "linear-gradient(135deg,rgba(239,68,68,0.15),rgba(245,158,11,0.15))",
-                border: "1px solid rgba(239,68,68,0.25)",
-                boxShadow: "0 0 20px rgba(239,68,68,0.1)"
+              <div className="group relative flex items-center gap-4 px-6 py-4 rounded-3xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 overflow-hidden" style={{
+                background: "linear-gradient(135deg,rgba(239,68,68,0.1),rgba(245,158,11,0.05))",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(239,68,68,0.2)",
+                boxShadow: "0 8px 32px rgba(239,68,68,0.15), 0 0 0 1px rgba(255,255,255,0.05) inset"
               }}>
-                <Flag size={18} className="text-red-400" />
-                <div>
-                  <span className="text-xs text-white/50 block uppercase tracking-wider">Meta da Corrida</span>
-                  <span className="text-2xl font-black text-white">{meta}</span>
-                  <span className="text-sm text-white/40 ml-2">{raceType === "qualificados" ? "qualif." : "agend."}</span>
+                {/* Glow effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center animate-pulse" style={{
+                  background: "linear-gradient(135deg, #ef4444, #f97316)",
+                  boxShadow: "0 0 25px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.2)"
+                }}>
+                  <Flag size={22} className="text-white drop-shadow-lg" />
                 </div>
-                <Zap size={16} className="text-yellow-400 animate-pulse" />
+                <div className="relative">
+                  <span className="text-xs text-white/60 block uppercase tracking-widest font-semibold">Meta da Corrida</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400">{meta}</span>
+                    <span className="text-sm text-white/50 font-semibold">{raceType === "qualificados" ? "qualif." : "agend."}</span>
+                  </div>
+                </div>
+                <Zap size={20} className="relative text-yellow-400 animate-pulse drop-shadow-lg" style={{
+                  filter: "drop-shadow(0 0 8px rgba(250,204,21,0.8))"
+                }} />
               </div>
             </div>
 
@@ -1094,6 +1170,25 @@ export default function CorridaPage() {
           50% { opacity: 0.4; transform: translateY(-15px) scale(1.5); }
           100% { opacity: 0; transform: translateY(-30px) scale(2); }
         }
+        @keyframes shimmer {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        @keyframes glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.4); }
+          50% { box-shadow: 0 0 40px rgba(245,158,11,0.6), 0 0 60px rgba(239,68,68,0.3); }
+        }
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}</style>
     </div>
   )
