@@ -461,64 +461,11 @@ export default function QuadroReunioes() {
         onNewLead={() => setIsModalOpen(true)}
       />
 
-      <StatsCards stats={stats} />
-
-      {/* TOP 1 da Semana */}
-      {mounted && !isLoading && (top1Agendei || top1Veio) && (
-        <div className="px-4 md:px-6 mb-4 flex gap-3 flex-wrap">
-          {/* TOP 1 Agendei */}
-          {top1Agendei && (
-            <div className="group flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[rgba(212,175,55,0.2)] bg-gradient-to-r from-[rgba(212,175,55,0.08)] to-[rgba(212,175,55,0.03)] backdrop-blur-sm transition-all duration-300 hover:border-[rgba(212,175,55,0.4)] hover:shadow-[0_4px_20px_rgba(212,175,55,0.15)]">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black text-[#d4af37]/60 uppercase tracking-widest">Top Agendei</span>
-                <span className="text-[10px] text-[#d4af37]/40">•</span>
-                <span className="text-[10px] font-bold text-[#d4af37]/60">{top1Agendei.total} leads</span>
-              </div>
-              <div className="w-px h-4 bg-[rgba(212,175,55,0.2)]" />
-              <div className="flex items-center gap-2">
-                {top1Agendei.foto ? (
-                  <img
-                    src={top1Agendei.foto}
-                    alt={top1Agendei.nome}
-                    className="w-7 h-7 rounded-full object-cover object-top border border-[rgba(212,175,55,0.3)] transition-transform duration-300 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.3)] flex items-center justify-center">
-                    <span className="text-[11px] font-bold text-[#d4af37]">{top1Agendei.nome.charAt(0)}</span>
-                  </div>
-                )}
-                <span className="text-[13px] font-bold text-[#f5f0e8]">{top1Agendei.nome}</span>
-              </div>
-            </div>
-          )}
-
-          {/* TOP 1 Veio */}
-          {top1Veio && (
-            <div className="group flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/8 to-emerald-500/3 backdrop-blur-sm transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_4px_20px_rgba(16,185,129,0.15)]">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black text-emerald-400/70 uppercase tracking-widest">Top Veio</span>
-                <span className="text-[10px] text-emerald-400/40">•</span>
-                <span className="text-[10px] font-bold text-emerald-400/70">{top1Veio.total} clientes</span>
-              </div>
-              <div className="w-px h-4 bg-emerald-500/20" />
-              <div className="flex items-center gap-2">
-                {top1Veio.foto ? (
-                  <img
-                    src={top1Veio.foto}
-                    alt={top1Veio.nome}
-                    className="w-7 h-7 rounded-full object-cover object-top border border-emerald-500/30 transition-transform duration-300 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                    <span className="text-[11px] font-bold text-emerald-400">{top1Veio.nome.charAt(0)}</span>
-                  </div>
-                )}
-                <span className="text-[13px] font-bold text-[#f5f0e8]">{top1Veio.nome}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <StatsCards
+        stats={stats}
+        top1Agendei={mounted && !isLoading ? top1Agendei : null}
+        top1Veio={mounted && !isLoading ? top1Veio : null}
+      />
 
       {/* Filtro por Equipe */}
       {equipes.length > 0 && (
