@@ -53,6 +53,7 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
   const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
+  const { leads: allLeads } = useLeads("", "") // Todos os leads para calcular Agendei corretamente
 
   // Sincronização automática com Kommo a cada 5 minutos
   // Sincronização automática removida - agora é apenas manual via botão de refresh no card
@@ -100,10 +101,15 @@ export default function QuadroReunioes() {
     }
   }, [leads, filteredLeads, selectedEquipe])
 
-  // TOP 1 Agendei (mais leads na semana por responsavel)
+  // TOP 1 Agendei (usa data_agendei no periodo da semana - igual ao dashboard)
   const top1Agendei = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return null
     const count: Record<string, { total: number; foto?: string }> = {}
-    leads.forEach(lead => {
+    allLeads.forEach((lead: Lead) => {
+      const agendeiDate = (lead as any).data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < dateRange.start || agendeiDate > dateRange.end) return
+      
       const nome = lead.responsavel || "Sem nome"
       if (!count[nome]) count[nome] = { total: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
       count[nome].total++
@@ -111,7 +117,7 @@ export default function QuadroReunioes() {
     const sorted = Object.entries(count).sort((a, b) => b[1].total - a[1].total)
     if (sorted.length === 0) return null
     return { nome: sorted[0][0], total: sorted[0][1].total, foto: sorted[0][1].foto }
-  }, [leads])
+  }, [allLeads, dateRange])
 
   // TOP 1 Veio (mais clientes que vieram por responsavel)
   const top1Veio = useMemo(() => {
