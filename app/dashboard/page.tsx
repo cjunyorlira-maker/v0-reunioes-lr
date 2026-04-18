@@ -402,30 +402,38 @@ export default function DashboardPage() {
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-white/5 backdrop-blur-xl bg-black/20 sticky top-0 z-40">
-          <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-4 max-w-[1600px] mx-auto gap-3 md:gap-0">
-            <div className="flex items-center gap-3 md:gap-4">
-              <Image
-                src="/images/logo-lr.png"
-                alt="LR Multimarcas"
-                width={160}
-                height={52}
-                className="h-[36px] md:h-[48px] w-auto object-contain"
-              />
-              <div>
-                <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+        <header className="border-b border-white/10 glass sticky top-0 z-40 transition-all duration-500">
+          <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-4 md:py-5 max-w-[1600px] mx-auto gap-4 md:gap-0">
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <Image
+                  src="/images/logo-lr.png"
+                  alt="LR Multimarcas"
+                  width={160}
+                  height={52}
+                  className="h-[42px] md:h-[52px] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/0 via-[#d4af37]/15 to-[#d4af37]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded" />
+              </div>
+              <div className="hidden sm:block w-px h-8 bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
+              <div className="hidden sm:block">
+                <h1 className="text-lg md:text-xl font-bold text-gradient-shimmer">
                   Dashboard Executivo
                 </h1>
-                <p className="text-[10px] md:text-xs text-white/40">{weekLabel}</p>
+                <p className="text-[11px] text-white/40 font-medium">{weekLabel}</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 mt-3 md:mt-0">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Link
                 href="/dashboard/corrida"
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 hover:from-yellow-500/30 hover:to-orange-500/30 text-yellow-400 text-xs md:text-sm font-medium transition-all"
+                className="group relative flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs md:text-sm font-bold transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
+                style={{
+                  boxShadow: "0 4px 20px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.2)"
+                }}
               >
-                Corrida
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative z-10">🏁 Corrida</span>
               </Link>
               <Link
                 href="/dashboard/vendedores"

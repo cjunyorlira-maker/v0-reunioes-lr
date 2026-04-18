@@ -17,9 +17,9 @@ interface LeadCardProps {
 
 function getTipoClass(tipo: string) {
   const t = (tipo || "").toLowerCase()
-  if (t.includes("cam")) return "bg-amber-500/10 text-amber-400 border-amber-500/20"
-  if (t.includes("casa")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-  return "bg-sky-500/10 text-sky-400 border-sky-500/20"
+  if (t.includes("cam")) return "bg-gradient-to-r from-amber-500/15 to-amber-500/8 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(217,119,6,0.15)]"
+  if (t.includes("casa")) return "bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+  return "bg-gradient-to-r from-sky-500/15 to-sky-500/8 text-sky-400 border-sky-500/30 shadow-[0_0_10px_rgba(14,165,233,0.15)]"
 }
 
 export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado, onVendaFechada, onRetorno }: LeadCardProps) {
@@ -32,24 +32,27 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:from-white/[0.1] hover:to-white/[0.05] transition-all cursor-pointer group"
+      className="group relative bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden cursor-pointer transition-all duration-400 hover:scale-[1.02] hover:-translate-y-1 hover:border-[rgba(212,175,55,0.4)] hover:shadow-[0_15px_50px_rgba(0,0,0,0.4),0_0_30px_rgba(212,175,55,0.15)]"
       onClick={() => onEdit(lead)}
     >
-      <div className="p-3.5 relative">
-        {/* Botão X para remover a tag de venda fechada quando estiver marcado */}
+      {/* Glow effect on hover */}
+      <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#d4af37]/0 via-[#d4af37]/0 to-[#d4af37]/0 group-hover:from-[#d4af37]/20 group-hover:via-transparent group-hover:to-[#d4af37]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" />
+      
+      <div className="p-4 relative">
+        {/* Botão para remover tag de venda fechada */}
         {lead.venda_fechada && onVendaFechada && (
           <button
             onClick={(e) => {
               e.stopPropagation()
               onVendaFechada(lead.id)
             }}
-            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-blue-500/15 text-blue-400 hover:bg-blue-500/30 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
             title="Remover tag de Venda Fechada"
           >
-            x
+            ×
           </button>
         )}
-        {/* Botão X para excluir (só aparece se não estiver marcado como venda fechada) */}
+        {/* Botão para excluir */}
         {!lead.venda_fechada && (
           <button
             onClick={(e) => {
@@ -58,27 +61,27 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                 onDelete(lead.id)
               }
             }}
-            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-            title="Excluir lead (com confirmação)"
+            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/30 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            title="Excluir lead"
           >
-            x
+            ×
           </button>
         )}
         
-        {/* Header with photo and info */}
-        <div className="flex items-start gap-3 mb-2">
-          {/* Photo - Larger */}
+        {/* Header com foto e info */}
+        <div className="flex items-start gap-3 mb-3">
+          {/* Foto */}
           {(() => {
             const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
             return fotoUrl ? (
               <img 
                 src={fotoUrl} 
                 alt={lead.responsavel}
-                className="w-11 h-11 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
+                className="w-12 h-12 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.3)] flex-shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
               />
             ) : (
-              <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[16px] text-[#d4af37] font-semibold">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.15)] to-[rgba(212,175,55,0.05)] border-2 border-[rgba(212,175,55,0.3)] flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
+                <span className="text-[16px] text-[#d4af37] font-bold">
                   {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
@@ -87,8 +90,8 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           
           <div className="flex-1 min-w-0">
             {/* Status + Time row */}
-            <div className="flex items-center gap-2 mb-1">
-              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className={`w-2.5 h-2.5 rounded-full ${statusDot} shadow-lg`} />
               <span className="text-[11px] text-[#8a8070] font-medium">
                 {formatTimeDisplay(lead.hora)}
               </span>
@@ -98,60 +101,61 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                     e.stopPropagation()
                     onRemoveRemarcado?.(lead.id)
                   }}
-                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)]"
+                  className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-[rgba(243,190,255,0.15)] to-[rgba(243,190,255,0.08)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] hover:border-[rgba(243,190,255,0.5)] hover:bg-[rgba(243,190,255,0.25)] transition-all duration-300 hover:scale-105 cursor-pointer shadow-[0_0_12px_rgba(243,190,255,0.1)]"
+                  title="Remover remarcado"
                 >
                   REMARCADO
                 </button>
               )}
               {lead.venda_fechada && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.1)]">
                   VENDA FECHADA
                 </span>
               )}
               {lead.retorno && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-cyan-500/15 to-cyan-500/8 text-cyan-400 border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.1)]">
                   RETORNO
                 </span>
               )}
             </div>
             
             {/* Client name */}
-            <h3 className="text-[14px] font-semibold text-[#f5f0e8] leading-tight truncate" title={lead.nome}>
+            <h3 className="text-[14px] font-bold text-[#f5f0e8] leading-tight truncate transition-colors duration-300 group-hover:text-[#d4af37]" title={lead.nome}>
               {lead.nome}
             </h3>
             
             {/* Responsavel */}
-            <p className="text-[12px] text-[#d4af37] font-medium truncate" title={lead.responsavel}>
+            <p className="text-[12px] text-[#d4af37] font-semibold truncate transition-colors duration-300 group-hover:text-[#fbbf24]" title={lead.responsavel}>
               {lead.responsavel}
             </p>
             
             {/* Equipe */}
             {lead.equipe && lead.equipe !== "Sem equipe" && (
-              <p className="text-[10px] text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
+              <p className="text-[10px] text-[#8a8070] truncate mt-1 transition-colors duration-300 group-hover:text-[#a8947c]">{lead.equipe}</p>
             )}
           </div>
         </div>
         
         {/* Tags row */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
           {lead.tipo_reuniao && (
-            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${
+            <span className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
-                ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
-                : "bg-pink-500/10 text-pink-400 border-pink-500/20"
+                ? "bg-gradient-to-r from-violet-500/15 to-violet-500/8 text-violet-400 border-violet-500/30 shadow-[0_0_10px_rgba(139,92,246,0.15)]"
+                : "bg-gradient-to-r from-pink-500/15 to-pink-500/8 text-pink-400 border-pink-500/30 shadow-[0_0_10px_rgba(244,114,182,0.15)]"
             }`}>
               {lead.tipo_reuniao}
             </span>
           )}
           
           {lead.tipo && (
-            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${getTipoClass(lead.tipo)}`}>
+            <span className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 ${getTipoClass(lead.tipo)} shadow-[0_0_10px_rgba(0,0,0,0.2)]`}>
               {lead.tipo}
             </span>
           )}
           
           {lead.atendente && (
-            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <span className="text-[9px] font-bold px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-500/15 to-sky-500/8 text-sky-400 border border-sky-500/30 shadow-[0_0_10px_rgba(14,165,233,0.15)]">
               Atendente: {lead.atendente}
             </span>
           )}
@@ -159,93 +163,35 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       </div>
       
       {/* Actions */}
-      <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
-        <div className="flex gap-1.5 mb-1.5">
+      <div className="px-4 pb-3 pt-0 border-t border-white/5 bg-gradient-to-b from-transparent to-[rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
+            className="flex-1 text-[10px] py-2.5 rounded-lg border border-emerald-500/30 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-emerald-500/5 hover:from-emerald-500/20 hover:to-emerald-500/10 font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
           >
-            Veio
+            ✓ Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 font-semibold transition-colors"
+            className="flex-1 text-[10px] py-2.5 rounded-lg border border-red-500/30 text-red-400 bg-gradient-to-b from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
           >
-            Faltou
+            ✗ Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-colors"
+            className="flex-1 text-[10px] py-2.5 rounded-lg border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-gradient-to-b from-[rgba(243,190,255,0.1)] to-[rgba(243,190,255,0.05)] hover:from-[rgba(243,190,255,0.15)] hover:to-[rgba(243,190,255,0.1)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(243,190,255,0.2)]"
           >
             Remarcar
           </button>
-          {lead.kommo_id && (
-            <a
-              href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.3)] bg-[rgba(107,79,187,0.1)] hover:bg-[rgba(107,79,187,0.2)] transition-colors"
-              title="Abrir no Kommo"
-            >
-              <img 
-                src="/images/kommo-logo.png" 
-                alt="Kommo" 
-                className="w-6 h-6"
-              />
-            </a>
-          )}
         </div>
-        {/* Botões de Venda Fechada e Retorno - sempre disponíveis se status for "veio" */}
-        {lead.status === "veio" && (
-          <div className="flex gap-1.5 mb-1.5">
-            {lead.venda_fechada && onVendaFechada && (
-              <button
-                onClick={() => onVendaFechada(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 font-semibold transition-colors"
-              >
-                ✓ Venda Fechada
-              </button>
-            )}
-            {!lead.venda_fechada && onVendaFechada && (
-              <button
-                onClick={() => onVendaFechada(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
-              >
-                Venda Fechada
-              </button>
-            )}
-            {lead.retorno && onRetorno && (
-              <button
-                onClick={() => onRetorno(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/15 hover:bg-cyan-500/25 font-semibold transition-colors"
-              >
-                ✓ Retorno
-              </button>
-            )}
-            {!lead.retorno && onRetorno && (
-              <button
-                onClick={() => onRetorno(lead.id)}
-                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 font-semibold transition-colors"
-              >
-                Marcar Retorno
-              </button>
-            )}
-          </div>
-        )}
-        {onSync && (
-          <button
-            onClick={() => onSync(lead.id)}
-            className="w-7 h-7 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] flex items-center justify-center transition-colors ml-auto"
-            title="Sincronizar com Kommo"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-              <path d="M16 21h5v-5"/>
-            </svg>
-          </button>
-        )}
+        
+        {/* Pending button */}
+        <button
+          onClick={() => onUpdateStatus(lead.id, "pending")}
+          className="w-full text-[10px] py-2.5 rounded-lg border border-[rgba(212,175,55,0.3)] text-[#d4af37] bg-gradient-to-b from-[rgba(212,175,55,0.1)] to-[rgba(212,175,55,0.05)] hover:from-[rgba(212,175,55,0.15)] hover:to-[rgba(212,175,55,0.1)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+        >
+          ⏰ Pendente
+        </button>
       </div>
     </div>
   )
