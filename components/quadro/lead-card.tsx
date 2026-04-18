@@ -17,9 +17,9 @@ interface LeadCardProps {
 
 function getTipoClass(tipo: string) {
   const t = (tipo || "").toLowerCase()
-  if (t.includes("cam")) return "bg-gradient-to-r from-amber-500/15 to-amber-500/8 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(217,119,6,0.15)]"
-  if (t.includes("casa")) return "bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-  return "bg-gradient-to-r from-sky-500/15 to-sky-500/8 text-sky-400 border-sky-500/30 shadow-[0_0_10px_rgba(14,165,233,0.15)]"
+  if (t.includes("cam")) return "bg-amber-500/10 text-amber-400 border-amber-500/20"
+  if (t.includes("casa")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  return "bg-sky-500/10 text-sky-400 border-sky-500/20"
 }
 
 export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRemoveRemarcado, onVendaFechada, onRetorno }: LeadCardProps) {
@@ -32,13 +32,10 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
 
   return (
     <div 
-      className="group relative bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden cursor-pointer transition-all duration-400 hover:scale-[1.02] hover:-translate-y-1 hover:border-[rgba(212,175,55,0.4)] hover:shadow-[0_15px_50px_rgba(0,0,0,0.4),0_0_30px_rgba(212,175,55,0.15)]"
+      className="group bg-gradient-to-br from-white/[0.08] to-white/[0.03] backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-[rgba(212,175,55,0.3)] hover:from-white/[0.1] hover:to-white/[0.05] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
       onClick={() => onEdit(lead)}
     >
-      {/* Glow effect on hover */}
-      <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#d4af37]/0 via-[#d4af37]/0 to-[#d4af37]/0 group-hover:from-[#d4af37]/20 group-hover:via-transparent group-hover:to-[#d4af37]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" />
-      
-      <div className="p-4 relative">
+      <div className="p-3.5 relative">
         {/* Botão para remover tag de venda fechada */}
         {lead.venda_fechada && onVendaFechada && (
           <button
@@ -68,20 +65,20 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           </button>
         )}
         
-        {/* Header com foto e info */}
-        <div className="flex items-start gap-3 mb-3">
-          {/* Foto */}
+        {/* Header with photo and info */}
+        <div className="flex items-start gap-3 mb-2">
+          {/* Photo */}
           {(() => {
             const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
             return fotoUrl ? (
               <img 
                 src={fotoUrl} 
                 alt={lead.responsavel}
-                className="w-12 h-12 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.3)] flex-shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                className="w-11 h-11 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.25)] flex-shrink-0 transition-all duration-300 group-hover:border-[rgba(212,175,55,0.5)] group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)]"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.15)] to-[rgba(212,175,55,0.05)] border-2 border-[rgba(212,175,55,0.3)] flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
-                <span className="text-[16px] text-[#d4af37] font-bold">
+              <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.25)] flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:border-[rgba(212,175,55,0.5)] group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                <span className="text-[16px] text-[#d4af37] font-semibold">
                   {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
@@ -90,8 +87,8 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           
           <div className="flex-1 min-w-0">
             {/* Status + Time row */}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <div className={`w-2.5 h-2.5 rounded-full ${statusDot} shadow-lg`} />
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-2 h-2 rounded-full ${statusDot} transition-all duration-300 group-hover:shadow-[0_0_8px_currentColor]`} />
               <span className="text-[11px] text-[#8a8070] font-medium">
                 {formatTimeDisplay(lead.hora)}
               </span>
@@ -101,61 +98,60 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                     e.stopPropagation()
                     onRemoveRemarcado?.(lead.id)
                   }}
-                  className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-[rgba(243,190,255,0.15)] to-[rgba(243,190,255,0.08)] text-[#f3beff] border border-[rgba(243,190,255,0.3)] hover:border-[rgba(243,190,255,0.5)] hover:bg-[rgba(243,190,255,0.25)] transition-all duration-300 hover:scale-105 cursor-pointer shadow-[0_0_12px_rgba(243,190,255,0.1)]"
-                  title="Remover remarcado"
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)] transition-all duration-300"
                 >
                   REMARCADO
                 </button>
               )}
               {lead.venda_fechada && (
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-emerald-500/15 to-emerald-500/8 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.1)]">
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 transition-all duration-300">
                   VENDA FECHADA
                 </span>
               )}
               {lead.retorno && (
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-gradient-to-r from-cyan-500/15 to-cyan-500/8 text-cyan-400 border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.1)]">
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 transition-all duration-300">
                   RETORNO
                 </span>
               )}
             </div>
             
             {/* Client name */}
-            <h3 className="text-[14px] font-bold text-[#f5f0e8] leading-tight truncate transition-colors duration-300 group-hover:text-[#d4af37]" title={lead.nome}>
+            <h3 className="text-[14px] font-semibold text-[#f5f0e8] leading-tight truncate transition-colors duration-300 group-hover:text-white" title={lead.nome}>
               {lead.nome}
             </h3>
             
             {/* Responsavel */}
-            <p className="text-[12px] text-[#d4af37] font-semibold truncate transition-colors duration-300 group-hover:text-[#fbbf24]" title={lead.responsavel}>
+            <p className="text-[12px] text-[#d4af37] font-medium truncate transition-colors duration-300" title={lead.responsavel}>
               {lead.responsavel}
             </p>
             
             {/* Equipe */}
             {lead.equipe && lead.equipe !== "Sem equipe" && (
-              <p className="text-[10px] text-[#8a8070] truncate mt-1 transition-colors duration-300 group-hover:text-[#a8947c]">{lead.equipe}</p>
+              <p className="text-[10px] text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
             )}
           </div>
         </div>
         
         {/* Tags row */}
-        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {lead.tipo_reuniao && (
-            <span className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 ${
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border transition-all duration-300 ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
-                ? "bg-gradient-to-r from-violet-500/15 to-violet-500/8 text-violet-400 border-violet-500/30 shadow-[0_0_10px_rgba(139,92,246,0.15)]"
-                : "bg-gradient-to-r from-pink-500/15 to-pink-500/8 text-pink-400 border-pink-500/30 shadow-[0_0_10px_rgba(244,114,182,0.15)]"
+                ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                : "bg-pink-500/10 text-pink-400 border-pink-500/20"
             }`}>
               {lead.tipo_reuniao}
             </span>
           )}
           
           {lead.tipo && (
-            <span className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 ${getTipoClass(lead.tipo)} shadow-[0_0_10px_rgba(0,0,0,0.2)]`}>
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border transition-all duration-300 ${getTipoClass(lead.tipo)}`}>
               {lead.tipo}
             </span>
           )}
           
           {lead.atendente && (
-            <span className="text-[9px] font-bold px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-500/15 to-sky-500/8 text-sky-400 border border-sky-500/30 shadow-[0_0_10px_rgba(14,165,233,0.15)]">
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20 transition-all duration-300">
               Atendente: {lead.atendente}
             </span>
           )}
@@ -163,34 +159,33 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       </div>
       
       {/* Actions */}
-      <div className="px-4 pb-3 pt-0 border-t border-white/5 bg-gradient-to-b from-transparent to-[rgba(0,0,0,0.2)]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex gap-1.5">
+      <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-1.5 mb-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[10px] py-2.5 rounded-lg border border-emerald-500/30 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-emerald-500/5 hover:from-emerald-500/20 hover:to-emerald-500/10 font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/30 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-emerald-500/5 hover:from-emerald-500/20 hover:to-emerald-500/15 font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
           >
-            ✓ Veio
+            Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[10px] py-2.5 rounded-lg border border-red-500/30 text-red-400 bg-gradient-to-b from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/30 text-red-400 bg-gradient-to-b from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/15 font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(239,68,68,0.25)]"
           >
-            ✗ Faltou
+            Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[10px] py-2.5 rounded-lg border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-gradient-to-b from-[rgba(243,190,255,0.1)] to-[rgba(243,190,255,0.05)] hover:from-[rgba(243,190,255,0.15)] hover:to-[rgba(243,190,255,0.1)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(243,190,255,0.2)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-gradient-to-b from-[rgba(243,190,255,0.1)] to-[rgba(243,190,255,0.05)] hover:from-[rgba(243,190,255,0.2)] hover:to-[rgba(243,190,255,0.15)] font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(243,190,255,0.25)]"
           >
             Remarcar
           </button>
         </div>
         
-        {/* Pending button */}
         <button
           onClick={() => onUpdateStatus(lead.id, "pending")}
-          className="w-full text-[10px] py-2.5 rounded-lg border border-[rgba(212,175,55,0.3)] text-[#d4af37] bg-gradient-to-b from-[rgba(212,175,55,0.1)] to-[rgba(212,175,55,0.05)] hover:from-[rgba(212,175,55,0.15)] hover:to-[rgba(212,175,55,0.1)] font-bold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+          className="w-full text-[11px] py-2 rounded-lg border border-[rgba(212,175,55,0.25)] text-[#d4af37] bg-gradient-to-b from-[rgba(212,175,55,0.08)] to-[rgba(212,175,55,0.03)] hover:from-[rgba(212,175,55,0.15)] hover:to-[rgba(212,175,55,0.1)] font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(212,175,55,0.25)]"
         >
-          ⏰ Pendente
+          Pendente
         </button>
       </div>
     </div>
