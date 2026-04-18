@@ -84,18 +84,22 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
             Sem reuniões
           </p>
         ) : (
-          dayLeads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              onUpdateStatus={onUpdateStatus}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              onSync={onSync}
-              onRemoveRemarcado={onRemoveRemarcado}
-              onVendaFechada={onVendaFechada}
-              onRetorno={onRetorno}
-            />
+          dayLeads.map((lead, index) => (
+            <div key={lead.id} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+              <LeadCard
+                lead={lead}
+                onUpdateStatus={onUpdateStatus}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onSync={onSync}
+                onRemoveRemarcado={onRemoveRemarcado}
+                onVendaFechada={onVendaFechada}
+                onRetorno={onRetorno}
+              />
+              {index < dayLeads.length - 1 && (
+                <div className="h-px mx-2 mt-2.5 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              )}
+            </div>
           ))
         )}
       </div>

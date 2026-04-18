@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
+import useSWR from "swr"
 import { toast } from "sonner"
 import { Header } from "@/components/quadro/header"
 import { StatsCards } from "@/components/quadro/stats-cards"
@@ -53,9 +54,41 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
   const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
+  
+  // Busca TODOS os leads para calcular Agendei corretamente (usa data_agendei - igual ao dashboard)
+  const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
+  const allLeads = allLeadsData || []
 
-  // Sincronização automática com Kommo a cada 5 minutos
-  // Sincronização automática removida - agora é apenas manual via botão de refresh no card
+  // TOP 1 Agendei (usa data_agendei no período da semana - igual ao dashboard)
+  const top1Agendei = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return null
+    const count: Record<string, { total: number; foto?: string }> = {}
+    allLeads.forEach((lead: Lead) => {
+      const agendeiDate = (lead as any).data_agendei
+      if (!agendeiDate) return
+      if (agendeiDate < dateRange.start || agendeiDate > dateRange.end) return
+      
+      const nome = lead.responsavel || "Sem nome"
+      if (!count[nome]) count[nome] = { total: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
+      count[nome].total++
+    })
+    const sorted = Object.entries(count).sort((a, b) => b[1].total - a[1].total)
+    if (sorted.length === 0) return null
+    return { nome: sorted[0][0], total: sorted[0][1].total, foto: sorted[0][1].foto }
+  }, [allLeads, dateRange])
+
+  // TOP 1 Veio (mais clientes que vieram por responsavel na semana)
+  const top1Veio = useMemo(() => {
+    const count: Record<string, { total: number; foto?: string }> = {}
+    leads.filter(l => l.status === "veio").forEach(lead => {
+      const nome = lead.responsavel || "Sem nome"
+      if (!count[nome]) count[nome] = { total: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
+      count[nome].total++
+    })
+    const sorted = Object.entries(count).sort((a, b) => b[1].total - a[1].total)
+    if (sorted.length === 0) return null
+    return { nome: sorted[0][0], total: sorted[0][1].total, foto: sorted[0][1].foto }
+  }, [leads])
 
   // Lista de equipes únicas
   const equipes = useMemo(() => {
@@ -435,34 +468,40 @@ export default function QuadroReunioes() {
         onNewLead={() => setIsModalOpen(true)}
       />
 
-      <StatsCards stats={stats} />
+      <StatsCards 
+        stats={stats} 
+        top1Agendei={mounted && !isLoading ? top1Agendei : null}
+        top1Veio={mounted && !isLoading ? top1Veio : null}
+      />
 
       {/* Filtro por Equipe */}
       {equipes.length > 0 && (
-        <div className="px-4 md:px-6 mb-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="px-4 md:px-6 mb-5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <span className="text-[10px] text-[#8a8070] uppercase tracking-wider font-semibold mr-1">Equipe:</span>
             <button
               onClick={() => setSelectedEquipe(null)}
-              className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`text-[11px] px-4 py-2 rounded-xl border font-semibold transition-all duration-300 backdrop-blur-sm overflow-hidden relative group ${
                 selectedEquipe === null
-                  ? "bg-[#d4af37] text-[#0a0a0a] border-[#d4af37] font-semibold"
-                  : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
+                  ? "bg-gradient-to-r from-[#d4af37] to-[#c9a227] text-[#0a0a0a] border-[#d4af37] shadow-[0_0_20px_rgba(212,175,55,0.3)]"
+                  : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.4)] hover:text-[#f5f0e8] hover:bg-white/[0.03]"
               }`}
             >
-              Todas
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 opacity-0 group-hover:opacity-100" />
+              <span className="relative z-10">Todas</span>
             </button>
             {equipes.map(equipe => (
               <button
                 key={equipe}
                 onClick={() => setSelectedEquipe(equipe)}
-                className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+                className={`text-[11px] px-4 py-2 rounded-xl border font-semibold transition-all duration-300 backdrop-blur-sm overflow-hidden relative group ${
                   selectedEquipe === equipe
-                    ? "bg-[#d4af37] text-[#0a0a0a] border-[#d4af37] font-semibold"
-                    : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-[rgba(212,175,55,0.3)] hover:text-[#f5f0e8]"
+                    ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white border-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                    : "bg-transparent text-[#8a8070] border-[rgba(212,175,55,0.15)] hover:border-violet-500/40 hover:text-[#f5f0e8] hover:bg-violet-500/5"
                 }`}
               >
-                {equipe}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 opacity-0 group-hover:opacity-100" />
+                <span className="relative z-10">{equipe}</span>
               </button>
             ))}
           </div>
