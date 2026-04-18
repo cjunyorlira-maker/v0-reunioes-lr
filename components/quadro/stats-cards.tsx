@@ -393,12 +393,12 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         )}
       </div>
 
-      {/* Linha 2: Total, Vieram, Faltaram, Pendentes */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-1">
+      {/* Linha 2: Total, Vieram, Faltaram, Pendentes — grid 2x2 no mobile, flex no desktop */}
+      <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:gap-4 md:overflow-x-auto pb-1">
         {cards.map((card) => (
           <div
             key={card.label}
-            className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden"
+            className="group relative flex items-center gap-3 px-4 py-3.5 md:px-5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden"
           >
             <div 
               className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
@@ -418,9 +418,9 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
                 style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}
               />
             </div>
-            <div className="relative z-10 flex flex-col items-center justify-center min-w-[48px]">
+            <div className="relative z-10 flex flex-col items-center justify-center min-w-[40px]">
               <span 
-                className={`text-3xl font-black ${card.color} transition-all duration-500 group-hover:scale-110`}
+                className={`text-2xl md:text-3xl font-black ${card.color} transition-all duration-500 group-hover:scale-110`}
                 style={{ 
                   textShadow: `0 0 30px ${card.glow}, 0 0 60px ${card.glow.replace('0.3', '0.2')}`,
                   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
@@ -430,7 +430,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
               </span>
             </div>
             <div className="relative z-10 flex flex-col">
-              <span className="text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
+              <span className="text-[10px] md:text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
                 {card.label}
               </span>
               <div 
