@@ -110,6 +110,9 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
                 onVendaFechada={onVendaFechada}
                 onRetorno={onRetorno}
               />
+              {index < dayLeads.length - 1 && (
+                <div className="h-px mx-2 mt-3 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              )}
             </div>
           ))
         )}

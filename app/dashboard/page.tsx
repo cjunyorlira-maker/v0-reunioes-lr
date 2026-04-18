@@ -437,28 +437,32 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/dashboard/vendedores"
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-400 text-xs md:text-sm font-medium transition-all"
+                className="group relative px-4 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs md:text-sm font-semibold transition-all duration-300 hover:bg-violet-500/20 hover:border-violet-500/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.2)] hover:scale-105 hover:-translate-y-0.5 overflow-hidden backdrop-blur-sm"
               >
-                Lista Vendedores
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative z-10">Lista Vendedores</span>
               </Link>
               <Link
                 href="/dashboard/piores"
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 text-xs md:text-sm font-medium transition-all"
+                className="group relative px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs md:text-sm font-semibold transition-all duration-300 hover:bg-red-500/20 hover:border-red-500/40 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:scale-105 hover:-translate-y-0.5 overflow-hidden backdrop-blur-sm"
               >
-                Piores
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative z-10">Piores</span>
               </Link>
               <button
                 onClick={handleCopyReport}
                 disabled={copying}
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-xs md:text-sm font-medium transition-all disabled:opacity-50"
+                className="group relative px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs md:text-sm font-semibold transition-all duration-300 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:scale-105 hover:-translate-y-0.5 overflow-hidden backdrop-blur-sm disabled:opacity-40 disabled:pointer-events-none"
               >
-                {copying ? "Copiando..." : "Copiar Relatorio"}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative z-10">{copying ? "Copiando..." : "Copiar Relatorio"}</span>
               </button>
               <Link
                 href="/"
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs md:text-sm font-medium transition-all"
+                className="group relative px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs md:text-sm font-semibold transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105 hover:-translate-y-0.5 overflow-hidden backdrop-blur-sm"
               >
-                Voltar ao Quadro
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative z-10">Voltar ao Quadro</span>
               </Link>
             </div>
           </div>
@@ -466,35 +470,35 @@ export default function DashboardPage() {
 
         {/* Filtros */}
         <div className="px-6 py-4 max-w-[1600px] mx-auto">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
             {/* Modo de filtro */}
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1">
+            <div className="flex items-center backdrop-blur-sm bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 gap-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <button
                 onClick={() => { setFilterMode("semana"); setSelectedDay(null); }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`relative px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 overflow-hidden ${
                   filterMode === "semana"
-                    ? "bg-[#d4af37] text-black"
-                    : "text-white/70 hover:bg-white/10"
+                    ? "bg-gradient-to-r from-[#d4af37] to-[#c9a227] text-black shadow-[0_4px_15px_rgba(212,175,55,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 Semana Toda
               </button>
               <button
                 onClick={() => setFilterMode("dia")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`relative px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 overflow-hidden ${
                   filterMode === "dia"
-                    ? "bg-violet-500 text-white"
-                    : "text-white/70 hover:bg-white/10"
+                    ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-[0_4px_15px_rgba(139,92,246,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 Por Dia
               </button>
               <button
                 onClick={() => setFilterMode("custom")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                className={`relative px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 overflow-hidden ${
                   filterMode === "custom"
-                    ? "bg-cyan-500 text-white"
-                    : "text-white/70 hover:bg-white/10"
+                    ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-[0_4px_15px_rgba(6,182,212,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Calendar className="w-4 h-4" />
@@ -511,12 +515,12 @@ export default function DashboardPage() {
                     <button
                       key={dayStr}
                       onClick={() => setSelectedDay(dayStr)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm ${
                         selectedDay === dayStr
-                          ? "bg-violet-500 text-white"
+                          ? "bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-[0_4px_15px_rgba(139,92,246,0.3)]"
                           : day.isToday
-                          ? "bg-violet-500/20 border border-violet-500/30 text-violet-400"
-                          : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                          ? "bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20"
+                          : "bg-white/[0.03] border border-white/10 text-white/60 hover:bg-white/8 hover:text-white"
                       }`}
                     >
                       {day.dayName} {day.dayNumber}
@@ -552,19 +556,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-white/10 mb-6">
+          <div className="flex gap-1 p-1.5 rounded-2xl backdrop-blur-sm bg-white/[0.03] border border-white/8 mb-6 w-fit shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             {[
-              { id: "produtividade", label: "Qualifiquei & Agendei" },
-              { id: "resultados", label: "Marcados & Resultados" },
-              { id: "funil", label: "Funil por Equipe" },
+              { id: "produtividade", label: "Qualifiquei & Agendei", color: "cyan" },
+              { id: "resultados", label: "Marcados & Resultados", color: "emerald" },
+              { id: "funil", label: "Funil por Equipe", color: "violet" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`px-5 py-3 text-sm font-medium transition-all border-b-2 -mb-[2px] ${
+                className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-300 ${
                   activeTab === tab.id
-                    ? "border-cyan-400 text-cyan-400"
-                    : "border-transparent text-white/50 hover:text-white/80"
+                    ? tab.color === "cyan"
+                      ? "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10 text-cyan-400 border border-cyan-500/30 shadow-[0_2px_12px_rgba(6,182,212,0.2)]"
+                      : tab.color === "emerald"
+                      ? "bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 text-emerald-400 border border-emerald-500/30 shadow-[0_2px_12px_rgba(16,185,129,0.2)]"
+                      : "bg-gradient-to-r from-violet-500/20 to-violet-600/10 text-violet-400 border border-violet-500/30 shadow-[0_2px_12px_rgba(139,92,246,0.2)]"
+                    : "text-white/40 hover:text-white/70 border border-transparent"
                 }`}
               >
                 {tab.label}
@@ -580,48 +588,62 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {/* Cards resumo */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 border border-cyan-500/20 rounded-2xl p-5">
-                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Qualificados</p>
-                  <p className="text-4xl font-bold text-cyan-400">{qualificados.length}</p>
-                </div>
-                <div className="bg-gradient-to-br from-violet-500/15 to-violet-600/5 border border-violet-500/20 rounded-2xl p-5">
-                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Agendei</p>
-                  <p className="text-4xl font-bold text-violet-400">{agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0)}</p>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-5">
-                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Top Vendedor</p>
-                  <p className="text-lg font-bold text-emerald-400 truncate">{agendeiPorVendedor[0]?.nome || "-"}</p>
-                </div>
-                <div className="bg-gradient-to-br from-amber-500/15 to-amber-600/5 border border-amber-500/20 rounded-2xl p-5">
-                  <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Top Equipe</p>
-                  <p className="text-lg font-bold text-amber-400 truncate">{agendeiPorVendedor[0]?.equipe || "-"}</p>
-                </div>
+                {[
+                  { label: "Qualificados", value: qualificados.length, color: "cyan", big: true },
+                  { label: "Agendei", value: agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0), color: "violet", big: true },
+                  { label: "Top Vendedor", value: agendeiPorVendedor[0]?.nome || "-", color: "emerald", big: false },
+                  { label: "Top Equipe", value: agendeiPorVendedor[0]?.equipe || "-", color: "amber", big: false },
+                ].map((card) => (
+                  <div key={card.label} className={`group relative backdrop-blur-sm border rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] overflow-hidden ${
+                    card.color === "cyan" ? "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-[0_8px_30px_rgba(6,182,212,0.15)]"
+                    : card.color === "violet" ? "bg-gradient-to-br from-violet-500/10 to-violet-600/5 border-violet-500/20 hover:border-violet-500/40 hover:shadow-[0_8px_30px_rgba(139,92,246,0.15)]"
+                    : card.color === "emerald" ? "bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)]"
+                    : "bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_8px_30px_rgba(245,158,11,0.15)]"
+                  }`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <p className="text-xs text-white/40 uppercase tracking-widest font-semibold mb-2">{card.label}</p>
+                    <p className={`font-bold truncate ${card.big ? "text-4xl" : "text-lg"} ${
+                      card.color === "cyan" ? "text-cyan-400"
+                      : card.color === "violet" ? "text-violet-400"
+                      : card.color === "emerald" ? "text-emerald-400"
+                      : "text-amber-400"
+                    }`}>{card.value}</p>
+                  </div>
+                ))}
               </div>
 
               {/* Tabelas lado a lado */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Qualifiquei por Vendedor */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-                  <h3 className="text-lg font-semibold text-cyan-400 mb-4">Qualifiquei por Vendedor</h3>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="backdrop-blur-sm bg-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
+                    <h3 className="text-base font-bold text-cyan-400">Qualifiquei por Vendedor</h3>
+                  </div>
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {qualifiqueiPorVendedor.length === 0 ? (
-                      <p className="text-white/40 text-sm">Nenhum lead qualificado no periodo</p>
+                      <p className="text-white/40 text-sm py-6 text-center">Nenhum lead qualificado no periodo</p>
                     ) : (
                       qualifiqueiPorVendedor.map((v, idx) => (
-                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
-                          {v.foto ? (
-                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-cyan-500/30" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">
-                              {v.nome.charAt(0)}
+                        <div key={v.nome}>
+                          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all duration-200 group">
+                            <span className="text-sm font-bold text-white/20 w-5 text-right">{idx + 1}</span>
+                            {v.foto ? (
+                              <img src={v.foto} alt={v.nome} className="w-9 h-9 rounded-full object-cover object-top border border-cyan-500/20 group-hover:border-cyan-500/40 transition-all duration-200" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-cyan-500/15 flex items-center justify-center text-cyan-400 font-bold text-sm border border-cyan-500/20">
+                                {v.nome.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-white/90 truncate text-sm">{v.nome}</p>
+                              <p className="text-[11px] text-white/35">{v.equipe}</p>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate">{v.nome}</p>
-                            <p className="text-xs text-white/40">{v.equipe}</p>
+                            <span className="text-xl font-black text-cyan-400 tabular-nums">{v.qualificados}</span>
                           </div>
-                          <span className="text-2xl font-bold text-cyan-400">{v.qualificados}</span>
+                          {idx < qualifiqueiPorVendedor.length - 1 && (
+                            <div className="h-px mx-3 bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+                          )}
                         </div>
                       ))
                     )}
@@ -629,27 +651,35 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Agendei por Vendedor */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-                  <h3 className="text-lg font-semibold text-violet-400 mb-4">Agendei por Vendedor</h3>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="backdrop-blur-sm bg-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
+                    <h3 className="text-base font-bold text-violet-400">Agendei por Vendedor</h3>
+                  </div>
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {agendeiPorVendedor.length === 0 ? (
-                      <p className="text-white/40 text-sm">Nenhum lead agendado no periodo</p>
+                      <p className="text-white/40 text-sm py-6 text-center">Nenhum lead agendado no periodo</p>
                     ) : (
                       agendeiPorVendedor.map((v, idx) => (
-                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
-                          {v.foto ? (
-                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-violet-500/30" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
-                              {v.nome.charAt(0)}
+                        <div key={v.nome}>
+                          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all duration-200 group">
+                            <span className="text-sm font-bold text-white/20 w-5 text-right">{idx + 1}</span>
+                            {v.foto ? (
+                              <img src={v.foto} alt={v.nome} className="w-9 h-9 rounded-full object-cover object-top border border-violet-500/20 group-hover:border-violet-500/40 transition-all duration-200" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-violet-500/15 flex items-center justify-center text-violet-400 font-bold text-sm border border-violet-500/20">
+                                {v.nome.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-white/90 truncate text-sm">{v.nome}</p>
+                              <p className="text-[11px] text-white/35">{v.equipe}</p>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate">{v.nome}</p>
-                            <p className="text-xs text-white/40">{v.equipe}</p>
+                            <span className="text-xl font-black text-violet-400 tabular-nums">{v.agendei}</span>
                           </div>
-                          <span className="text-2xl font-bold text-violet-400">{v.agendei}</span>
+                          {idx < agendeiPorVendedor.length - 1 && (
+                            <div className="h-px mx-3 bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+                          )}
                         </div>
                       ))
                     )}
@@ -658,8 +688,11 @@ export default function DashboardPage() {
               </div>
 
               {/* Grafico de barras comparativo */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-                <h3 className="text-lg font-semibold text-white mb-4">Comparativo Qualifiquei vs Agendei</h3>
+              <div className="backdrop-blur-sm bg-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-white/50 shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+                  <h3 className="text-base font-bold text-white/80">Comparativo Qualifiquei vs Agendei</h3>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={agendeiPorVendedor.slice(0, 10).map(v => ({
@@ -683,29 +716,37 @@ export default function DashboardPage() {
               {/* Ranking de Conversao Qualifiquei -> Agendei */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Por Vendedor */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-                  <h3 className="text-lg font-semibold text-emerald-400 mb-4">Conversao Qualifiquei → Agendei (Vendedor)</h3>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="backdrop-blur-sm bg-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                    <h3 className="text-base font-bold text-emerald-400">Conversao Qualifiquei → Agendei (Vendedor)</h3>
+                  </div>
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {conversaoQualAgendei.length === 0 ? (
-                      <p className="text-white/40 text-sm">Sem dados de conversao</p>
+                      <p className="text-white/40 text-sm py-6 text-center">Sem dados de conversao</p>
                     ) : (
                       conversaoQualAgendei.map((v, idx) => (
-                        <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
-                          {v.foto ? (
-                            <img src={v.foto} alt={v.nome} className="w-10 h-10 rounded-full object-cover object-top border border-emerald-500/30" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
-                              {v.nome.charAt(0)}
+                        <div key={v.nome}>
+                          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all duration-200 group">
+                            <span className="text-sm font-bold text-white/20 w-5 text-right">{idx + 1}</span>
+                            {v.foto ? (
+                              <img src={v.foto} alt={v.nome} className="w-9 h-9 rounded-full object-cover object-top border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-200" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-bold text-sm border border-emerald-500/20">
+                                {v.nome.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-white/90 truncate text-sm">{v.nome}</p>
+                              <p className="text-[11px] text-white/35">{v.qualificados} qual → {v.agendei} agendei</p>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate">{v.nome}</p>
-                            <p className="text-xs text-white/40">{v.qualificados} qual → {v.agendei} agendei</p>
+                            <span className={`text-xl font-black tabular-nums ${v.taxa >= 70 ? "text-emerald-400" : v.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
+                              {v.taxa}%
+                            </span>
                           </div>
-                          <span className={`text-2xl font-bold ${v.taxa >= 70 ? "text-emerald-400" : v.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
-                            {v.taxa}%
-                          </span>
+                          {idx < conversaoQualAgendei.length - 1 && (
+                            <div className="h-px mx-3 bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+                          )}
                         </div>
                       ))
                     )}
@@ -713,25 +754,33 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Por Equipe */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-                  <h3 className="text-lg font-semibold text-amber-400 mb-4">Conversao Qualifiquei → Agendei (Equipe)</h3>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="backdrop-blur-sm bg-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                    <h3 className="text-base font-bold text-amber-400">Conversao Qualifiquei → Agendei (Equipe)</h3>
+                  </div>
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {conversaoPorEquipe.length === 0 ? (
-                      <p className="text-white/40 text-sm">Sem dados de conversao</p>
+                      <p className="text-white/40 text-sm py-6 text-center">Sem dados de conversao</p>
                     ) : (
                       conversaoPorEquipe.map((e, idx) => (
-                        <div key={e.nome} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                          <span className="text-lg font-bold text-white/30 w-6">{idx + 1}</span>
-                          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
-                            {e.nome.charAt(0)}
+                        <div key={e.nome}>
+                          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all duration-200">
+                            <span className="text-sm font-bold text-white/20 w-5 text-right">{idx + 1}</span>
+                            <div className="w-9 h-9 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-400 font-bold text-sm border border-amber-500/20">
+                              {e.nome.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-white/90 truncate text-sm">{e.nome}</p>
+                              <p className="text-[11px] text-white/35">{e.qualificados} qual → {e.agendei} agendei</p>
+                            </div>
+                            <span className={`text-xl font-black tabular-nums ${e.taxa >= 70 ? "text-emerald-400" : e.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
+                              {e.taxa}%
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate">{e.nome}</p>
-                            <p className="text-xs text-white/40">{e.qualificados} qual → {e.agendei} agendei</p>
-                          </div>
-                          <span className={`text-2xl font-bold ${e.taxa >= 70 ? "text-emerald-400" : e.taxa >= 40 ? "text-amber-400" : "text-red-400"}`}>
-                            {e.taxa}%
-                          </span>
+                          {idx < conversaoPorEquipe.length - 1 && (
+                            <div className="h-px mx-3 bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+                          )}
                         </div>
                       ))
                     )}
