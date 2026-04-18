@@ -1,286 +1,284 @@
 "use client"
 
-import useSWR from "swr"
-import { getFotoVendedor } from "@/lib/vendedores"
-
-interface Venda {
-  id: number
-  kommo_id: string
-  nome_lead: string
-  valor_venda: number
-  responsavel: string
-  atendente: string
-  origem: string
-  tags: string | null
-  avaliacao: string | null
-  data_venda: string
-}
-
-interface VendasStats {
-  totalVendas: number
-  valorTotal: number
-  top1Vendedor: { nome: string; total: number; valor: number } | null
-  top1PorValor: { nome: string; total: number; valor: number } | null
-  rankingVendedores: { nome: string; total: number; valor: number }[]
-  rankingOrigens: { nome: string; total: number; valor: number }[]
-  avaliacoes: { Excelente: number; Bom: number; "Sem avaliação": number }
-}
-
-interface VendasResponse {
-  vendas: Venda[]
-  stats: VendasStats
-}
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import { useMemo } from "react"
+import { useVendas } from "@/hooks/use-vendas"
 
 export function SalesDashboard() {
-  const { data, isLoading } = useSWR<VendasResponse>("/api/vendas", fetcher, { refreshInterval: 60000 })
+  const { vendas, isLoading } = useVendas()
 
-  if (isLoading || !data) {
+  // TOP 1 Vendedor (maior valor total)
+  const top1Vendedor = useMemo(() => {
+    if (!vendas || vendas.length === 0) return null
+    const byVendedor: Record<string, { total: number; vendas: number }> = {}
+    
+    vendas.forEach((venda) => {
+      if (!byVendedor[venda.responsavel]) {
+        byVendedor[venda.responsavel] = { total: 0, vendas: 0 }
+      }
+      byVendedor[venda.responsavel].total += venda.valor_venda
+      byVendedor[venda.responsavel].vendas++
+    })
+
+    const sorted = Object.entries(byVendedor).sort((a, b) => b[1].total - a[1].total)
+    if (sorted.length === 0) return null
+
+    return {
+      nome: sorted[0][0],
+      total: sorted[0][1].total,
+      vendas: sorted[0][1].vendas,
+    }
+  }, [vendas])
+
+  // TOP 1 Equipe (mapeando vendedor para equipe)
+  const top1Equipe = useMemo(() => {
+    if (!vendas || vendas.length === 0) return null
+    
+    const byEquipe: Record<string, { total: number; vendas: number }> = {}
+    
+    vendas.forEach((venda) => {
+      const equipe = "LR Multimarcas"
+      if (!byEquipe[equipe]) {
+        byEquipe[equipe] = { total: 0, vendas: 0 }
+      }
+      byEquipe[equipe].total += venda.valor_venda
+      byEquipe[equipe].vendas++
+    })
+
+    const sorted = Object.entries(byEquipe).sort((a, b) => b[1].total - a[1].total)
+    if (sorted.length === 0) return null
+
+    return {
+      nome: sorted[0][0],
+      total: sorted[0][1].total,
+      vendas: sorted[0][1].vendas,
+    }
+  }, [vendas])
+
+  // Vendas por origem
+  const vendorPorOrigem = useMemo(() => {
+    if (!vendas || vendas.length === 0) return []
+    const byOrigem: Record<string, { total: number; vendas: number }> = {}
+    
+    vendas.forEach((venda) => {
+      const origem = venda.origem || "Sem origem"
+      if (!byOrigem[origem]) {
+        byOrigem[origem] = { total: 0, vendas: 0 }
+      }
+      byOrigem[origem].total += venda.valor_venda
+      byOrigem[origem].vendas++
+    })
+
+    return Object.entries(byOrigem).map(([nome, data]) => ({ nome, ...data })).sort((a, b) => b.total - a.total)
+  }, [vendas])
+
+  // Estatísticas de avaliação
+  const avaliacaoStats = useMemo(() => {
+    if (!vendas || vendas.length === 0) return { excelente: 0, bom: 0, naoAvaliado: 0 }
+    
+    let excelente = 0
+    let bom = 0
+    let naoAvaliado = 0
+
+    vendas.forEach((venda) => {
+      if (venda.avaliacao === "Excelente") excelente++
+      else if (venda.avaliacao === "Bom") bom++
+      else naoAvaliado++
+    })
+
+    return { excelente, bom, naoAvaliado }
+  }, [vendas])
+
+  const totalVendas = vendas.length
+  const totalValor = vendas.reduce((acc, v) => acc + v.valor_venda, 0)
+
+  if (isLoading) {
     return (
       <div className="px-4 md:px-6 mb-6">
-        <div className="h-32 rounded-2xl bg-white/[0.02] animate-pulse" />
+        <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 text-center text-white/50">
+          Carregando vendas...
+        </div>
       </div>
     )
   }
 
-  const { stats, vendas } = data
-  const formatCurrency = (value: number) => 
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+  if (!vendas || vendas.length === 0) {
+    return (
+      <div className="px-4 md:px-6 mb-6">
+        <div className="backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 text-center text-white/50">
+          Nenhuma venda registrada
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="px-4 md:px-6 mb-6">
-      {/* Header com titulo */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">💰</span>
-          <h2 className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">
-            Vendas Produção
-          </h2>
-        </div>
-        <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/30 to-transparent" />
-        <span className="text-xs text-white/40 font-semibold">{stats.totalVendas} vendas</span>
-      </div>
-
-      {/* Grid principal */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {/* TOP 1 Vendedor - com palminha animada */}
-        {stats.top1Vendedor && (
-          <div className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-2xl overflow-hidden cursor-default transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1"
-            style={{
-              background: "linear-gradient(145deg, rgba(16,185,129,0.12) 0%, transparent 50%, rgba(16,185,129,0.08) 100%)",
-              border: "1px solid rgba(16,185,129,0.3)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-            }}
-          >
-            {/* Glow animado */}
-            <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
-              style={{ background: "radial-gradient(ellipse at center, rgba(16,185,129,0.4), transparent 70%)" }}
+    <div className="px-4 md:px-6 mb-6 space-y-5">
+      {/* TOP 1 Cards com palminha animada */}
+      <div className="flex items-center gap-4 overflow-x-auto pb-2">
+        {/* TOP 1 Vendedor */}
+        {top1Vendedor && (
+          <div className="group relative flex items-center gap-4 px-6 py-4 min-w-fit rounded-2xl backdrop-blur-2xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default">
+            <div 
+              className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+              style={{
+                background: `linear-gradient(145deg, rgba(212,175,55,0.08) 0%, transparent 50%, rgba(212,175,55,0.05) 100%)`,
+                border: `1px solid rgba(212,175,55,0.25)`,
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+              }}
             />
             
-            {/* Shimmer */}
-            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)" }}
-              />
-            </div>
-
-            {/* Palminha animada */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="text-3xl animate-bounce" style={{ 
-                filter: "drop-shadow(0 0 12px rgba(16,185,129,0.5))",
-                animationDuration: "2s",
-              }}>
-                🏆
-              </div>
-              <span className="text-[8px] font-black text-emerald-400/60 uppercase tracking-widest mt-1">TOP 1</span>
-            </div>
-
-            {/* Foto */}
-            <div className="relative z-10">
-              <div className="absolute -inset-1 rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500 blur-sm"
-                style={{ background: "linear-gradient(135deg, #10b981, transparent, #10b981)" }}
-              />
-              {getFotoVendedor(stats.top1Vendedor.nome) ? (
-                <img
-                  src={getFotoVendedor(stats.top1Vendedor.nome) || ""}
-                  alt={stats.top1Vendedor.nome}
-                  className="relative w-14 h-14 rounded-full object-cover object-top border-2 border-emerald-500/60 transition-all duration-500 group-hover:scale-110"
-                  style={{ boxShadow: "0 0 25px rgba(16,185,129,0.3)" }}
-                />
-              ) : (
-                <div className="relative w-14 h-14 rounded-full border-2 border-emerald-500/60 flex items-center justify-center bg-emerald-500/20 font-black text-xl text-emerald-400"
-                  style={{ boxShadow: "0 0 25px rgba(16,185,129,0.3)" }}
-                >
-                  {stats.top1Vendedor.nome.charAt(0)}
-                </div>
-              )}
-              <span className="absolute -top-1 -right-1 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none text-black shadow-lg"
-                style={{ background: "linear-gradient(135deg, #10b981, #34d399)" }}
-              >
-                TOP 1
-              </span>
-            </div>
-
-            {/* Info */}
-            <div className="relative z-10 flex flex-col min-w-0">
-              <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-emerald-400"
-                style={{ textShadow: "0 0 20px rgba(16,185,129,0.5)" }}
-              >
-                Vendedor
-              </span>
-              <span className="text-sm font-bold text-white truncate max-w-[120px]">
-                {stats.top1Vendedor.nome}
-              </span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-lg font-black text-emerald-400"
-                  style={{ textShadow: "0 0 15px rgba(16,185,129,0.5)" }}
-                >
-                  {stats.top1Vendedor.total}
-                </span>
-                <span className="text-[10px] text-white/50 font-semibold">vendas</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TOP 1 Por Valor */}
-        {stats.top1PorValor && (
-          <div className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-2xl overflow-hidden cursor-default transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1"
-            style={{
-              background: "linear-gradient(145deg, rgba(212,175,55,0.12) 0%, transparent 50%, rgba(212,175,55,0.08) 100%)",
-              border: "1px solid rgba(212,175,55,0.3)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-            }}
-          >
-            {/* Glow animado */}
-            <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
-              style={{ background: "radial-gradient(ellipse at center, rgba(212,175,55,0.4), transparent 70%)" }}
+            <div 
+              className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
+              style={{ background: `radial-gradient(ellipse at center, rgba(212,175,55,0.3), transparent 70%)` }}
             />
+            
+            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+              <div 
+                className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }}
+              />
+            </div>
 
             {/* Palminha animada */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="text-3xl animate-bounce" style={{ 
-                filter: "drop-shadow(0 0 12px rgba(212,175,55,0.5))",
-                animationDuration: "2s",
-                animationDelay: "0.5s",
-              }}>
-                💰
-              </div>
-              <span className="text-[8px] font-black text-[#d4af37]/60 uppercase tracking-widest mt-1">VGV</span>
+            <div className="relative z-10 text-4xl" style={{ animation: 'wave 1.5s ease-in-out infinite' }}>
+              👏
             </div>
 
-            {/* Foto */}
-            <div className="relative z-10">
-              <div className="absolute -inset-1 rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500 blur-sm"
-                style={{ background: "linear-gradient(135deg, #d4af37, transparent, #d4af37)" }}
-              />
-              {getFotoVendedor(stats.top1PorValor.nome) ? (
-                <img
-                  src={getFotoVendedor(stats.top1PorValor.nome) || ""}
-                  alt={stats.top1PorValor.nome}
-                  className="relative w-14 h-14 rounded-full object-cover object-top border-2 border-[#d4af37]/60 transition-all duration-500 group-hover:scale-110"
-                  style={{ boxShadow: "0 0 25px rgba(212,175,55,0.3)" }}
-                />
-              ) : (
-                <div className="relative w-14 h-14 rounded-full border-2 border-[#d4af37]/60 flex items-center justify-center bg-[#d4af37]/20 font-black text-xl text-[#d4af37]"
-                  style={{ boxShadow: "0 0 25px rgba(212,175,55,0.3)" }}
-                >
-                  {stats.top1PorValor.nome.charAt(0)}
-                </div>
-              )}
-            </div>
-
-            {/* Info */}
             <div className="relative z-10 flex flex-col min-w-0">
-              <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-[#d4af37]"
-                style={{ textShadow: "0 0 20px rgba(212,175,55,0.5)" }}
-              >
-                Maior VGV
+              <span className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#d4af37", textShadow: `0 0 20px rgba(212,175,55,0.5)` }}>
+                TOP 1 VENDEDOR
               </span>
-              <span className="text-sm font-bold text-white truncate max-w-[120px]">
-                {stats.top1PorValor.nome}
-              </span>
-              <span className="text-sm font-black text-[#d4af37] mt-1"
-                style={{ textShadow: "0 0 15px rgba(212,175,55,0.5)" }}
-              >
-                {formatCurrency(stats.top1PorValor.valor)}
-              </span>
+              <span className="text-sm font-bold text-white truncate">{top1Vendedor.nome}</span>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xl font-black" style={{ color: "#d4af37" }}>
+                  R$ {(top1Vendedor.total / 1000).toFixed(0)}k
+                </span>
+                <span className="text-[10px] text-white/60">{top1Vendedor.vendas} vendas</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Separador */}
-        <div className="w-px h-20 bg-gradient-to-b from-transparent via-white/15 to-transparent flex-shrink-0 self-center" />
-
-        {/* Total VGV */}
-        <div className="group relative flex items-center gap-3 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-2xl overflow-hidden cursor-default transition-all duration-500 hover:scale-[1.03]"
-          style={{
-            background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, transparent 50%, rgba(139,92,246,0.05) 100%)",
-            border: "1px solid rgba(139,92,246,0.2)",
-          }}
-        >
-          <div className="text-2xl">📊</div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider">Total VGV</span>
-            <span className="text-xl font-black text-violet-400"
-              style={{ textShadow: "0 0 20px rgba(139,92,246,0.5)" }}
-            >
-              {formatCurrency(stats.valorTotal)}
-            </span>
-          </div>
-        </div>
-
-        {/* Origens */}
-        {stats.rankingOrigens.slice(0, 3).map((origem, i) => (
-          <div key={origem.nome}
-            className="group flex items-center gap-3 px-4 py-3 rounded-xl backdrop-blur-xl transition-all duration-300 hover:scale-105 cursor-default"
-            style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <div className="text-lg">
-              {origem.nome === "Tráfego Pago" ? "📱" : 
-               origem.nome === "Facebook Grupos" ? "👥" : 
-               origem.nome === "Indicação" ? "🤝" : "🏢"}
+        {/* TOP 1 Equipe */}
+        {top1Equipe && (
+          <div className="group relative flex items-center gap-4 px-6 py-4 min-w-fit rounded-2xl backdrop-blur-2xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default">
+            <div 
+              className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+              style={{
+                background: `linear-gradient(145deg, rgba(16,185,129,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)`,
+                border: `1px solid rgba(16,185,129,0.25)`,
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+              }}
+            />
+            
+            <div 
+              className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
+              style={{ background: `radial-gradient(ellipse at center, rgba(16,185,129,0.3), transparent 70%)` }}
+            />
+            
+            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+              <div 
+                className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }}
+              />
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-white/50 font-semibold">{origem.nome}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-white">{origem.total}</span>
-                <span className="text-[9px] text-white/40">vendas</span>
-              </div>
-            </div>
-          </div>
-        ))}
 
-        {/* Avaliacoes */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl backdrop-blur-xl"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">Avaliacoes</span>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="text-sm">⭐</span>
-                <span className="text-xs font-bold text-emerald-400">{stats.avaliacoes.Excelente}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm">👍</span>
-                <span className="text-xs font-bold text-amber-400">{stats.avaliacoes.Bom}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm">➖</span>
-                <span className="text-xs font-bold text-white/40">{stats.avaliacoes["Sem avaliação"]}</span>
+            {/* Palminha animada */}
+            <div className="relative z-10 text-4xl" style={{ animation: 'wave 1.5s ease-in-out infinite 0.2s' }}>
+              👏
+            </div>
+
+            <div className="relative z-10 flex flex-col min-w-0">
+              <span className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#10b981", textShadow: `0 0 20px rgba(16,185,129,0.5)` }}>
+                TOP 1 EQUIPE
+              </span>
+              <span className="text-sm font-bold text-white truncate">{top1Equipe.nome}</span>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xl font-black" style={{ color: "#10b981" }}>
+                  R$ {(top1Equipe.total / 1000).toFixed(0)}k
+                </span>
+                <span className="text-[10px] text-white/60">{top1Equipe.vendas} vendas</span>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Vendas */}
+        <div className="group relative backdrop-blur-xl rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden">
+          <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(135deg, rgba(59,130,246,0.08) 0%, transparent 100%)`, border: `1px solid rgba(59,130,246,0.2)` }} />
+          <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" style={{ background: `rgba(59,130,246,0.2)` }} />
+          <div className="relative z-10">
+            <span className="text-[10px] text-blue-400/60 uppercase tracking-wider font-bold">Total de Vendas</span>
+            <p className="text-3xl font-black text-white mt-2">{totalVendas}</p>
+            <p className="text-xs text-blue-400/80 mt-1">R$ {(totalValor / 1000).toFixed(1)}k faturado</p>
+          </div>
+        </div>
+
+        {/* Avaliação */}
+        <div className="group relative backdrop-blur-xl rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden">
+          <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(135deg, rgba(34,197,94,0.08) 0%, transparent 100%)`, border: `1px solid rgba(34,197,94,0.2)` }} />
+          <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" style={{ background: `rgba(34,197,94,0.2)` }} />
+          <div className="relative z-10 space-y-2">
+            <span className="text-[10px] text-emerald-400/60 uppercase tracking-wider font-bold block">Avaliações</span>
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-2xl font-black text-emerald-400">{avaliacaoStats.excelente}</p>
+                <p className="text-[9px] text-emerald-400/60">Excelente</p>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-amber-400">{avaliacaoStats.bom}</p>
+                <p className="text-[9px] text-amber-400/60">Bom</p>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-gray-400">{avaliacaoStats.naoAvaliado}</p>
+                <p className="text-[9px] text-gray-400/60">Não avaliado</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Origem */}
+        {vendorPorOrigem.length > 0 && (
+          <div className="group relative backdrop-blur-xl rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden">
+            <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(135deg, rgba(139,92,246,0.08) 0%, transparent 100%)`, border: `1px solid rgba(139,92,246,0.2)` }} />
+            <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" style={{ background: `rgba(139,92,246,0.2)` }} />
+            <div className="relative z-10">
+              <span className="text-[10px] text-purple-400/60 uppercase tracking-wider font-bold">Top Origem</span>
+              <p className="text-sm font-bold text-white mt-2">{vendorPorOrigem[0].nome}</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-2xl font-black text-purple-400">{vendorPorOrigem[0].vendas}</p>
+                <p className="text-xs text-purple-400/60">vendas</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Origem Breakdown */}
+      {vendorPorOrigem.length > 0 && (
+        <div className="group relative backdrop-blur-xl rounded-2xl p-5 transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 100%)`, border: `1px solid rgba(255,255,255,0.08)` }} />
+          <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg -z-10" style={{ background: `rgba(255,255,255,0.05)` }} />
+          <div className="relative z-10">
+            <h3 className="text-sm font-bold text-white mb-4">Vendas por Origem</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {vendorPorOrigem.map((item) => (
+                <div key={item.nome} className="backdrop-blur-sm bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 transition-all duration-300 hover:bg-white/[0.06] hover:border-white/[0.12]">
+                  <p className="text-[11px] text-white/60 font-semibold mb-2">{item.nome}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-black text-white">{item.vendas}</p>
+                    <p className="text-xs text-white/40">vendas</p>
+                  </div>
+                  <p className="text-[10px] text-white/50 mt-1">R$ {(item.total / 1000).toFixed(1)}k</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

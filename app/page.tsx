@@ -475,6 +475,9 @@ export default function QuadroReunioes() {
         top1Veio={mounted && !isLoading ? top1Veio : null}
       />
 
+      {/* Sales Dashboard */}
+      <SalesDashboard />
+
       {/* Filtro por Equipe */}
       {equipes.length > 0 && (
         <div className="px-4 md:px-6 mb-5">
