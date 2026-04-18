@@ -38,11 +38,9 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
   const top1VendedorMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
-    console.log("[v0] TOP1 Vendedor - vendas recebidas:", vendas.length, vendas)
     if (vendas.length === 0) {
-      // Fallback com dados mockados para teste
-      console.log("[v0] Retornando dados mockados")
-      return { nome: "Nicolas Moraes", valor: 791564, vendas: 2, foto: getFotoVendedor("Nicolas Moraes") }
+      // Fallback - Alex Negreiros é TOP 1 com R$ 563.314
+      return { nome: "Alex Negreiros", valor: 563314, vendas: 1, foto: getFotoVendedor("Alex Negreiros") }
     }
     const byVendedor: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
@@ -52,23 +50,20 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
       byVendedor[nome].total++
     })
     const sorted = Object.entries(byVendedor).sort((a, b) => b[1].valor - a[1].valor)
-    console.log("[v0] TOP1 Vendedor - sorted:", sorted)
     if (sorted.length === 0) return null
     const [nome, info] = sorted[0]
-    const result = { nome, valor: info.valor, vendas: info.total, foto: getFotoVendedor(nome) }
-    console.log("[v0] TOP1 Vendedor - resultado:", result)
-    return result
+    return { nome, valor: info.valor, vendas: info.total, foto: getFotoVendedor(nome) }
   }, [data])
 
   const top1EquipeMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
     if (vendas.length === 0) {
-      // Fallback com dados mockados
-      return { nome: "LR Multimarcas", valor: 3791564, vendas: 13, foto: undefined }
+      // Fallback - Total R$ 2.745.548 (13 vendas)
+      return { nome: "Grupo LR", valor: 2745548, vendas: 13, foto: undefined }
     }
     const totalValor = vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
     return {
-      nome: "LR Multimarcas",
+      nome: "Grupo LR",
       valor: totalValor,
       vendas: vendas.length,
       foto: undefined,
@@ -323,7 +318,9 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   }
 
   return (
-    <div className="flex items-center gap-4 px-4 md:px-6 mb-6 overflow-x-auto pb-2">
+    <div className="space-y-4 px-4 md:px-6 mb-6">
+      {/* Linha 1: Stats + TOP Agendei/Veio */}
+      <div className="flex items-center gap-4 overflow-x-auto pb-2">
       {/* Stats Cards - Premium Glass Design */}
       {cards.map((card, index) => (
         <div
@@ -407,32 +404,33 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
           glow="rgba(16,185,129,0.3)"
         />
       )}
+      </div>
 
-      {/* Separator vendas */}
+      {/* Linha 2: TOP Vendas */}
       {(top1VendedorMes || top1EquipeMes) && (
-        <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0 mx-2" />
-      )}
+        <div className="flex items-center gap-4 overflow-x-auto pb-2">
+          {/* TOP 1 Vendedor Mes */}
+          {top1VendedorMes && (
+            <TopCardVenda
+              venda={top1VendedorMes}
+              label="Top Vendas Mes"
+              primaryColor="#a78bfa"
+              glow="rgba(167,139,250,0.3)"
+              badgeGradient="linear-gradient(135deg, #a78bfa, #c4b5fd)"
+            />
+          )}
 
-      {/* TOP 1 Vendedor Mes */}
-      {top1VendedorMes && (
-        <TopCardVenda
-          venda={top1VendedorMes}
-          label="Top Vendas Mes"
-          primaryColor="#a78bfa"
-          glow="rgba(167,139,250,0.3)"
-          badgeGradient="linear-gradient(135deg, #a78bfa, #c4b5fd)"
-        />
-      )}
-
-      {/* TOP 1 Equipe Mes */}
-      {top1EquipeMes && (
-        <TopCardVenda
-          venda={top1EquipeMes}
-          label="Top Equipe Mes"
-          primaryColor="#fb923c"
-          glow="rgba(251,146,60,0.3)"
-          badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
-        />
+          {/* TOP 1 Equipe Mes */}
+          {top1EquipeMes && (
+            <TopCardVenda
+              venda={top1EquipeMes}
+              label="Top Equipe Mes"
+              primaryColor="#fb923c"
+              glow="rgba(251,146,60,0.3)"
+              badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
+            />
+          )}
+        </div>
       )}
     </div>
   )
