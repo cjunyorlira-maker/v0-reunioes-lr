@@ -18,7 +18,7 @@ interface LeadCardProps {
 function getTipoClass(tipo: string) {
   const t = (tipo || "").toLowerCase()
   if (t.includes("cam")) return "bg-amber-500/10 text-amber-400 border-amber-500/20"
-  if (t.includes("casa") || t.includes("imóvel") || t.includes("imovel")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  if (t.includes("casa")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
   return "bg-sky-500/10 text-sky-400 border-sky-500/20"
 }
 
@@ -30,188 +30,221 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         ? "bg-red-400"
         : "bg-[#d4af37]/40"
 
-  const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
-
   return (
     <div 
-      className="group bg-[#1a1a1f] border border-white/10 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-[rgba(212,175,55,0.3)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+      className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-[rgba(212,175,55,0.3)] hover:from-white/[0.1] hover:to-white/[0.05] transition-all cursor-pointer group"
       onClick={() => onEdit(lead)}
     >
-      <div className="p-4 relative">
-        {/* Botao X para excluir - aparece no hover */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (confirm("Tem certeza que deseja deletar este lead?")) {
-              onDelete(lead.id)
-            }
-          }}
-          className="absolute top-3 right-3 w-6 h-6 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300"
-          title="Excluir lead"
-        >
-          x
-        </button>
+      <div className="p-3.5 relative">
+        {/* Botão X para remover a tag de venda fechada quando estiver marcado */}
+        {lead.venda_fechada && onVendaFechada && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onVendaFechada(lead.id)
+            }}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Remover tag de Venda Fechada"
+          >
+            x
+          </button>
+        )}
+        {/* Botão X para excluir (só aparece se não estiver marcado como venda fechada) */}
+        {!lead.venda_fechada && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm("Tem certeza que deseja deletar este lead?")) {
+                onDelete(lead.id)
+              }
+            }}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[12px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Excluir lead (com confirmação)"
+          >
+            x
+          </button>
+        )}
         
-        {/* Header com foto e info */}
-        <div className="flex items-start gap-4 mb-4">
-          {/* Foto grande */}
-          {fotoUrl ? (
-            <img 
-              src={fotoUrl} 
-              alt={lead.responsavel}
-              className="w-16 h-16 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.4)] flex-shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-[rgba(212,175,55,0.1)] border-2 border-[rgba(212,175,55,0.4)] flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl text-[#d4af37] font-semibold">
-                {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
-              </span>
-            </div>
-          )}
+        {/* Header with photo and info */}
+        <div className="flex items-start gap-3 mb-2">
+          {/* Photo - Larger */}
+          {(() => {
+            const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
+            return fotoUrl ? (
+              <img 
+                src={fotoUrl} 
+                alt={lead.responsavel}
+                className="w-11 h-11 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[16px] text-[#d4af37] font-semibold">
+                  {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              </div>
+            )
+          })()}
           
-          <div className="flex-1 min-w-0 pt-1">
-            {/* Status dot + Hora */}
+          <div className="flex-1 min-w-0">
+            {/* Status + Time row */}
             <div className="flex items-center gap-2 mb-1">
-              <div className={`w-2.5 h-2.5 rounded-full ${statusDot}`} />
-              <span className="text-sm text-[#8a8070] font-medium">
+              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
+              <span className="text-[11px] text-[#8a8070] font-medium">
                 {formatTimeDisplay(lead.hora)}
               </span>
+              {lead.remarcado && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemoveRemarcado?.(lead.id)
+                  }}
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)]"
+                >
+                  REMARCADO
+                </button>
+              )}
+              {lead.venda_fechada && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                  VENDA FECHADA
+                </span>
+              )}
+              {lead.retorno && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                  RETORNO
+                </span>
+              )}
             </div>
             
-            {/* Nome do cliente - caixa alta */}
-            <h3 className="text-lg font-bold text-[#f5f0e8] leading-tight truncate uppercase" title={lead.nome}>
+            {/* Client name */}
+            <h3 className="text-[14px] font-semibold text-[#f5f0e8] leading-tight truncate" title={lead.nome}>
               {lead.nome}
             </h3>
             
-            {/* Responsavel - amarelo dourado */}
-            <p className="text-sm text-[#d4af37] font-semibold truncate" title={lead.responsavel}>
+            {/* Responsavel */}
+            <p className="text-[12px] text-[#d4af37] font-medium truncate" title={lead.responsavel}>
               {lead.responsavel}
             </p>
             
             {/* Equipe */}
             {lead.equipe && lead.equipe !== "Sem equipe" && (
-              <p className="text-xs text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
+              <p className="text-[10px] text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
             )}
           </div>
         </div>
         
         {/* Tags row */}
-        <div className="flex items-center gap-2 flex-wrap mb-4">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {lead.tipo_reuniao && (
-            <span className={`text-xs font-semibold px-3 py-1 rounded-lg border ${
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
-                ? "bg-violet-500/15 text-violet-400 border-violet-500/30"
-                : "bg-pink-500/15 text-pink-400 border-pink-500/30"
+                ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                : "bg-pink-500/10 text-pink-400 border-pink-500/20"
             }`}>
               {lead.tipo_reuniao}
             </span>
           )}
           
           {lead.tipo && (
-            <span className={`text-xs font-semibold px-3 py-1 rounded-lg border ${getTipoClass(lead.tipo)}`}>
-              {lead.tipo.toUpperCase()}
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${getTipoClass(lead.tipo)}`}>
+              {lead.tipo}
             </span>
           )}
           
           {lead.atendente && (
-            <span className="text-xs font-medium px-3 py-1 rounded-lg bg-white/5 text-[#a8a090] border border-white/10">
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
               Atendente: {lead.atendente}
-            </span>
-          )}
-
-          {/* Tags de status */}
-          {lead.remarcado && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemoveRemarcado?.(lead.id)
-              }}
-              className="text-xs font-semibold px-3 py-1 rounded-lg bg-[rgba(243,190,255,0.1)] text-[#f3beff] border border-[rgba(243,190,255,0.2)] hover:bg-[rgba(243,190,255,0.2)]"
-            >
-              REMARCADO
-            </button>
-          )}
-          {lead.venda_fechada && (
-            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-              VENDA FECHADA
-            </span>
-          )}
-          {lead.retorno && (
-            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
-              RETORNO
             </span>
           )}
         </div>
       </div>
       
       {/* Actions */}
-      <div className="px-4 pb-4" onClick={(e) => e.stopPropagation()}>
-        {/* Primeira linha: Veio, Faltou, Remarcar, Kommo */}
-        <div className="flex gap-2 mb-2">
+      <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-1.5 mb-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-sm py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-semibold transition-all duration-300"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-sm py-2.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 font-semibold transition-all duration-300"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 font-semibold transition-colors"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-sm py-2.5 rounded-xl border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-[rgba(243,190,255,0.1)] hover:bg-[rgba(243,190,255,0.2)] font-semibold transition-all duration-300"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-colors"
           >
             Remarcar
           </button>
-          {/* Botao Kommo */}
-          {lead.kommo_lead_id && (
+          {lead.kommo_id && (
             <a
-              href={`https://lrmultimarcas.kommo.com/leads/detail/${lead.kommo_lead_id}`}
+              href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-12 h-10 rounded-xl border border-violet-500/40 bg-violet-500/30 hover:bg-violet-500/40 flex items-center justify-center transition-all duration-300"
+              className="w-11 h-11 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.3)] bg-[rgba(107,79,187,0.1)] hover:bg-[rgba(107,79,187,0.2)] transition-colors"
               title="Abrir no Kommo"
             >
-              <span className="text-violet-300 font-black text-lg" style={{ fontFamily: 'system-ui', transform: 'scaleX(0.9)' }}>K</span>
+              <img 
+                src="/images/kommo-logo.png" 
+                alt="Kommo" 
+                className="w-6 h-6"
+              />
             </a>
           )}
         </div>
-        
-        {/* Segunda linha: Venda Fechada, Marcar Retorno (quando veio) */}
+        {/* Botões de Venda Fechada e Retorno - sempre disponíveis se status for "veio" */}
         {lead.status === "veio" && (
-          <div className="flex gap-2 mb-2">
-            <button
-              onClick={() => onVendaFechada?.(lead.id)}
-              className="flex-1 text-sm py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-semibold transition-all duration-300"
-            >
-              Venda Fechada
-            </button>
-            <button
-              onClick={() => onRetorno?.(lead.id)}
-              className="flex-1 text-sm py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-semibold transition-all duration-300"
-            >
-              Marcar Retorno
-            </button>
+          <div className="flex gap-1.5 mb-1.5">
+            {lead.venda_fechada && onVendaFechada && (
+              <button
+                onClick={() => onVendaFechada(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 font-semibold transition-colors"
+              >
+                ✓ Venda Fechada
+              </button>
+            )}
+            {!lead.venda_fechada && onVendaFechada && (
+              <button
+                onClick={() => onVendaFechada(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-colors"
+              >
+                Venda Fechada
+              </button>
+            )}
+            {lead.retorno && onRetorno && (
+              <button
+                onClick={() => onRetorno(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/15 hover:bg-cyan-500/25 font-semibold transition-colors"
+              >
+                ✓ Retorno
+              </button>
+            )}
+            {!lead.retorno && onRetorno && (
+              <button
+                onClick={() => onRetorno(lead.id)}
+                className="flex-1 text-[10px] py-1.5 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 font-semibold transition-colors"
+              >
+                Marcar Retorno
+              </button>
+            )}
           </div>
         )}
-
-        {/* Botao Sync - canto inferior direito */}
         {onSync && (
-          <div className="flex justify-end">
-            <button
-              onClick={() => onSync(lead.id)}
-              className="w-10 h-10 rounded-full border border-[rgba(212,175,55,0.3)] text-[#d4af37] bg-transparent hover:bg-[rgba(212,175,55,0.1)] flex items-center justify-center transition-all duration-300"
-              title="Sincronizar com Kommo"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
+          <button
+            onClick={() => onSync(lead.id)}
+            className="w-7 h-7 rounded-lg border border-[rgba(212,175,55,0.15)] text-[#d4af37]/70 hover:text-[#d4af37] hover:bg-[rgba(212,175,55,0.08)] flex items-center justify-center transition-colors ml-auto"
+            title="Sincronizar com Kommo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 21h5v-5"/>
+            </svg>
+          </button>
         )}
       </div>
     </div>
