@@ -160,33 +160,44 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       
       {/* Actions */}
       <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
-        <div className="flex gap-1.5 mb-1.5">
+        <div className="flex gap-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/30 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-emerald-500/5 hover:from-emerald-500/20 hover:to-emerald-500/15 font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/15 font-semibold transition-all duration-300"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/30 text-red-400 bg-gradient-to-b from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/15 font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 font-semibold transition-all duration-300"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-gradient-to-b from-[rgba(243,190,255,0.1)] to-[rgba(243,190,255,0.05)] hover:from-[rgba(243,190,255,0.2)] hover:to-[rgba(243,190,255,0.15)] font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(243,190,255,0.25)]"
+            className="flex-1 text-[11px] py-2 rounded-lg border border-[rgba(243,190,255,0.2)] text-[#f3beff] bg-[rgba(243,190,255,0.05)] hover:bg-[rgba(243,190,255,0.15)] font-semibold transition-all duration-300"
           >
             Remarcar
           </button>
         </div>
         
-        <button
-          onClick={() => onUpdateStatus(lead.id, "pending")}
-          className="w-full text-[11px] py-2 rounded-lg border border-[rgba(212,175,55,0.25)] text-[#d4af37] bg-gradient-to-b from-[rgba(212,175,55,0.08)] to-[rgba(212,175,55,0.03)] hover:from-[rgba(212,175,55,0.15)] hover:to-[rgba(212,175,55,0.1)] font-semibold transition-all duration-300 hover:shadow-[0_0_12px_rgba(212,175,55,0.25)]"
-        >
-          Pendente
-        </button>
+        {/* Botões extras quando veio */}
+        {lead.status === "veio" && (
+          <div className="flex gap-1.5 mt-1.5">
+            <button
+              onClick={() => onVendaFechada?.(lead.id)}
+              className="flex-1 text-[11px] py-2 rounded-lg border border-blue-500/20 text-blue-400 bg-blue-500/5 hover:bg-blue-500/15 font-semibold transition-all duration-300"
+            >
+              Venda Fechada
+            </button>
+            <button
+              onClick={() => onRetorno?.(lead.id)}
+              className="flex-1 text-[11px] py-2 rounded-lg border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 font-semibold transition-all duration-300"
+            >
+              Retorno
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
