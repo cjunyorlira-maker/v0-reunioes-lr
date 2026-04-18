@@ -15,6 +15,7 @@ import { NextWeekPreview } from "@/components/quadro/next-week-preview"
 import { AnalyticsDashboard } from "@/components/quadro/analytics-dashboard"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
+import { useVendas } from "@/hooks/use-vendas"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
 import { Confetti } from "@/components/ui/confetti"
@@ -55,6 +56,7 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
   const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
+  const { top1Vendedor, top1Equipe } = useVendas()
   
   // Busca TODOS os leads para calcular Agendei corretamente (usa data_agendei - igual ao dashboard)
   const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
@@ -473,6 +475,8 @@ export default function QuadroReunioes() {
         stats={stats} 
         top1Agendei={mounted && !isLoading ? top1Agendei : null}
         top1Veio={mounted && !isLoading ? top1Veio : null}
+        top1Vendedor={mounted ? top1Vendedor : null}
+        top1Equipe={mounted ? top1Equipe : null}
       />
 
       {/* Sales Dashboard */}
