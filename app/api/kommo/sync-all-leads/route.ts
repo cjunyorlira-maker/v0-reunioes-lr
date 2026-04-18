@@ -138,6 +138,10 @@ export async function POST() {
             let status: "pending" | "veio" | "nao" = "pending"
             if (statusId === 69799508) status = "veio"
             if (statusId === 69799504) status = "nao"
+            
+            // Vendido produção = venda fechada
+            const isVendidoProducao = statusId === 69615804
+            const vendaFechada = isVendidoProducao
 
             // Verifica se já existe pelo kommo_id numérico
             const { data: existing } = await supabase
@@ -149,6 +153,7 @@ export async function POST() {
             const leadData = {
               kommo_id: lead.id.toString(),
               kommo_lead_id: lead.id.toString(),
+              kommo_status_id: statusId.toString(),
               nome: lead.name,
               responsavel: responsavelNome,
               responsavel_id: responsavelId?.toString(),
@@ -160,6 +165,7 @@ export async function POST() {
               tipo_reuniao: tipoReuniao,
               foto_responsavel: fotoResponsavel,
               remarcado: isRemarcado,
+              venda_fechada: vendaFechada,
             }
 
             if (existing) {
