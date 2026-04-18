@@ -57,8 +57,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     
     return (
       <div 
-        className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 animate-slide-up overflow-hidden cursor-default"
-        style={{ animationDelay: '300ms' }}
+        className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default"
       >
         {/* Glass background with gradient border - mais transparente */}
         <div 
