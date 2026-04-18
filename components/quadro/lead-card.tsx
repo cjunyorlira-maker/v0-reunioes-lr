@@ -173,12 +173,10 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="w-12 h-10 rounded-xl border border-violet-500/40 bg-violet-500/20 hover:bg-violet-500/30 flex items-center justify-center transition-all duration-300"
+              className="w-12 h-10 rounded-xl border border-violet-500/40 bg-violet-500/30 hover:bg-violet-500/40 flex items-center justify-center transition-all duration-300"
               title="Abrir no Kommo"
             >
-              <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l4.59-4.58L18 11l-6 6z"/>
-              </svg>
+              <span className="text-violet-300 font-black text-lg" style={{ fontFamily: 'system-ui', transform: 'scaleX(0.9)' }}>K</span>
             </a>
           )}
         </div>
