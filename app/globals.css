@@ -146,12 +146,6 @@ body::before {
   animation: pulse-dot 1s infinite;
 }
 
-@keyframes wave {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(20deg); }
-  75% { transform: rotate(-20deg); }
-}
-
 @keyframes slide-up {
   from {
     opacity: 0;
