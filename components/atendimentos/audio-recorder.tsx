@@ -23,7 +23,6 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const durationRef = useRef<number>(0)  // Guardar duração em ref para upload
-  const streamRef = useRef<MediaStream | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
