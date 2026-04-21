@@ -33,6 +33,30 @@ interface Atendimento {
   pontos_positivos: string[] | null
   pontos_criticos: string[] | null
   feedback_coaching: string | null
+  // Novos campos do prompt expandido
+  situacao_financeira: {
+    tinha_entrada: boolean | null
+    impeditivo_principal: string | null
+    perfil_mapeado: boolean | null
+  } | null
+  garantiu_contemplacao: boolean | null
+  usou_prova_social: {
+    reclame_aqui: boolean | null
+    site_empresa: boolean | null
+    referencias_clientes: boolean | null
+  } | null
+  tecnicas_fechamento: {
+    tentou_fechar: boolean | null
+    quantidade_tentativas: number | null
+    tecnicas_usadas: string[] | null
+    resultado: string | null
+  } | null
+  proximo_passo_sugerido: string | null
+  objecoes_cliente: Array<{
+    objecao: string
+    resposta_vendedor: string
+    eficaz: boolean
+  }> | null
   status: string
   fechou: boolean
   is_benchmark: boolean
