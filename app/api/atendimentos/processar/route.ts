@@ -275,13 +275,28 @@ export async function POST(request: Request) {
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Buscar o audio do Blob usando get() (funciona com private store)
-  console.log("[v0] Buscando audio do Blob:", audioUrl)
+  // Buscar o audio do Blob usando get() com access: "private"
+  console.log("[v0] Buscando audio do Blob (private):", audioUrl)
   let audioBuffer: ArrayBuffer
   try {
-    const blob = await get(audioUrl)
-    audioBuffer = await blob.arrayBuffer()
-    console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength)
+    const { stream, blob } = await get(audioUrl, { access: "private" })
+    // Converter stream para ArrayBuffer
+    const chunks: Uint8Array[] = []
+    const reader = stream.getReader()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+    }
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+    const result = new Uint8Array(totalLength)
+    let offset = 0
+    for (const chunk of chunks) {
+      result.set(chunk, offset)
+      offset += chunk.length
+    }
+    audioBuffer = result.buffer
+    console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength, "contentType:", blob.contentType)
   } catch (blobError) {
     console.error("[v0] Erro ao buscar audio do Blob:", blobError)
     throw new Error(`Falha ao buscar audio do Blob: ${blobError}`)
