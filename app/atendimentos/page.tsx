@@ -199,47 +199,117 @@ export default function AtendimentosPage() {
             loop
             muted
             playsInline
-            className="w-full h-full object-cover"
-            poster="https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=1920&q=80"
+            className="w-full h-full object-cover scale-105"
+            poster="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1920&q=80"
           >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-solar-panels-on-a-roof-on-a-sunny-day-40816-large.mp4" type="video/mp4" />
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-business-team-discussing-in-a-meeting-42898-large.mp4" type="video/mp4" />
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-businessman-shaking-hands-with-a-colleague-42847-large.mp4" type="video/mp4" />
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-handshake-between-two-businessmen-42721-large.mp4" type="video/mp4" />
           </video>
-          {/* Overlay gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-violet-950/80" />
-          {/* Particulas animadas */}
-          <div className="absolute inset-0 opacity-30">
-            {[...Array(20)].map((_, i) => (
+
+          {/* Overlay multicamadas para profundidade */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-violet-950/60 to-black/90" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
+
+          {/* Grade sutil */}
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
+              backgroundSize: "60px 60px",
+            }}
+          />
+
+          {/* Glow orbs animados */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "4s" }} />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: "6s", animationDelay: "2s" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
+
+          {/* Particulas flutuantes */}
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(25)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                className="absolute rounded-full bg-white"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 3}s`,
+                  width: `${1 + (i % 3)}px`,
+                  height: `${1 + (i % 3)}px`,
+                  left: `${(i * 37 + 5) % 100}%`,
+                  top: `${(i * 53 + 10) % 100}%`,
+                  opacity: 0.1 + (i % 5) * 0.06,
+                  animation: `float ${4 + (i % 6)}s ease-in-out infinite`,
+                  animationDelay: `${(i * 0.4) % 5}s`,
                 }}
               />
             ))}
           </div>
+
+          {/* Linhas diagonais sutis */}
+          <div className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(45deg, white 0px, white 1px, transparent 1px, transparent 40px)`,
+            }}
+          />
         </div>
+
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.15; }
+            33% { transform: translateY(-20px) translateX(10px); opacity: 0.3; }
+            66% { transform: translateY(10px) translateX(-8px); opacity: 0.1; }
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
 
         {/* Login Card */}
         <div className="relative z-10 w-full max-w-md mx-4">
-          <div className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl">
+          {/* Glow atrás do card */}
+          <div className="absolute -inset-4 bg-violet-600/20 rounded-[2.5rem] blur-2xl" />
+          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-transparent to-purple-600/20 rounded-3xl blur-lg" />
+
+          <div
+            className="relative backdrop-blur-3xl border rounded-3xl p-8 shadow-2xl overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, rgba(139,92,246,0.08) 100%)",
+              borderColor: "rgba(255,255,255,0.12)",
+              boxShadow: "0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
+          >
+            {/* Shimmer no topo do card */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
+            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
             {/* Header */}
             <div className="text-center mb-8">
               <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 animate-pulse" />
-                <div className="absolute inset-1 rounded-xl bg-black/50 backdrop-blur flex items-center justify-center">
-                  <Zap className="w-10 h-10 text-white" />
+                {/* Anel externo giratório */}
+                <div
+                  className="absolute -inset-1 rounded-2xl opacity-60"
+                  style={{
+                    background: "linear-gradient(135deg, #8b5cf6, #a855f7, #7c3aed, #8b5cf6)",
+                    animation: "spin 8s linear infinite",
+                  }}
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-lg shadow-violet-500/40" />
+                <div className="absolute inset-[3px] rounded-xl bg-black/60 backdrop-blur flex items-center justify-center">
+                  <Zap className="w-9 h-9 text-white drop-shadow-lg" />
                 </div>
               </div>
-              <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
+              <h1 className="text-3xl font-black text-white mb-2 tracking-tight text-balance">
                 Central de Atendimentos
               </h1>
-              <p className="text-white/50 text-sm">
+              <p className="text-white/40 text-sm font-medium">
                 Acesse com as credenciais da sua equipe
               </p>
+              {/* Linha decorativa */}
+              <div className="flex items-center gap-3 mt-4">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/15" />
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-400/60" />
+                <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/15" />
+              </div>
             </div>
 
             {/* Form */}
