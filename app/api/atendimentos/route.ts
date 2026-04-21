@@ -13,13 +13,13 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
-    // Admin vê todos, outras equipes só veem os seus
+    // Admin ou "all" vê todos, outras equipes só veem os seus
     const query = supabase
       .from("atendimentos")
       .select("*")
       .order("created_at", { ascending: false })
 
-    if (equipe !== "Admin") {
+    if (equipe !== "Admin" && equipe !== "all") {
       query.eq("equipe", equipe)
     }
 

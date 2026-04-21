@@ -71,6 +71,7 @@ export default function AtendimentosPage() {
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
+  const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -89,7 +90,11 @@ export default function AtendimentosPage() {
   const fetchAtendimentos = async () => {
     setLoadingAtendimentos(true)
     try {
-      const res = await fetch(`/api/atendimentos?equipe=${equipe}`)
+      // Admin tem acesso a todas as equipes
+      const url = equipe === "Admin" 
+        ? "/api/atendimentos?equipe=all" 
+        : `/api/atendimentos?equipe=${equipe}`
+      const res = await fetch(url)
       const data = await res.json()
       if (data.atendimentos) {
         setAtendimentos(data.atendimentos)
@@ -137,9 +142,9 @@ export default function AtendimentosPage() {
     setAtendimentos([])
   }
 
-  // Agrupa motivos de nao fechamento por categoria
+  // Agrupa motivos de nao fechamento por categoria (usa lista filtrada para Admin)
   const motivosPorCategoria = useMemo(() => {
-    const naoFechados = atendimentos.filter(a => a.status === "concluido" && !a.fechou && a.motivo_nao_fechamento)
+    const naoFechados = atendimentosFiltrados.filter(a => a.status === "concluido" && !a.fechou && a.motivo_nao_fechamento)
     const categorized: Record<string, Atendimento[]> = {
       financeiro: [],
       timing: [],
@@ -164,12 +169,18 @@ export default function AtendimentosPage() {
     })
 
     return categorized
-  }, [atendimentos])
+  }, [atendimentosFiltrados])
 
-  // Stats
-  const aguardando = atendimentos.filter((a) => a.status === "aguardando")
-  const processando = atendimentos.filter((a) => a.status === "processando" || a.status === "gravando")
-  const concluidos = atendimentos.filter((a) => a.status === "concluido")
+  // Filtra atendimentos por equipe quando Admin seleciona uma equipe especifica
+  const atendimentosFiltrados = useMemo(() => {
+    if (equipe !== "Admin" || filtroEquipe === "all") return atendimentos
+    return atendimentos.filter(a => a.equipe === filtroEquipe)
+  }, [atendimentos, equipe, filtroEquipe])
+
+  // Stats (usando lista filtrada)
+  const aguardando = atendimentosFiltrados.filter((a) => a.status === "aguardando")
+  const processando = atendimentosFiltrados.filter((a) => a.status === "processando" || a.status === "gravando")
+  const concluidos = atendimentosFiltrados.filter((a) => a.status === "concluido")
   const fechados = concluidos.filter((a) => a.fechou)
   const naoFechados = concluidos.filter((a) => !a.fechou)
   const taxaConversao = concluidos.length > 0 ? ((fechados.length / concluidos.length) * 100).toFixed(1) : "0"
@@ -390,6 +401,31 @@ export default function AtendimentosPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Filtro por equipe - apenas para Admin */}
+              {equipe === "Admin" && (
+                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                  <SelectTrigger className="w-40 h-9 bg-white/5 border-white/10 text-white rounded-xl text-sm">
+                    <SelectValue placeholder="Todas equipes" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a1a24] border-white/10 rounded-xl">
+                    <SelectItem value="all" className="text-white hover:bg-white/10">
+                      Todas equipes
+                    </SelectItem>
+                    {EQUIPES.filter(eq => eq !== "Admin").map((eq) => (
+                      <SelectItem 
+                        key={eq} 
+                        value={eq} 
+                        className="text-white hover:bg-white/10"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${EQUIPE_COLORS[eq]?.gradient}`} />
+                          {eq}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 onClick={fetchAtendimentos}
                 variant="outline"
@@ -451,7 +487,7 @@ export default function AtendimentosPage() {
                 <p className="text-white/50">Carregando atendimentos...</p>
               </div>
             </div>
-          ) : atendimentos.length === 0 ? (
+          ) : atendimentosFiltrados.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-6">
                 <FileText className="w-12 h-12 text-white/20" />
