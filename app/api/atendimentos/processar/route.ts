@@ -137,22 +137,30 @@ export async function POST(request: Request) {
   let atendimentoId: string | null = null
 
   try {
+    console.log("[v0] Processar POST iniciado")
     const body = await request.json()
     atendimentoId = body.atendimentoId
     const audioUrl = body.audioUrl
 
+    console.log("[v0] Body recebido:", { atendimentoId, audioUrl: audioUrl?.substring(0, 50) })
+
     if (!atendimentoId || !audioUrl) {
+      console.error("[v0] Dados incompletos - atendimentoId:", atendimentoId, "audioUrl:", !!audioUrl)
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
     // 1. Buscar dados do atendimento (kommo_id, nome_lead, responsavel)
+    console.log("[v0] Buscando dados do atendimento:", atendimentoId)
     const { data: atendimento } = await supabase
       .from("atendimentos")
       .select("kommo_id, nome_lead, responsavel, equipe")
       .eq("id", atendimentoId)
       .single()
+    
+    console.log("[v0] Atendimento encontrado:", atendimento?.nome_lead)
 
     // 2. Transcrever com Deepgram (3 tentativas)
+    console.log("[v0] Iniciando Deepgram...")
     const transcricao = await withRetry(
       () => transcreverAudio(audioUrl),
       3,
@@ -160,7 +168,10 @@ export async function POST(request: Request) {
       "Deepgram transcricao"
     )
 
+    console.log("[v0] Transcricao completa:", transcricao?.substring(0, 100))
+
     if (!transcricao) {
+      console.error("[v0] Deepgram falhou após 3 tentativas")
       await supabase
         .from("atendimentos")
         .update({ status: "erro", updated_at: new Date().toISOString() })
@@ -169,12 +180,15 @@ export async function POST(request: Request) {
     }
 
     // 3. Analisar com Claude (3 tentativas)
+    console.log("[v0] Iniciando Claude...")
     const analise = await withRetry(
       () => analisarComClaude(transcricao),
       3,
       3000,
       "Claude analise"
     )
+
+    console.log("[v0] Analise completa - score:", analise?.score_geral)
 
     if (!analise) {
       // Salva ao menos a transcricao mesmo sem analise
