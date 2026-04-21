@@ -224,11 +224,14 @@ export default function AtendimentosPage() {
             muted
             playsInline
             className="w-full h-full object-cover scale-105"
-            poster="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1920&q=80"
+            poster="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1920&q=80"
           >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-business-team-discussing-in-a-meeting-42898-large.mp4" type="video/mp4" />
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-businessman-shaking-hands-with-a-colleague-42847-large.mp4" type="video/mp4" />
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-handshake-between-two-businessmen-42721-large.mp4" type="video/mp4" />
+            {/* Video principal: Grafico financeiro com tickers de acoes em tempo real */}
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-the-stock-market-trend-on-screen-9607-large.mp4" type="video/mp4" />
+            {/* Fallback 1: Tela de dados de mercado em tempo real */}
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-stock-subscription-data-in-a-real-time-screen-47796-large.mp4" type="video/mp4" />
+            {/* Fallback 2: Reflexo de numeros digitais em oculos */}
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-reflections-of-digital-numbers-on-glasses-47792-large.mp4" type="video/mp4" />
           </video>
 
           {/* Overlay multicamadas para profundidade */}
