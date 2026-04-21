@@ -237,7 +237,7 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
     max_tokens: 4000,
     messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
   })

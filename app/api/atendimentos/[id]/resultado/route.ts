@@ -71,11 +71,11 @@ ${atendimento.feedback_coaching || "Não disponível"}
 
   // Enviar para API do Kommo
   const KOMMO_TOKEN = process.env.KOMMO_ACCESS_TOKEN
-  const KOMMO_DOMAIN = process.env.KOMMO_DOMAIN
+  const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
 
-  if (!KOMMO_TOKEN || !KOMMO_DOMAIN || !atendimento.kommo_id) return
+  if (!KOMMO_TOKEN || !KOMMO_SUBDOMAIN || !atendimento.kommo_id) return
 
-  await fetch(`https://${KOMMO_DOMAIN}/api/v4/leads/${atendimento.kommo_id}/notes`, {
+  await fetch(`https://${KOMMO_SUBDOMAIN}/api/v4/leads/${atendimento.kommo_id}/notes`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${KOMMO_TOKEN}`,
