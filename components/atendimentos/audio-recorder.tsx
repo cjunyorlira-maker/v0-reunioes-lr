@@ -91,16 +91,23 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
     }
   }
 
+  const MIN_DURATION_SECONDS = 30
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      if (duration < MIN_DURATION_SECONDS) {
+        setError(`A gravação deve ter pelo menos ${MIN_DURATION_SECONDS} segundos. Atual: ${duration}s.`)
+        return
+      }
+
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current)
         timerRef.current = null
       }
-      
+
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
@@ -169,8 +176,23 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
             {formatDuration(duration)}
           </p>
           <p className="text-xs text-white/50 mt-1">
-            {isRecording ? "Gravando..." : isUploading ? "Enviando..." : "Pronto para gravar"}
+            {isRecording
+              ? duration < MIN_DURATION_SECONDS
+                ? `Mínimo ${MIN_DURATION_SECONDS}s — faltam ${MIN_DURATION_SECONDS - duration}s`
+                : "Gravando..."
+              : isUploading
+              ? "Enviando..."
+              : "Pronto para gravar"}
           </p>
+          {/* Barra de progresso mínima */}
+          {isRecording && duration < MIN_DURATION_SECONDS && (
+            <div className="w-full mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-red-400 to-orange-400 rounded-full transition-all duration-1000"
+                style={{ width: `${(duration / MIN_DURATION_SECONDS) * 100}%` }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Visualizer (simple pulse animation when recording) */}
@@ -215,10 +237,13 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
             <Button
               onClick={stopRecording}
               variant="destructive"
-              className="bg-red-600 hover:bg-red-700"
+              disabled={duration < MIN_DURATION_SECONDS}
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Square className="w-4 h-4 mr-2" />
-              Parar Gravacao
+              {duration < MIN_DURATION_SECONDS
+                ? `Aguarde ${MIN_DURATION_SECONDS - duration}s...`
+                : "Parar Gravacao"}
             </Button>
           )}
 
