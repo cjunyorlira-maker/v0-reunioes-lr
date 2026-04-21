@@ -302,7 +302,8 @@ export default function QuadroReunioes() {
       
       // Cria automaticamente um registro em atendimentos quando o lead vai para "Veio"
       try {
-        await fetch("/api/atendimentos", {
+        console.log("[v0] Criando atendimento para lead:", { lead_id: lead.id, nome: lead.nome, equipe: lead.equipe })
+        const response = await fetch("/api/atendimentos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -313,8 +314,13 @@ export default function QuadroReunioes() {
             equipe: lead.equipe,
           })
         })
+        const data = await response.json()
+        console.log("[v0] Resposta da API atendimentos:", response.status, data)
+        if (!response.ok) {
+          console.error("[v0] Erro na resposta:", data)
+        }
       } catch (atendimentoError) {
-        console.error("Erro ao criar atendimento:", atendimentoError)
+        console.error("[v0] Erro ao criar atendimento:", atendimentoError)
       }
       
       // Move o lead no Kommo
