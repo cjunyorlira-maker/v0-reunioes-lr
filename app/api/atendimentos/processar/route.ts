@@ -162,7 +162,7 @@ export async function POST(request: Request) {
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
     const transcricao = await withRetry(
-      () => transcreverAudio(audioUrl),
+      () => transcreverAudio(atendimentoId),
       3,
       2000,
       "Deepgram transcricao"
@@ -272,46 +272,24 @@ export async function POST(request: Request) {
 }
 
 // ─── Deepgram ────────────────────────────────────────────────────────────────
-async function transcreverAudio(audioUrl: string): Promise<string | null> {
+async function transcreverAudio(atendimentoId: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Buscar o audio do Blob usando get() com access: "private"
-  console.log("[v0] Buscando audio do Blob (private):", audioUrl)
-  let audioBuffer: ArrayBuffer
-  try {
-    const { stream, blob } = await get(audioUrl, { access: "private" })
-    // Converter stream para ArrayBuffer
-    const chunks: Uint8Array[] = []
-    const reader = stream.getReader()
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(value)
-    }
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-    const result = new Uint8Array(totalLength)
-    let offset = 0
-    for (const chunk of chunks) {
-      result.set(chunk, offset)
-      offset += chunk.length
-    }
-    audioBuffer = result.buffer
-    console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength, "contentType:", blob.contentType)
-  } catch (blobError) {
-    console.error("[v0] Erro ao buscar audio do Blob:", blobError)
-    throw new Error(`Falha ao buscar audio do Blob: ${blobError}`)
-  }
+  // Acessar o audio via endpoint proxy (que tem acesso ao Blob privado)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  const audioProxyUrl = `${baseUrl}/api/atendimentos/${atendimentoId}/audio`
+  
+  console.log("[v0] Enviando audio para Deepgram via proxy:", audioProxyUrl)
 
-  // Enviar buffer diretamente para o Deepgram (nao URL)
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
     {
       method: "POST",
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "audio/webm",
+        "Content-Type": "application/json",
       },
-      body: audioBuffer,
+      body: JSON.stringify({ url: audioProxyUrl }),
     }
   )
 
