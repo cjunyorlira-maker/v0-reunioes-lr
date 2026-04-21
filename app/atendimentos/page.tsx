@@ -212,40 +212,86 @@ export default function AtendimentosPage() {
 
   const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
 
-  // Tela de Login com video de fundo
+  // Tela de Login com canvas de particulas
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-        {/* Video Background */}
-        <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-            poster="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1920&q=80"
-          >
-            <source src="https://videos.pexels.com/video-files/7579965/7579965-uhd_2560_1440_25fps.mp4" type="video/mp4" />
-            <source src="https://videos.pexels.com/video-files/6801757/6801757-hd_1920_1080_25fps.mp4" type="video/mp4" />
-          </video>
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center bg-[#07080f]">
 
-          {/* Overlay escuro para legibilidade */}
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
-        </div>
+        {/* Canvas de particulas animadas */}
+        <canvas
+          ref={(canvas) => {
+            if (!canvas || (canvas as any)._initialized) return
+            ;(canvas as any)._initialized = true
+            const ctx = canvas.getContext("2d")!
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+
+            const particles: { x: number; y: number; vx: number; vy: number; r: number; alpha: number; color: string }[] = []
+            const colors = ["#10b981", "#14b8a6", "#6366f1", "#8b5cf6", "#ffffff"]
+
+            for (let i = 0; i < 120; i++) {
+              particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                r: Math.random() * 2 + 0.5,
+                alpha: Math.random() * 0.5 + 0.1,
+                color: colors[Math.floor(Math.random() * colors.length)],
+              })
+            }
+
+            const draw = () => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height)
+              particles.forEach((p, i) => {
+                p.x += p.vx
+                p.y += p.vy
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+
+                // Particula
+                ctx.beginPath()
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                ctx.fillStyle = p.color
+                ctx.globalAlpha = p.alpha
+                ctx.fill()
+
+                // Linhas entre particulas proximas
+                for (let j = i + 1; j < particles.length; j++) {
+                  const dx = particles[j].x - p.x
+                  const dy = particles[j].y - p.y
+                  const dist = Math.sqrt(dx * dx + dy * dy)
+                  if (dist < 120) {
+                    ctx.beginPath()
+                    ctx.moveTo(p.x, p.y)
+                    ctx.lineTo(particles[j].x, particles[j].y)
+                    ctx.strokeStyle = p.color
+                    ctx.globalAlpha = (1 - dist / 120) * 0.12
+                    ctx.lineWidth = 0.5
+                    ctx.stroke()
+                  }
+                }
+                ctx.globalAlpha = 1
+              })
+              requestAnimationFrame(draw)
+            }
+            draw()
+          }}
+          className="absolute inset-0 w-full h-full"
+        />
+
+        {/* Overlay suave */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07080f]/40 via-transparent to-[#07080f]/70" />
 
         {/* Login Card */}
         <div className="relative z-10 w-full max-w-md mx-4">
           <div
-            className="relative backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl"
-            style={{
-              background: "rgba(15, 15, 20, 0.85)",
-            }}
+            className="relative backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl"
+            style={{ background: "rgba(10, 11, 18, 0.88)" }}
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="relative mx-auto w-16 h-16 mb-5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <div className="mx-auto w-16 h-16 mb-5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
                 <Zap className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-white mb-1">
