@@ -60,16 +60,57 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   }
 
   const vendedorEquipe: Record<string, string> = {
-    "Nicolas Moraes": "Legado",
-    "Bianca Isabela": "TDM",
-    "Ana Beatriz": "TDM",
-    "Alex Negreiros": "Lobos",
-    "Amanda Souza": "TDM",
-    "Isabelly Ribeiro": "Lobos",
-    "Ana Gabrielly": "Lobos",
-    "Alexia Cunha": "Legado",
+    // Elite
+    "Yuri Ryan Pereira": "Elite",
+    "Yuri Pereira": "Elite",
+    // Guerreiros
+    "Gisely Leal": "Guerreiros",
+    "Rafaella Antunes": "Guerreiros",
+    "Rafaella": "Guerreiros",
+    "Lidiane Fonseca": "Guerreiros",
+    "Lidiane": "Guerreiros",
+    // Gladiadores
+    "Alexia Cunha": "Gladiadores",
+    "Alexia": "Gladiadores",
+    "Nathan Caue": "Gladiadores",
+    "Nathan Cauê": "Gladiadores",
+    // Samurais
+    "Leonardo Freitas": "Samurais",
     "João Victor": "Samurais",
+    "Joao Victor": "Samurais",
+    // Legado
+    "Janaina Dantas": "Legado",
+    "Janaína Dantas": "Legado",
+    "Brayan": "Legado",
+    "Brayan Bertolai": "Legado",
+    "Nicolas Moraes": "Legado",
+    "Gabrielly Pereira": "Legado",
+    "Gabrielly": "Legado",
+    // Lobos
+    "Alex Negreiros": "Lobos",
+    "Lucas Dionisio": "Lobos",
+    "Lucas Dionísio": "Lobos",
+    "Ana Gabrielly": "Lobos",
+    "Isabelly Ribeiro": "Lobos",
+    "Isabelly": "Lobos",
+    // TDM (Turma dos Milhões)
+    "Kleinver Seabra": "TDM",
     "Emily Machado": "TDM",
+    "Emily": "TDM",
+    "Amanda Souza": "TDM",
+    "Amanda": "TDM",
+    "Bianca Isabela": "TDM",
+    "Bianca": "TDM",
+    "João Lucas": "TDM",
+    "Joao Lucas": "TDM",
+    "Ana Beatriz": "TDM",
+    "Ana": "TDM",
+    "Willy Santana": "TDM",
+    "Willy": "TDM",
+    // Admin (não conta para ranking)
+    "Livia Rafaela": "Admin",
+    "Integração Dashboard": "Admin",
+    "Grupo Lr Multimarcas": "Admin",
   }
 
   const top1EquipeMes = useMemo((): Top1Venda | null => {

@@ -19,6 +19,7 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   
   // Yuri Pereira
   "Yuri Pereira":      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Yuri-Pereira-DjE5KadXSFgcLiTFQ7ascxSpCiw39Z.jpeg",
+  "Yuri Ryan Pereira": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Yuri-Pereira-DjE5KadXSFgcLiTFQ7ascxSpCiw39Z.jpeg",
   
   // Lucas Dionisio
   "Lucas Dionisio":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lucas-Dionisio-Kluj5V4vJBSVou4FWPddzY37jKkHqS.jpeg",
@@ -98,6 +99,72 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   // Isabelly Ribeiro
   "Isabelly Ribeiro":  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Isabelly-fXqFzPrCMB7SX4oVX5vY0p9GEsLTNX.jpg",
   "Isabelly":          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Isabelly-fXqFzPrCMB7SX4oVX5vY0p9GEsLTNX.jpg",
+}
+
+// Mapa de equipes dos vendedores
+export const VENDEDOR_EQUIPE: Record<string, string> = {
+  // Elite
+  "Yuri Ryan Pereira": "Elite",
+  "Yuri Pereira": "Elite",
+  // Guerreiros
+  "Gisely Leal": "Guerreiros",
+  "Rafaella Antunes": "Guerreiros",
+  "Rafaella": "Guerreiros",
+  "Lidiane Fonseca": "Guerreiros",
+  "Lidiane": "Guerreiros",
+  // Gladiadores
+  "Alexia Cunha": "Gladiadores",
+  "Alexia": "Gladiadores",
+  "Aléxia": "Gladiadores",
+  "Aléxia Cunha": "Gladiadores",
+  "Nathan Caue": "Gladiadores",
+  "Nathan Cauê": "Gladiadores",
+  // Samurais
+  "Leonardo Freitas": "Samurais",
+  "João Victor": "Samurais",
+  "Joao Victor": "Samurais",
+  // Legado
+  "Janaina Dantas": "Legado",
+  "Janaína Dantas": "Legado",
+  "Janaina": "Legado",
+  "Brayan": "Legado",
+  "Brayan Bertolai": "Legado",
+  "Nicolas Moraes": "Legado",
+  "Gabrielly Pereira": "Legado",
+  "Gabrielly": "Legado",
+  // Lobos
+  "Alex Negreiros": "Lobos",
+  "Lucas Dionisio": "Lobos",
+  "Lucas Dionísio": "Lobos",
+  "Ana Gabrielly": "Lobos",
+  "Isabelly Ribeiro": "Lobos",
+  "Isabelly": "Lobos",
+  // TDM (Turma dos Milhões)
+  "Kleinver Seabra": "TDM",
+  "Emily Machado": "TDM",
+  "Emily": "TDM",
+  "Amanda Souza": "TDM",
+  "Amanda": "TDM",
+  "Bianca Isabela": "TDM",
+  "Bianca Simoes": "TDM",
+  "Bianca Simões": "TDM",
+  "Bianca": "TDM",
+  "João Lucas": "TDM",
+  "Joao Lucas": "TDM",
+  "Ana Beatriz": "TDM",
+  "Willy Santana": "TDM",
+  "Willy": "TDM",
+  // Admin (não conta para ranking de equipes)
+  "Livia Rafaela": "Admin",
+  "Integração Dashboard": "Admin",
+  "Grupo Lr Multimarcas": "Admin",
+}
+
+// Função para obter equipe do vendedor
+export function getVendedorEquipe(nome: string): string {
+  if (!nome) return "Outro"
+  const trimmed = nome.trim()
+  return VENDEDOR_EQUIPE[trimmed] || VENDEDOR_EQUIPE[normalizeVendedorNome(trimmed)] || "Outro"
 }
 
 // Mapa de genero dos vendedores (M = masculino, F = feminino)
