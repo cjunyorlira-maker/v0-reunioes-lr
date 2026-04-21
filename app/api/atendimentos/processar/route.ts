@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { del } from "@vercel/blob"
+import { del, get } from "@vercel/blob"
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
@@ -261,14 +261,17 @@ export async function POST(request: Request) {
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Buscar o audio do Blob (funciona com private store)
+  // Buscar o audio do Blob usando get() (funciona com private store)
   console.log("[v0] Buscando audio do Blob:", audioUrl)
-  const audioResponse = await fetch(audioUrl)
-  if (!audioResponse.ok) {
-    throw new Error(`Falha ao buscar audio do Blob: ${audioResponse.status}`)
+  let audioBuffer: ArrayBuffer
+  try {
+    const blob = await get(audioUrl)
+    audioBuffer = await blob.arrayBuffer()
+    console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength)
+  } catch (blobError) {
+    console.error("[v0] Erro ao buscar audio do Blob:", blobError)
+    throw new Error(`Falha ao buscar audio do Blob: ${blobError}`)
   }
-  const audioBuffer = await audioResponse.arrayBuffer()
-  console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength)
 
   // Enviar buffer diretamente para o Deepgram (nao URL)
   const response = await fetch(
