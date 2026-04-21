@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     console.log("[v0] Enviando para Blob com filename:", filename)
     
     const blob = await put(filename, audio, {
+      access: "private",
       contentType: audio.type || "audio/webm",
     })
     
