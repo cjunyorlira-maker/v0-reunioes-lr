@@ -10,15 +10,22 @@ export async function POST(request: Request) {
     const duracao = formData.get("duracao") as string
 
     if (!audio || !atendimentoId) {
+      console.error("[v0] Dados incompletos - audio:", !!audio, "atendimentoId:", atendimentoId)
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
+    console.log("[v0] Upload iniciando - atendimentoId:", atendimentoId, "audioSize:", audio.size, "audioType:", audio.type)
+
     // 1. Upload audio to Vercel Blob
     const filename = `atendimentos/${atendimentoId}-${Date.now()}.webm`
+    console.log("[v0] Enviando para Blob com filename:", filename)
+    
     const blob = await put(filename, audio, {
       access: "public",
       contentType: audio.type || "audio/webm",
     })
+    
+    console.log("[v0] Blob upload success - url:", blob.url)
 
     const supabase = await createClient()
 
@@ -46,8 +53,13 @@ export async function POST(request: Request) {
       audioUrl: blob.url,
       message: "Audio enviado. Processamento iniciado." 
     })
-  } catch (error) {
-    console.error("Erro no upload:", error)
-    return NextResponse.json({ error: "Erro ao fazer upload" }, { status: 500 })
+  } catch (error: any) {
+    console.error("[v0] Erro no upload:", error)
+    console.error("[v0] Erro message:", error?.message)
+    console.error("[v0] Erro stack:", error?.stack)
+    return NextResponse.json({ 
+      error: "Erro ao fazer upload", 
+      details: error?.message || "Unknown error"
+    }, { status: 500 })
   }
 }
