@@ -175,7 +175,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   ]
 
   const fotoObjectPosition: Record<string, string> = {
-    "Ana Beatriz": "object-top -top-1",
+    "Ana Beatriz": "object-top -top-3",
   }
 
   const TopCard = ({ person, label, color, glow }: { person: Top1Person; label: string; color: string; glow: string }) => {
