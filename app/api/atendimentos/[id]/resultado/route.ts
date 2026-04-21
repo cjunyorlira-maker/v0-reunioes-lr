@@ -75,7 +75,7 @@ ${atendimento.feedback_coaching || "Não disponível"}
 
   if (!KOMMO_TOKEN || !KOMMO_SUBDOMAIN || !atendimento.kommo_id) return
 
-  await fetch(`https://${KOMMO_SUBDOMAIN}/api/v4/leads/${atendimento.kommo_id}/notes`, {
+  await fetch(`https://${KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads/${atendimento.kommo_id}/notes`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${KOMMO_TOKEN}`,

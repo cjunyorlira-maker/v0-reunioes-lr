@@ -31,16 +31,16 @@ function extractKommoData(data: any): { leadId: string | null; statusId: string 
 
 // Busca dados completos do lead na API do Kommo
 async function fetchLeadFromKommo(leadId: string) {
-  const KOMMO_DOMAIN = process.env.KOMMO_DOMAIN || "crm2lrmultimarcascom"
-  const KOMMO_TOKEN = process.env.KOMMO_API_TOKEN
+  const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
+  const KOMMO_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 
-  if (!KOMMO_TOKEN) {
-    console.log("[v0] KOMMO_API_TOKEN não configurado")
+  if (!KOMMO_TOKEN || !KOMMO_SUBDOMAIN) {
+    console.log("[v0] KOMMO_ACCESS_TOKEN ou KOMMO_SUBDOMAIN não configurado")
     return null
   }
 
   try {
-    const url = `https://${KOMMO_DOMAIN}.kommo.com/api/v4/leads/${leadId}?with=contacts`
+    const url = `https://${KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads/${leadId}?with=contacts`
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${KOMMO_TOKEN}`,
