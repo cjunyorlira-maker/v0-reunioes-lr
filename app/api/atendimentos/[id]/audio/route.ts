@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { get } from "@vercel/blob"
 
 // Endpoint proxy para servir audio de Blob privado
 export async function GET(
@@ -21,19 +22,18 @@ export async function GET(
       return NextResponse.json({ error: "Audio nao encontrado" }, { status: 404 })
     }
 
-    // Buscar audio do Blob (funciona com private store pois usa o token do servidor)
-    const audioResponse = await fetch(atendimento.audio_url)
-    if (!audioResponse.ok) {
-      return NextResponse.json({ error: "Falha ao buscar audio" }, { status: 500 })
-    }
+    console.log("[v0] Proxy: buscando audio do Blob:", atendimento.audio_url.substring(0, 50))
 
-    const audioBuffer = await audioResponse.arrayBuffer()
+    // Buscar audio do Blob usando get() (funciona com private store)
+    const { stream, blob } = await get(atendimento.audio_url, { access: "private" })
 
-    // Retornar o audio com headers corretos
-    return new NextResponse(audioBuffer, {
+    console.log("[v0] Proxy: audio encontrado, tamanho:", blob.size)
+
+    // Retornar o stream diretamente
+    return new NextResponse(stream as any, {
       headers: {
-        "Content-Type": "audio/webm",
-        "Content-Length": audioBuffer.byteLength.toString(),
+        "Content-Type": blob.contentType || "audio/webm",
+        "Content-Length": blob.size.toString(),
         "Cache-Control": "private, max-age=3600",
       },
     })
