@@ -223,133 +223,50 @@ export default function AtendimentosPage() {
             loop
             muted
             playsInline
-            className="w-full h-full object-cover scale-105"
+            className="w-full h-full object-cover"
             poster="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1920&q=80"
           >
-            {/* Video principal: Grafico financeiro com tickers de acoes em tempo real */}
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-the-stock-market-trend-on-screen-9607-large.mp4" type="video/mp4" />
-            {/* Fallback 1: Tela de dados de mercado em tempo real */}
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-stock-subscription-data-in-a-real-time-screen-47796-large.mp4" type="video/mp4" />
-            {/* Fallback 2: Reflexo de numeros digitais em oculos */}
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-reflections-of-digital-numbers-on-glasses-47792-large.mp4" type="video/mp4" />
+            <source src="https://videos.pexels.com/video-files/7579965/7579965-uhd_2560_1440_25fps.mp4" type="video/mp4" />
+            <source src="https://videos.pexels.com/video-files/6801757/6801757-hd_1920_1080_25fps.mp4" type="video/mp4" />
           </video>
 
-          {/* Overlay multicamadas para profundidade */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-violet-950/60 to-black/90" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
-
-          {/* Grade sutil */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`,
-              backgroundSize: "60px 60px",
-            }}
-          />
-
-          {/* Glow orbs animados */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "4s" }} />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: "6s", animationDelay: "2s" }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
-
-          {/* Particulas flutuantes */}
-          <div className="absolute inset-0 overflow-hidden">
-            {[...Array(25)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: `${1 + (i % 3)}px`,
-                  height: `${1 + (i % 3)}px`,
-                  left: `${(i * 37 + 5) % 100}%`,
-                  top: `${(i * 53 + 10) % 100}%`,
-                  opacity: 0.1 + (i % 5) * 0.06,
-                  animation: `float ${4 + (i % 6)}s ease-in-out infinite`,
-                  animationDelay: `${(i * 0.4) % 5}s`,
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Linhas diagonais sutis */}
-          <div className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `repeating-linear-gradient(45deg, white 0px, white 1px, transparent 1px, transparent 40px)`,
-            }}
-          />
+          {/* Overlay escuro para legibilidade */}
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
         </div>
-
-        <style jsx>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.15; }
-            33% { transform: translateY(-20px) translateX(10px); opacity: 0.3; }
-            66% { transform: translateY(10px) translateX(-8px); opacity: 0.1; }
-          }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
 
         {/* Login Card */}
         <div className="relative z-10 w-full max-w-md mx-4">
-          {/* Glow atrás do card */}
-          <div className="absolute -inset-4 bg-violet-600/20 rounded-[2.5rem] blur-2xl" />
-          <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 via-transparent to-purple-600/20 rounded-3xl blur-lg" />
-
           <div
-            className="relative backdrop-blur-3xl border rounded-3xl p-8 shadow-2xl overflow-hidden"
+            className="relative backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl"
             style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, rgba(139,92,246,0.08) 100%)",
-              borderColor: "rgba(255,255,255,0.12)",
-              boxShadow: "0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
+              background: "rgba(15, 15, 20, 0.85)",
             }}
           >
-            {/* Shimmer no topo do card */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                {/* Anel externo giratório */}
-                <div
-                  className="absolute -inset-1 rounded-2xl opacity-60"
-                  style={{
-                    background: "linear-gradient(135deg, #8b5cf6, #a855f7, #7c3aed, #8b5cf6)",
-                    animation: "spin 8s linear infinite",
-                  }}
-                />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-lg shadow-violet-500/40" />
-                <div className="absolute inset-[3px] rounded-xl bg-black/60 backdrop-blur flex items-center justify-center">
-                  <Zap className="w-9 h-9 text-white drop-shadow-lg" />
-                </div>
+              <div className="relative mx-auto w-16 h-16 mb-5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <Zap className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-3xl font-black text-white mb-2 tracking-tight text-balance">
+              <h1 className="text-2xl font-bold text-white mb-1">
                 Central de Atendimentos
               </h1>
-              <p className="text-white/40 text-sm font-medium">
+              <p className="text-white/50 text-sm">
                 Acesse com as credenciais da sua equipe
               </p>
-              {/* Linha decorativa */}
-              <div className="flex items-center gap-3 mt-4">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/15" />
-                <div className="w-1.5 h-1.5 rounded-full bg-violet-400/60" />
-                <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/15" />
-              </div>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
                   Equipe
                 </label>
                 <Select value={equipe} onValueChange={setEquipe}>
-                  <SelectTrigger className="h-14 bg-white/5 border-white/10 text-white rounded-xl text-base hover:bg-white/10 transition-all duration-300 focus:ring-2 focus:ring-violet-500/50">
+                  <SelectTrigger className="h-12 bg-white/10 border-white/20 text-white rounded-lg hover:bg-white/15 transition-colors focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50">
                     <SelectValue placeholder="Selecione sua equipe" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a24] border-white/10 rounded-xl">
+                  <SelectContent className="bg-[#1a1a24] border-white/20 rounded-lg">
                     {EQUIPES.map((eq) => (
                       <SelectItem 
                         key={eq} 
@@ -367,7 +284,7 @@ export default function AtendimentosPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
                   Senha
                 </label>
                 <div className="relative">
@@ -377,9 +294,9 @@ export default function AtendimentosPage() {
                     onChange={(e) => setSenha(e.target.value.replace(/\D/g, "").slice(0, 4))}
                     placeholder="****"
                     maxLength={4}
-                    className="h-14 bg-white/5 border-white/10 text-white text-center text-2xl tracking-[0.5em] placeholder:text-white/20 placeholder:tracking-[0.5em] rounded-xl hover:bg-white/10 transition-all duration-300 focus:ring-2 focus:ring-violet-500/50"
+                    className="h-12 bg-white/10 border-white/20 text-white text-center text-xl tracking-[0.5em] placeholder:text-white/30 placeholder:tracking-[0.5em] rounded-lg hover:bg-white/15 transition-colors focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
                   />
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 </div>
               </div>
 
@@ -393,11 +310,11 @@ export default function AtendimentosPage() {
               <Button
                 type="submit"
                 disabled={!equipe || senha.length !== 4 || loading}
-                className="w-full h-14 text-base font-bold rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-50 disabled:hover:scale-100"
+                className="w-full h-12 text-base font-semibold rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/30 disabled:opacity-50"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Entrando...
                   </div>
                 ) : (
@@ -410,11 +327,11 @@ export default function AtendimentosPage() {
             </form>
 
             {/* Voltar */}
-            <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="mt-5 pt-5 border-t border-white/10">
               <Link href="/">
                 <Button 
                   variant="ghost" 
-                  className="w-full h-12 text-white/50 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
+                  className="w-full h-10 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar ao Quadro de Leads
