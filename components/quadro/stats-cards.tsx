@@ -174,10 +174,15 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     },
   ]
 
+  const fotoObjectPosition: Record<string, string> = {
+    "Ana Beatriz": "object-top -top-1",
+  }
+
   const TopCard = ({ person, label, color, glow }: { person: Top1Person; label: string; color: string; glow: string }) => {
     const isGold = color === "text-[#d4af37]"
     const primaryColor = isGold ? "#d4af37" : "#10b981"
     const borderColor = isGold ? "rgba(212,175,55,0.4)" : "rgba(16,185,129,0.4)"
+    const objectPos = fotoObjectPosition[person.nome] || "object-top"
     
     return (
       <div 
@@ -229,7 +234,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             <img
               src={person.foto}
               alt={person.nome}
-              className="relative w-14 h-14 rounded-full object-cover object-top border-2 transition-all duration-500 group-hover:scale-110"
+              className={`relative w-14 h-14 rounded-full ${objectPos} border-2 transition-all duration-500 group-hover:scale-110`}
               style={{
                 borderColor: primaryColor,
                 boxShadow: `0 0 25px ${glow}, 0 4px 15px rgba(0,0,0,0.3)`,
