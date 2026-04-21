@@ -142,6 +142,12 @@ export default function AtendimentosPage() {
     setAtendimentos([])
   }
 
+  // Filtra atendimentos por equipe quando Admin seleciona uma equipe especifica
+  const atendimentosFiltrados = useMemo(() => {
+    if (equipe !== "Admin" || filtroEquipe === "all") return atendimentos
+    return atendimentos.filter(a => a.equipe === filtroEquipe)
+  }, [atendimentos, equipe, filtroEquipe])
+
   // Agrupa motivos de nao fechamento por categoria (usa lista filtrada para Admin)
   const motivosPorCategoria = useMemo(() => {
     const naoFechados = atendimentosFiltrados.filter(a => a.status === "concluido" && !a.fechou && a.motivo_nao_fechamento)
@@ -170,12 +176,6 @@ export default function AtendimentosPage() {
 
     return categorized
   }, [atendimentosFiltrados])
-
-  // Filtra atendimentos por equipe quando Admin seleciona uma equipe especifica
-  const atendimentosFiltrados = useMemo(() => {
-    if (equipe !== "Admin" || filtroEquipe === "all") return atendimentos
-    return atendimentos.filter(a => a.equipe === filtroEquipe)
-  }, [atendimentos, equipe, filtroEquipe])
 
   // Stats (usando lista filtrada)
   const aguardando = atendimentosFiltrados.filter((a) => a.status === "aguardando")
