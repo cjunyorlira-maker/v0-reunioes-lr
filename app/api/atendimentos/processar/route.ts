@@ -1,53 +1,108 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import { del } from "@vercel/blob"
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
 
-// Prompt do Claude para analise
-const PROMPT_ANALISE = `Você é um especialista em análise de atendimentos comerciais onde financiamento e consórcio imobiliário são oferecidos. Analise a transcrição da reunião abaixo com os seguintes critérios:
+// Prompt completo do Claude para analise de atendimentos (criado no Workbench)
+const PROMPT_ANALISE = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário.
 
-## Critérios de Avaliação (0 a 10):
+CONTEXTO DO NEGÓCIO:
+O cliente foi captado pelo pré-vendas com a proposta de conhecer um "sistema próprio de financiamento" diferenciado. Ele vem à agência acreditando que vai ver algo que nunca viu antes. O atendimento presencial é feito pelo supervisor (não pelo pré-vendas). A estratégia é: apresentar o financiamento mostrando as limitações do mercado, e conduzir naturalmente para o consórcio, que é o produto principal.
 
-### 1. Abordagem Inicial (score_abordagem)
-- Rapport e conexão com cliente
-- Coleta de informações (perfil, necessidade, urgência)
-- Escuta ativa
+ANALISE OS SEGUINTES PONTOS:
 
-### 2. Apresentação do Financiamento (score_financiamento)
-- Clareza na explicação
-- Argumentação de benefícios
-- Transição para consórcio quando financiamento não é viável
+1. ABORDAGEM INICIAL
+- O atendimento foi humanizado ou frio/robótico?
+- Houve rapport e conexão com o cliente?
+- O supervisor coletou informações importantes do cliente (perfil, objetivo, situação financeira, tem entrada ou não)?
+- Identificou resistências iniciais do cliente?
+- O cliente demonstrou abertura ou já chegou resistente?
 
-### 3. Apresentação do Consórcio (score_consorcio)
-- Explicação do funcionamento
-- Uso de provas sociais e casos de sucesso
-- Resposta a objeções
+2. APRESENTAÇÃO DO FINANCIAMENTO
+- Foi apresentado de forma dinâmica ou só leu a tela sem argumentação?
+- Houve muitas pausas e silêncios sem propósito?
+- Apresentou os diferenciais e argumentou sobre os juros do mercado?
+- Falou do sistema próprio como diferencial?
+- Usou exemplos reais para ilustrar?
+- Conduziu naturalmente para o consórcio ao mostrar as limitações do financiamento? (sem falar diretamente que o cliente não tem perfil)
+- Argumentou sobre o porquê o financiamento não é a melhor opção naquele momento?
 
-### 4. Técnicas de Fechamento (score_fechamento)
-- Criação de urgência
-- Tentativas de fechamento
-- Superação de objeções finais
+3. APRESENTAÇÃO DO CONSÓRCIO
+- Explicou bem o funcionamento de sorteio e lance?
+- Garantiu data de contemplação? (ATENÇÃO: isso NÃO pode ser feito — marcar como CRÍTICO se acontecer)
+- Apresentou referências e cases de clientes realizados?
+- Mostrou o site da empresa e Reclame Aqui como prova social?
+- Explicou bem os diferenciais do consórcio vs financiamento?
+- Quais foram as objeções do cliente e como foram respondidas?
+- O cliente demonstrou resistência? Em qual momento?
 
-## Retorne APENAS um JSON válido com esta estrutura:
+4. SITUAÇÃO FINANCEIRA DO CLIENTE
+- O cliente tinha entrada disponível?
+- Qual foi o impeditivo identificado para fechar?
+- O perfil financeiro foi bem mapeado?
+
+5. TÉCNICAS DE FECHAMENTO
+- O vendedor tentou fechar? Quantas vezes?
+- Quais técnicas de fechamento foram usadas?
+- Como respondeu às objeções de fechamento?
+- O cliente ficou de pensar? O vendedor tentou contornar?
+
+6. AVALIAÇÃO GERAL DO TEMPO
+- Quanto tempo em cada etapa (financiamento / consórcio)?
+- Houve momento de desengajamento do cliente?
+- O ritmo foi adequado ou apressado/lento demais?
+
+CLASSIFICAÇÕES ESPECIAIS — marcar como CRÍTICO se:
+⛔ Garantiu data de contemplação no consórcio
+⛔ Foi direto demais dizendo que o cliente não tem perfil para financiamento
+⛔ Não tentou nenhuma técnica de fechamento
+⛔ Atendimento completamente robótico sem conexão humana
+
+RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
 {
-  "score_geral": 7.5,
-  "score_abordagem": 8.0,
-  "score_financiamento": 7.0,
-  "score_consorcio": 7.5,
-  "score_fechamento": 6.5,
-  "resumo": "Resumo executivo do atendimento em 2-3 frases",
-  "pontos_positivos": ["ponto 1", "ponto 2", "ponto 3"],
-  "pontos_criticos": ["ponto a melhorar 1", "ponto a melhorar 2"],
+  "score_geral": número 0-10,
+  "score_abordagem": número 0-10,
+  "score_financiamento": número 0-10,
+  "score_consorcio": número 0-10,
+  "score_fechamento": número 0-10,
+  "resumo": "texto de 3-4 linhas resumindo o atendimento",
+  "pontos_positivos": ["array de pontos que foram bem"],
+  "pontos_criticos": ["array de pontos CRÍTICOS — erros graves"],
   "objecoes_cliente": [
-    {"objecao": "texto da objecao", "resposta_vendedor": "como o vendedor respondeu", "avaliacao": "boa/ruim/ausente"}
+    {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
   ],
-  "motivo_nao_fechamento": "Principal motivo identificado ou null se fechou",
-  "feedback_coaching": "Feedback direto e construtivo para o vendedor melhorar"
+  "situacao_financeira": {
+    "tinha_entrada": true/false/null,
+    "impeditivo_principal": "string",
+    "perfil_mapeado": true/false
+  },
+  "garantiu_contemplacao": true/false,
+  "usou_prova_social": {
+    "reclame_aqui": true/false,
+    "site_empresa": true/false,
+    "referencias_clientes": true/false
+  },
+  "tecnicas_fechamento": {
+    "tentou_fechar": true/false,
+    "quantidade_tentativas": número,
+    "tecnicas_usadas": ["array"],
+    "resultado": "fechou/nao_fechou/em_aberto"
+  },
+  "motivo_nao_fechamento": "string principal ou null se fechou",
+  "proximo_passo_sugerido": "string com recomendação clara",
+  "feedback_coaching": "texto de coaching para o vendedor — o que melhorar no próximo atendimento"
 }
+
+IMPORTANTE: 
+- Speaker 0 = Supervisor/Vendedor
+- Speaker 1 = Cliente
+- Responda APENAS com o JSON válido, sem texto adicional
+- Se algo não ficou claro na transcrição, indique null
 
 ## Transcrição da Reunião:
 `
@@ -170,6 +225,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // 6. Deletar audio do Vercel Blob para liberar storage
+    try {
+      await del(audioUrl)
+      console.log("[v0] Audio deletado do Blob com sucesso:", audioUrl)
+    } catch (delError) {
+      console.error("[v0] Erro ao deletar audio do Blob:", delError)
+      // Nao falhar o processamento por erro de delete
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Erro geral no processamento:", error)
@@ -237,8 +301,12 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
   const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
+    model: "claude-sonnet-4-6",
     max_tokens: 4000,
+    thinking: {
+      type: "enabled",
+      budget_tokens: 16000,
+    },
     messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
   })
 
