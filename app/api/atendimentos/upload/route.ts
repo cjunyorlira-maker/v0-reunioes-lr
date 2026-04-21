@@ -42,8 +42,12 @@ export async function POST(request: Request) {
 
     // 3. Trigger async processing (Deepgram + Claude)
     // This runs in background - don't await
-    const processorUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"}/api/atendimentos/processar`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+    const processorUrl = `${baseUrl}/api/atendimentos/processar`
     console.log("[v0] Iniciando processamento async em:", processorUrl)
+    console.log("[v0] NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
+    console.log("[v0] VERCEL_URL:", process.env.VERCEL_URL)
     
     fetch(processorUrl, {
       method: "POST",
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
       console.log("[v0] Resposta do processar:", res.status)
       return res.json()
     }).then(data => {
-      console.log("[v0] Processamento iniciado com sucesso")
+      console.log("[v0] Processamento iniciado com sucesso", data)
     }).catch(err => {
       console.error("[v0] Erro ao iniciar processamento:", err)
     })
