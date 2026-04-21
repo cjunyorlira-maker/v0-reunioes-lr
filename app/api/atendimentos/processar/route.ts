@@ -261,15 +261,25 @@ export async function POST(request: Request) {
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
+  // Buscar o audio do Blob (funciona com private store)
+  console.log("[v0] Buscando audio do Blob:", audioUrl)
+  const audioResponse = await fetch(audioUrl)
+  if (!audioResponse.ok) {
+    throw new Error(`Falha ao buscar audio do Blob: ${audioResponse.status}`)
+  }
+  const audioBuffer = await audioResponse.arrayBuffer()
+  console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength)
+
+  // Enviar buffer diretamente para o Deepgram (nao URL)
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
     {
       method: "POST",
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": "audio/webm",
       },
-      body: JSON.stringify({ url: audioUrl }),
+      body: audioBuffer,
     }
   )
 
