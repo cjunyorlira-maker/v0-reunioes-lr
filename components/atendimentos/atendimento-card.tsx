@@ -17,7 +17,12 @@ import {
   User,
   Clock,
   FileText,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  Target,
+  DollarSign,
+  MessageSquare,
+  ArrowRight
 } from "lucide-react"
 import { AudioRecorder } from "./audio-recorder"
 import { cn } from "@/lib/utils"
@@ -42,6 +47,30 @@ interface Atendimento {
   pontos_positivos: string[] | null
   pontos_criticos: string[] | null
   feedback_coaching: string | null
+  // Novos campos do prompt expandido
+  situacao_financeira: {
+    tinha_entrada: boolean | null
+    impeditivo_principal: string | null
+    perfil_mapeado: boolean | null
+  } | null
+  garantiu_contemplacao: boolean | null
+  usou_prova_social: {
+    reclame_aqui: boolean | null
+    site_empresa: boolean | null
+    referencias_clientes: boolean | null
+  } | null
+  tecnicas_fechamento: {
+    tentou_fechar: boolean | null
+    quantidade_tentativas: number | null
+    tecnicas_usadas: string[] | null
+    resultado: string | null
+  } | null
+  proximo_passo_sugerido: string | null
+  objecoes_cliente: Array<{
+    objecao: string
+    resposta_vendedor: string
+    eficaz: boolean
+  }> | null
   status: string
   fechou: boolean
   is_benchmark: boolean
@@ -317,6 +346,131 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
               <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
                 <p className="text-xs text-violet-400 font-medium mb-1">Feedback para o vendedor:</p>
                 <p className="text-sm text-white/70">{atendimento.feedback_coaching}</p>
+              </div>
+            )}
+
+            {/* Proximo passo sugerido */}
+            {atendimento.proximo_passo_sugerido && (
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-xs text-blue-400 font-medium mb-1 flex items-center gap-1">
+                  <ArrowRight className="w-3 h-3" />
+                  Proximo Passo Sugerido:
+                </p>
+                <p className="text-sm text-white/70">{atendimento.proximo_passo_sugerido}</p>
+              </div>
+            )}
+
+            {/* Alerta critico - Garantiu contemplacao */}
+            {atendimento.garantiu_contemplacao && (
+              <div className="p-3 rounded-lg bg-red-600/20 border border-red-500/40">
+                <p className="text-xs text-red-400 font-bold flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  ALERTA CRITICO: Vendedor garantiu data de contemplacao!
+                </p>
+              </div>
+            )}
+
+            {/* Situacao financeira do cliente */}
+            {atendimento.situacao_financeira && (
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  Situacao Financeira do Cliente:
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="text-center p-2 rounded bg-white/5">
+                    <p className={atendimento.situacao_financeira.tinha_entrada ? "text-emerald-400" : "text-red-400"}>
+                      {atendimento.situacao_financeira.tinha_entrada === null ? "?" : atendimento.situacao_financeira.tinha_entrada ? "Sim" : "Nao"}
+                    </p>
+                    <p className="text-white/40 text-[10px]">Tinha entrada</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-white/5">
+                    <p className={atendimento.situacao_financeira.perfil_mapeado ? "text-emerald-400" : "text-amber-400"}>
+                      {atendimento.situacao_financeira.perfil_mapeado === null ? "?" : atendimento.situacao_financeira.perfil_mapeado ? "Sim" : "Nao"}
+                    </p>
+                    <p className="text-white/40 text-[10px]">Perfil mapeado</p>
+                  </div>
+                  <div className="col-span-1 text-center p-2 rounded bg-white/5">
+                    <p className="text-white/70 text-[10px] line-clamp-2">
+                      {atendimento.situacao_financeira.impeditivo_principal || "-"}
+                    </p>
+                    <p className="text-white/40 text-[10px]">Impeditivo</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tecnicas de fechamento */}
+            {atendimento.tecnicas_fechamento && (
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs text-cyan-400 font-medium mb-2 flex items-center gap-1">
+                  <Target className="w-3 h-3" />
+                  Tecnicas de Fechamento:
+                </p>
+                <div className="flex items-center gap-4 text-xs mb-2">
+                  <span className={atendimento.tecnicas_fechamento.tentou_fechar ? "text-emerald-400" : "text-red-400"}>
+                    {atendimento.tecnicas_fechamento.tentou_fechar ? "Tentou fechar" : "Nao tentou fechar"}
+                  </span>
+                  {atendimento.tecnicas_fechamento.quantidade_tentativas !== null && (
+                    <span className="text-white/50">
+                      {atendimento.tecnicas_fechamento.quantidade_tentativas} tentativa(s)
+                    </span>
+                  )}
+                </div>
+                {atendimento.tecnicas_fechamento.tecnicas_usadas && atendimento.tecnicas_fechamento.tecnicas_usadas.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {atendimento.tecnicas_fechamento.tecnicas_usadas.map((tecnica, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">
+                        {tecnica}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Prova social utilizada */}
+            {atendimento.usou_prova_social && (
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs text-purple-400 font-medium mb-2">Prova Social Utilizada:</p>
+                <div className="flex gap-3 text-xs">
+                  <span className={atendimento.usou_prova_social.reclame_aqui ? "text-emerald-400" : "text-white/30"}>
+                    {atendimento.usou_prova_social.reclame_aqui ? "✓" : "✗"} Reclame Aqui
+                  </span>
+                  <span className={atendimento.usou_prova_social.site_empresa ? "text-emerald-400" : "text-white/30"}>
+                    {atendimento.usou_prova_social.site_empresa ? "✓" : "✗"} Site
+                  </span>
+                  <span className={atendimento.usou_prova_social.referencias_clientes ? "text-emerald-400" : "text-white/30"}>
+                    {atendimento.usou_prova_social.referencias_clientes ? "✓" : "✗"} Referencias
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Objecoes do cliente */}
+            {atendimento.objecoes_cliente && atendimento.objecoes_cliente.length > 0 && (
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs text-orange-400 font-medium mb-2 flex items-center gap-1">
+                  <MessageSquare className="w-3 h-3" />
+                  Objecoes do Cliente ({atendimento.objecoes_cliente.length}):
+                </p>
+                <div className="space-y-2">
+                  {atendimento.objecoes_cliente.map((obj, i) => (
+                    <div key={i} className="text-xs p-2 rounded bg-white/5">
+                      <p className="text-white/70"><span className="text-orange-400">Cliente:</span> {obj.objecao}</p>
+                      <p className="text-white/50 mt-1"><span className="text-blue-400">Vendedor:</span> {obj.resposta_vendedor}</p>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "mt-1 text-[9px]",
+                          obj.eficaz ? "border-emerald-500/30 text-emerald-400" : "border-red-500/30 text-red-400"
+                        )}
+                      >
+                        {obj.eficaz ? "Resposta eficaz" : "Resposta ineficaz"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

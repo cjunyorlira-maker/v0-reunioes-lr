@@ -33,8 +33,8 @@ export async function POST(
       return NextResponse.json({ error: "Erro ao atualizar resultado" }, { status: 500 })
     }
 
-    // Se fechou, enviar nota para o Kommo (opcional)
-    if (fechou && data.kommo_id) {
+    // Enviar nota para o Kommo quando marcar resultado (fechou ou nao fechou)
+    if (data.kommo_id) {
       try {
         await enviarNotaKommo(data)
       } catch (err) {
