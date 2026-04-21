@@ -310,8 +310,12 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
     messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
   })
 
-  const content = response.content[0]
-  if (content.type !== "text") throw new Error("Resposta do Claude sem conteudo texto")
+  // Quando thinking está ativado, o Claude retorna 2 blocos:
+  // content[0] = bloco de pensamento (type: "thinking")
+  // content[1] = texto com o JSON (type: "text")
+  // Usar .find() para pegar o bloco correto
+  const content = response.content.find(c => c.type === "text")
+  if (!content || content.type !== "text") throw new Error("Resposta do Claude sem conteudo texto")
 
   const jsonMatch = content.text.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error("JSON nao encontrado na resposta do Claude")
