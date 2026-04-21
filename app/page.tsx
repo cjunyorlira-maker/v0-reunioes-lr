@@ -300,6 +300,23 @@ export default function QuadroReunioes() {
       // Atualiza o lead com o atendente e status veio
       await updateLead(lead.id, { status: "veio", atendente })
       
+      // Cria automaticamente um registro em atendimentos quando o lead vai para "Veio"
+      try {
+        await fetch("/api/atendimentos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            kommo_id: lead.kommo_id,
+            nome_lead: lead.nome,
+            responsavel: lead.responsavel,
+            equipe: lead.equipe,
+          })
+        })
+      } catch (atendimentoError) {
+        console.error("Erro ao criar atendimento:", atendimentoError)
+      }
+      
       // Move o lead no Kommo
       try {
         const response = await fetch("/api/kommo/move-lead", {
