@@ -19,8 +19,10 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   const [error, setError] = useState("")
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const durationRef = useRef<number>(0)  // Guardar duração em ref para upload
   const streamRef = useRef<MediaStream | null>(null)
 
   // Cleanup on unmount
@@ -74,9 +76,14 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       mediaRecorder.start(1000) // Collect data every second
       setIsRecording(true)
       
+      // Reset duração
+      durationRef.current = 0
+      setDuration(0)
+      
       // Start timer
       timerRef.current = setInterval(() => {
-        setDuration(prev => prev + 1)
+        durationRef.current += 1
+        setDuration(durationRef.current)
       }, 1000)
 
     } catch (err: any) {
@@ -123,7 +130,7 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       const formData = new FormData()
       formData.append("audio", audioBlob, `atendimento-${atendimentoId}.webm`)
       formData.append("atendimentoId", atendimentoId)
-      formData.append("duracao", duration.toString())
+      formData.append("duracao", durationRef.current.toString())
 
       const response = await fetch("/api/atendimentos/upload", {
         method: "POST",
