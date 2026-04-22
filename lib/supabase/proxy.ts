@@ -60,7 +60,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ['/auth/login', '/auth/error', '/api/webhook']
+  // Inclui rotas de API que são chamadas server-to-server (sem cookies de sessão)
+  const publicRoutes = [
+    '/auth/login', 
+    '/auth/error', 
+    '/api/webhook',
+    '/api/atendimentos/processar',  // chamada server-to-server do upload
+    '/api/atendimentos/upload',     // chamada do cliente mas processa async
+    '/api/n8n',
+    '/api/kommo',
+  ]
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   
   // Se não está logado e não é rota pública, redireciona para login
