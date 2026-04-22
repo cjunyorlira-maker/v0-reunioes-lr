@@ -346,34 +346,6 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   console.log("[v0] Transcricao simples:", transcript.substring(0, 100))
   return transcript
 }
-  )
-
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
-  }
-
-  const data = await response.json()
-
-  // Formatar com diarizacao (speakers)
-  const words = data.results?.channels?.[0]?.alternatives?.[0]?.words
-  if (words && words.length > 0 && words[0].speaker !== undefined) {
-    let formatted = ""
-    let currentSpeaker = -1
-    for (const word of words) {
-      if (word.speaker !== currentSpeaker) {
-        currentSpeaker = word.speaker
-        formatted += `\n\n[${currentSpeaker === 0 ? "Vendedor" : "Cliente"}]: `
-      }
-      formatted += word.punctuated_word + " "
-    }
-    return formatted.trim()
-  }
-
-  const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript
-  if (!transcript || transcript.trim().length === 0) throw new Error("Transcricao vazia retornada pelo Deepgram")
-  return transcript
-}
 
 // ─── Claude ───────────────────────────────────────────────────────────────────
 async function analisarComClaude(transcricao: string): Promise<any | null> {
