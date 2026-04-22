@@ -1,6 +1,7 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { put } from "@vercel/blob"
 import { NextResponse } from "next/server"
+import { after } from "next/server"
 
 export async function POST(request: Request) {
   try {
@@ -40,26 +41,27 @@ export async function POST(request: Request) {
       })
       .eq("id", atendimentoId)
 
-    // 3. Trigger async processing (Deepgram + Claude)
-    // This runs in background - don't await
+    // 3. Trigger async processing (Deepgram + Claude) usando after() para garantir execução
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
     const processorUrl = `${baseUrl}/api/atendimentos/processar`
-    console.log("[v0] Iniciando processamento async em:", processorUrl)
-    console.log("[v0] NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
-    console.log("[v0] VERCEL_URL:", process.env.VERCEL_URL)
+    console.log("[v0] Agendando processamento async em:", processorUrl)
     
-    fetch(processorUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ atendimentoId, audioUrl: blob.url }),
-    }).then(res => {
-      console.log("[v0] Resposta do processar:", res.status)
-      return res.json()
-    }).then(data => {
-      console.log("[v0] Processamento iniciado com sucesso", data)
-    }).catch(err => {
-      console.error("[v0] Erro ao iniciar processamento:", err)
+    // after() garante que o código execute mesmo após o response ser enviado
+    after(async () => {
+      console.log("[v0] Iniciando processamento via after()...")
+      try {
+        const res = await fetch(processorUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ atendimentoId, audioUrl: blob.url }),
+        })
+        console.log("[v0] Resposta do processar:", res.status)
+        const data = await res.json()
+        console.log("[v0] Processamento concluido:", data)
+      } catch (err) {
+        console.error("[v0] Erro ao processar:", err)
+      }
     })
 
     return NextResponse.json({ 
