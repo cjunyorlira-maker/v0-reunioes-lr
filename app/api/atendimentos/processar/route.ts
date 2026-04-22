@@ -231,12 +231,6 @@ export async function POST(request: Request) {
         pontos_criticos: analise?.pontos_criticos || null,
         objecoes_cliente: analise?.objecoes_cliente || null,
         feedback_coaching: analise?.feedback_coaching || null,
-        // Novos campos do prompt expandido
-        situacao_financeira: analise?.situacao_financeira || null,
-        garantiu_contemplacao: analise?.garantiu_contemplacao ?? null,
-        usou_prova_social: analise?.usou_prova_social || null,
-        tecnicas_fechamento: analise?.tecnicas_fechamento || null,
-        proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
         status: "concluido",
         fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
         updated_at: new Date().toISOString(),
