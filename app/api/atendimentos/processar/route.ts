@@ -87,7 +87,25 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   "objecoes_cliente": [
     {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
   ],
+  "situacao_financeira": {
+    "tinha_entrada": true/false/null,
+    "impeditivo_principal": "string",
+    "perfil_mapeado": true/false
+  },
+  "garantiu_contemplacao": true/false,
+  "usou_prova_social": {
+    "reclame_aqui": true/false,
+    "site_empresa": true/false,
+    "referencias_clientes": true/false
+  },
+  "tecnicas_fechamento": {
+    "tentou_fechar": true/false,
+    "quantidade_tentativas": número,
+    "tecnicas_usadas": ["array"],
+    "resultado": "fechou/nao_fechou/em_aberto"
+  },
   "motivo_nao_fechamento": "string principal ou null se fechou",
+  "proximo_passo_sugerido": "string com recomendação clara",
   "feedback_coaching": "texto de coaching para o vendedor — o que melhorar no próximo atendimento"
 }
 
@@ -213,6 +231,11 @@ export async function POST(request: Request) {
         pontos_criticos: analise?.pontos_criticos || null,
         objecoes_cliente: analise?.objecoes_cliente || null,
         feedback_coaching: analise?.feedback_coaching || null,
+        situacao_financeira: analise?.situacao_financeira || null,
+        garantiu_contemplacao: analise?.garantiu_contemplacao ?? null,
+        usou_prova_social: analise?.usou_prova_social || null,
+        tecnicas_fechamento: analise?.tecnicas_fechamento || null,
+        proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
         status: "concluido",
         fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
         updated_at: new Date().toISOString(),
