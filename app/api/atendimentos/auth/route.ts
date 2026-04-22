@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Equipe e senha são obrigatórios" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createSupabaseAdmin()
 
     const { data, error } = await supabase
       .from("equipes_senhas")

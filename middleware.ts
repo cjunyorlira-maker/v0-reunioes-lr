@@ -16,9 +16,12 @@ export const config = {
      * - /api/kommo/* (external API integrations)
      * - /api/n8n/* (webhooks from N8N)
      * - /api/webhook/* (generic webhooks)
+     * - /api/atendimentos/processar (server-to-server async processing)
+     * - /api/atendimentos/upload (audio upload)
+     * - /api/atendimentos/auth (equipe/senha auth)
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|api/n8n|api/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|api/n8n|api/webhook|api/atendimentos/processar|api/atendimentos/upload|api/atendimentos/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

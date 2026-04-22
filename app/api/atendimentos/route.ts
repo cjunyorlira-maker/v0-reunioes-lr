@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 // GET - Listar atendimentos da equipe
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Equipe é obrigatória" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createSupabaseAdmin()
 
     // Admin ou "all" vê todos, outras equipes só veem os seus
     const query = supabase
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createSupabaseAdmin()
 
     // Verificar se já existe atendimento para este lead
     const { data: existente } = await supabase

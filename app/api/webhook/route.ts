@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { NextRequest, NextResponse } from "next/server"
 import Pusher from "pusher"
 
@@ -172,7 +172,7 @@ const PIPELINE_ID = 7012299
 
 // Webhook endpoint para integração com Kommo / Make / Pluga
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = createSupabaseAdmin()
   
   try {
     console.log("[v0] Webhook recebido - Content-Type:", request.headers.get("content-type"))

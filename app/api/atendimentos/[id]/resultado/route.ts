@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 // POST - Marcar resultado do atendimento (fechou ou nao fechou)
@@ -14,7 +14,7 @@ export async function POST(
       return NextResponse.json({ error: "Campo 'fechou' é obrigatório" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createSupabaseAdmin()
 
     // Atualizar atendimento
     const { data, error } = await supabase

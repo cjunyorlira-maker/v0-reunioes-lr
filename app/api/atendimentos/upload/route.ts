@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { put } from "@vercel/blob"
 import { NextResponse } from "next/server"
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     
     console.log("[v0] Blob upload success - url:", blob.url)
 
-    const supabase = await createClient()
+    const supabase = createSupabaseAdmin()
 
     // 2. Update atendimento with audio URL and status
     await supabase
