@@ -238,6 +238,7 @@ export async function POST(request: Request) {
         tecnicas_fechamento: analise?.tecnicas_fechamento || null,
         proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
         status: "concluido",
+        fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
         updated_at: new Date().toISOString(),
       })
       .eq("id", atendimentoId)
