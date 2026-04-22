@@ -67,6 +67,7 @@ export async function updateSession(request: NextRequest) {
     '/api/webhook',
     '/api/atendimentos/processar',  // chamada server-to-server do upload
     '/api/atendimentos/upload',     // chamada do cliente mas processa async
+    '/api/atendimentos/auth',       // login por equipe/senha (sem sessão Supabase)
     '/api/n8n',
     '/api/kommo',
   ]
