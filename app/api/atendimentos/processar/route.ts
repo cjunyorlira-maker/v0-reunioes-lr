@@ -325,7 +325,8 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   }
 
   const audioBuffer = await blobResponse.arrayBuffer()
-  console.log("[v0] Audio baixado do Blob, tamanho:", audioBuffer.byteLength)
+  const audioContentType = blobResponse.headers.get("content-type") || "audio/webm"
+  console.log("[v0] Audio baixado do Blob, tamanho:", audioBuffer.byteLength, "tipo:", audioContentType)
 
   // 2. Enviar buffer diretamente para o Deepgram
   console.log("[v0] Enviando audio para Deepgram...")
@@ -335,7 +336,7 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
       method: "POST",
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "audio/webm",
+        "Content-Type": audioContentType,
       },
       body: audioBuffer,
     }
@@ -381,7 +382,7 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 20000,  // DEVE ser maior que budget_tokens (16000 thinking + 4000 resposta)
+    max_tokens: 28000,  // 16000 thinking + 12000 resposta JSON
     thinking: {
       type: "enabled",
       budget_tokens: 16000,
