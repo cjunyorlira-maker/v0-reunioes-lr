@@ -474,15 +474,16 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
               </div>
             )}
 
-            {/* Audio - usa endpoint proxy para Blob privado */}
-            {atendimento.audio_url && (
+            {/* Audio - USA URL PRIVADA DO BLOB - NAO FUNCIONA SEM TOKEN */}
+            {/* Comentado pois o Blob é privado e não pode ser acessado direto do navegador */}
+            {/* {atendimento.audio_url && (
               <div>
                 <p className="text-xs text-white/50 mb-2">
                   Audio ({atendimento.duracao_segundos ? formatDuration(atendimento.duracao_segundos) : "-"})
                 </p>
-                <audio controls className="w-full h-10" src={`/api/atendimentos/${atendimento.id}/audio`} />
+                <audio controls className="w-full h-10" src={atendimento.audio_url} />
               </div>
-            )}
+            )} */}
           </div>
         )}
       </CardContent>

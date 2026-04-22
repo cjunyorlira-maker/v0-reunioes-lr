@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { del, get } from "@vercel/blob"
+import { del } from "@vercel/blob"
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
     const transcricao = await withRetry(
-      () => transcreverAudio(atendimentoId),
+      () => transcreverAudio(audioUrl),
       3,
       2000,
       "Deepgram transcricao"
@@ -272,25 +272,69 @@ export async function POST(request: Request) {
 }
 
 // ─── Deepgram ────────────────────────────────────────────────────────────────
-async function transcreverAudio(atendimentoId: string): Promise<string | null> {
+async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Acessar o audio via endpoint proxy (que tem acesso ao Blob privado)
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-  const audioProxyUrl = `${baseUrl}/api/atendimentos/${atendimentoId}/audio`
-  
-  console.log("[v0] Enviando audio para Deepgram via proxy:", audioProxyUrl)
+  // 1. Baixar o áudio do Vercel Blob usando o token (funciona com private store)
+  console.log("[v0] Baixando audio do Blob:", audioUrl.substring(0, 60))
+  const blobResponse = await fetch(audioUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+    },
+  })
 
+  if (!blobResponse.ok) {
+    throw new Error(`Erro ao baixar audio do Blob: ${blobResponse.status}`)
+  }
+
+  const audioBuffer = await blobResponse.arrayBuffer()
+  console.log("[v0] Audio baixado do Blob, tamanho:", audioBuffer.byteLength)
+
+  // 2. Enviar buffer diretamente para o Deepgram
+  console.log("[v0] Enviando audio para Deepgram...")
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
     {
       method: "POST",
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": "audio/webm",
       },
-      body: JSON.stringify({ url: audioProxyUrl }),
+      body: audioBuffer,
     }
+  )
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
+  }
+
+  const data = await response.json()
+  console.log("[v0] Deepgram respondeu com sucesso")
+
+  // Formatar com diarização (speakers)
+  const words = data.results?.channels?.[0]?.alternatives?.[0]?.words
+  if (words && words.length > 0 && words[0].speaker !== undefined) {
+    let formatted = ""
+    let currentSpeaker = -1
+    for (const word of words) {
+      if (word.speaker !== currentSpeaker) {
+        currentSpeaker = word.speaker
+        formatted += `\n\n[${currentSpeaker === 0 ? "Vendedor" : "Cliente"}]: `
+      }
+      formatted += word.punctuated_word + " "
+    }
+    console.log("[v0] Transcricao com diarização formatada")
+    return formatted.trim()
+  }
+
+  const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript
+  if (!transcript || transcript.trim().length === 0) {
+    throw new Error("Transcricao vazia retornada pelo Deepgram")
+  }
+  console.log("[v0] Transcricao simples:", transcript.substring(0, 100))
+  return transcript
+}
   )
 
   if (!response.ok) {
