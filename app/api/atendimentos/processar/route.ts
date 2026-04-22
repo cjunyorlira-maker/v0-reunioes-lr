@@ -380,21 +380,18 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
 
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
-  const response = await anthropic.messages.create({
+  // Usar streaming para evitar timeout em operacoes longas
+  const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",
-    max_tokens: 28000,  // 16000 thinking + 12000 resposta JSON
-    thinking: {
-      type: "enabled",
-      budget_tokens: 16000,
-    },
+    max_tokens: 8000,
     messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
   })
 
-  // Quando thinking está ativado, o Claude retorna 2 blocos:
-  // content[0] = bloco de pensamento (type: "thinking")
-  // content[1] = texto com o JSON (type: "text")
-  // Usar .find() para pegar o bloco correto
-  const content = response.content.find(c => c.type === "text")
+  // Aguardar resposta completa do stream
+  const response = await stream.finalMessage()
+  console.log("[v0] Claude stream finalizado")
+
+  const content = response.content[0]
   if (!content || content.type !== "text") throw new Error("Resposta do Claude sem conteudo texto")
 
   const jsonMatch = content.text.match(/\{[\s\S]*\}/)
