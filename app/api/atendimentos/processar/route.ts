@@ -283,18 +283,28 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Erro geral no processamento:", error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error("[v0] Erro geral no processamento:", errorMsg, error)
 
     // Marca como erro no banco se tiver o ID
     if (atendimentoId) {
-      const supabaseErr = createServiceClient()
-      await supabaseErr
-        .from("atendimentos")
-        .update({ status: "erro", updated_at: new Date().toISOString() })
-        .eq("id", atendimentoId)
+      try {
+        const supabaseErr = createServiceClient()
+        await supabaseErr
+          .from("atendimentos")
+          .update({ 
+            status: "erro",
+            resumo: `Erro no processamento: ${errorMsg}`,
+            updated_at: new Date().toISOString() 
+          })
+          .eq("id", atendimentoId)
+        console.log("[v0] Atendimento marcado como erro com mensagem:", errorMsg)
+      } catch (dbError) {
+        console.error("[v0] Erro ao salvar erro no banco:", dbError)
+      }
     }
 
-    return NextResponse.json({ error: "Erro no processamento" }, { status: 500 })
+    return NextResponse.json({ error: errorMsg }, { status: 500 })
   }
 }
 
@@ -392,7 +402,7 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
   return JSON.parse(jsonMatch[0])
 }
 
-// ─── Kommo: Enviar Nota ───────────────────────────────────────────────────────
+// ─── Kommo: Enviar Nota ───────────────────────────────���───────────────────────
 async function enviarNotaKommo(
   kommoId: string,
   nomeLead: string,
