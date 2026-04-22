@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 // IDs das etapas que devem aparecer no quadro
 const ETAPAS_QUADRO = [
   67567420,   // Confirmar Reunião
@@ -32,7 +27,11 @@ export async function POST() {
     return NextResponse.json({ error: "Credenciais do Kommo não configuradas" }, { status: 500 })
   }
 
-  const results: any[] = []
+  // Criar cliente Supabase apenas dentro da função
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   let totalImported = 0
 
   try {
