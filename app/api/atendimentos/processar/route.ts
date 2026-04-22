@@ -3,6 +3,9 @@ import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { del } from "@vercel/blob"
 
+// Aumentar timeout para 5 minutos (Deepgram + Claude demoram)
+export const maxDuration = 300
+
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
