@@ -1,10 +1,18 @@
-import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { del } from "@vercel/blob"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Aumentar timeout para 5 minutos (Deepgram + Claude demoram)
 export const maxDuration = 300
+
+// Cliente Supabase com Service Role (funciona sem sessão de usuário)
+function createServiceClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
@@ -136,7 +144,7 @@ async function withRetry<T>(
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   let atendimentoId: string | null = null
 
   try {
@@ -263,7 +271,7 @@ export async function POST(request: Request) {
 
     // Marca como erro no banco se tiver o ID
     if (atendimentoId) {
-      const supabaseErr = await createClient()
+      const supabaseErr = createServiceClient()
       await supabaseErr
         .from("atendimentos")
         .update({ status: "erro", updated_at: new Date().toISOString() })
@@ -375,7 +383,7 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
+    max_tokens: 20000,  // DEVE ser maior que budget_tokens (16000 thinking + 4000 resposta)
     thinking: {
       type: "enabled",
       budget_tokens: 16000,
