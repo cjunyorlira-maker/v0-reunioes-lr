@@ -214,8 +214,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falha na analise após 3 tentativas" }, { status: 500 })
     }
 
-    // 4. Salvar resultados no Supabase
-    await supabase
+    // 4. Salvar resultados no Supabase PRIMEIRO
+    console.log("[v0] Salvando resultados no Supabase...")
+    const { error: updateError } = await supabase
       .from("atendimentos")
       .update({
         transcricao_completa: transcricao,
@@ -241,19 +242,34 @@ export async function POST(request: Request) {
       })
       .eq("id", atendimentoId)
 
-    // 5. Enviar nota para o Kommo com o resumo da analise
+    if (updateError) {
+      console.error("[v0] Erro ao atualizar atendimento no Supabase:", updateError)
+      throw new Error(`Erro ao salvar resultados: ${updateError.message}`)
+    }
+    console.log("[v0] Atendimento marcado como concluido no Supabase")
+
+    // 5. Enviar nota para o Kommo com o resumo da analise (DEPOIS de salvar no Supabase)
+    console.log("[v0] Enviando nota para Kommo...")
     if (atendimento?.kommo_id && KOMMO_ACCESS_TOKEN && KOMMO_SUBDOMAIN) {
-      await withRetry(
-        () => enviarNotaKommo(
-          atendimento.kommo_id,
-          atendimento.nome_lead,
-          atendimento.responsavel,
-          analise
-        ),
-        2,
-        1500,
-        "Kommo nota"
-      )
+      try {
+        await withRetry(
+          () => enviarNotaKommo(
+            atendimento.kommo_id,
+            atendimento.nome_lead,
+            atendimento.responsavel,
+            analise
+          ),
+          2,
+          1500,
+          "Kommo nota"
+        )
+        console.log("[v0] Nota enviada para Kommo com sucesso")
+      } catch (kommoError) {
+        console.error("[v0] Erro ao enviar nota para Kommo (não falha o processamento):", kommoError)
+        // Não falhar o processamento por erro de envio ao Kommo
+      }
+    } else {
+      console.log("[v0] Kommo não será acionado - kommo_id:", atendimento?.kommo_id, "token:", !!KOMMO_ACCESS_TOKEN)
     }
 
     // 6. Deletar audio do Vercel Blob para liberar storage
