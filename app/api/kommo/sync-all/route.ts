@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 // IDs das etapas no Kommo
 const ETAPA_REMARCADOS = 102225923
 const ETAPAS_PERMITIDAS = [67567420, 58498483, 102225923] // Confirmar reunião, Reunião confirmada, Remarcados
@@ -25,6 +20,12 @@ export async function POST() {
         { status: 500 }
       )
     }
+
+    // Criar cliente Supabase apenas dentro da função
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Busca todos os leads pendentes no banco
     const { data: leadsLocais, error: dbError } = await supabase
