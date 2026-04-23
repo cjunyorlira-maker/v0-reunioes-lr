@@ -39,8 +39,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   const top1VendedorMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
     if (vendas.length === 0) {
-      // Fallback - Nicolas Moraes é TOP 1 com R$ 791.564 (2 vendas)
-      return { nome: "Nicolas Moraes", valor: 791564, vendas: 2, foto: getFotoVendedor("Nicolas Moraes") }
+      // Sem vendas no mês - não exibe o card
+      return null
     }
     const byVendedor: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
@@ -117,13 +117,15 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     const vendas = data?.vendas || []
 
     if (vendas.length === 0) {
-      // Fallback - TDM é TOP 1 com R$ 2.084.261 (4 vendas)
-      return { nome: "TDM", valor: 2084261, vendas: 4, foto: "/equipes/tdm.jpg" }
+      // Sem vendas no mês - não exibe o card
+      return null
     }
 
     const byEquipe: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
       const equipe = vendedorEquipe[v.responsavel] || "Outro"
+      // Ignora Admin e Outro para o ranking
+      if (equipe === "Admin" || equipe === "Outro") return
       if (!byEquipe[equipe]) byEquipe[equipe] = { valor: 0, total: 0 }
       byEquipe[equipe].valor += Number(v.valor_venda)
       byEquipe[equipe].total++
