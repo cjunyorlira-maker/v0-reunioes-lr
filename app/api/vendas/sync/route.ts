@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { getPeriodoProducaoAtual, timestampToDateString } from "@/lib/periodo-producao"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,10 +68,15 @@ export async function POST() {
   }
 
   try {
-    // Busca leads na etapa "Vendido Produção" (69615804)
-    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_VENDIDO}&with=custom_fields_values&limit=250`
+    // Período de produção: dia 21 ao dia 20 do mês seguinte
+    const periodo = getPeriodoProducaoAtual()
+    const inicioTimestamp = Math.floor(new Date(periodo.inicio).getTime() / 1000)
+    const fimTimestamp = Math.floor(new Date(periodo.fim + "T23:59:59").getTime() / 1000)
 
-    console.log("[v0] Buscando vendas do Kommo:", url)
+    // Busca leads na etapa "Vendido Produção" (69615804) dentro do período
+    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_VENDIDO}&filter[updated_at][from]=${inicioTimestamp}&filter[updated_at][to]=${fimTimestamp}&with=custom_fields_values&limit=250`
+
+    console.log("[v0] Buscando vendas do Kommo - Período:", periodo.mesReferencia, periodo.inicio, "a", periodo.fim)
 
     const response = await fetch(url, {
       headers: { "Authorization": `Bearer ${token}` },
@@ -148,7 +154,7 @@ export async function POST() {
         responsavel: responsavelNome,
         equipe: equipe,
         valor_venda: valorVenda,
-        data_venda: new Date(lead.updated_at * 1000).toISOString().split("T")[0],
+        data_venda: timestampToDateString(lead.updated_at),
       })
     }
 
@@ -198,6 +204,11 @@ export async function POST() {
       total: vendas.length,
       inserted,
       updated,
+      periodo: {
+        inicio: periodo.inicio,
+        fim: periodo.fim,
+        mesReferencia: periodo.mesReferencia,
+      },
       vendas,
     })
   } catch (error) {

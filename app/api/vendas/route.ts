@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,18 +9,14 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    // Calcula o primeiro e último dia do mês atual
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      .toISOString().split("T")[0]
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-      .toISOString().split("T")[0]
+    // Período de produção: dia 21 ao dia 20 do mês seguinte
+    const periodo = getPeriodoProducaoAtual()
 
     const { data: vendas, error } = await supabase
       .from("vendas")
       .select("*")
-      .gte("data_venda", firstDayOfMonth)
-      .lte("data_venda", lastDayOfMonth)
+      .gte("data_venda", periodo.inicio)
+      .lte("data_venda", periodo.fim)
       .order("data_venda", { ascending: false })
 
     if (error) {
@@ -29,7 +26,11 @@ export async function GET() {
 
     return NextResponse.json({ 
       vendas: vendas || [],
-      periodo: { inicio: firstDayOfMonth, fim: lastDayOfMonth }
+      periodo: {
+        inicio: periodo.inicio,
+        fim: periodo.fim,
+        mesReferencia: periodo.mesReferencia,
+      }
     })
   } catch (err) {
     console.error("Erro na API de vendas:", err)
