@@ -19,6 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
+      token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
       onBeforeGenerateToken: async (pathname) => {
         // Validar que é um upload de atendimento
         if (!pathname.startsWith("atendimentos/")) {

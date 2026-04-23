@@ -276,7 +276,7 @@ export async function POST(request: Request) {
 
     // 6. Deletar audio do Vercel Blob para liberar storage
     try {
-      await del(audioUrl)
+      await del(audioUrl, { token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN })
       console.log("[v0] Audio deletado do Blob com sucesso:", audioUrl)
     } catch (delError) {
       console.error("[v0] Erro ao deletar audio do Blob:", delError)
