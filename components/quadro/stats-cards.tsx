@@ -57,6 +57,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
   const equipeLogos: Record<string, string> = {
     "TDM": "/equipes/tdm.jpg",
+    "Legado": "/equipes/legado.jpg",
+    "Guerreiros": "/equipes/guerreiros.jpg",
   }
 
   const vendedorEquipe: Record<string, string> = {

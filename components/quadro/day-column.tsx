@@ -22,6 +22,10 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
     .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
 
   const naoVieram = dayLeads.filter((lead) => lead.status === "nao").length
+  const vieramCount = dayLeads.filter((lead) => lead.status === "veio").length
+  const decididos = vieramCount + naoVieram
+  const percentualVieram = decididos > 0 ? Math.round((vieramCount / decididos) * 100) : null
+  const onlineCount = dayLeads.filter((lead) => lead.tipo_reuniao?.toLowerCase() === "online").length
   const isToday = day.isToday
 
   return (
@@ -67,10 +71,27 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
               {dayLeads.length} marc.
             </span>
           </div>
-          {naoVieram > 0 && (
-            <div className="px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/25">
-              <span className="text-[12px] font-bold text-red-400">
-                {naoVieram} faltou
+          {/* Percentual de presença */}
+          {percentualVieram !== null && (
+            <div className={`px-2.5 py-0.5 rounded-lg border ${
+              percentualVieram >= 70 
+                ? "bg-emerald-500/15 border-emerald-500/25" 
+                : percentualVieram >= 40 
+                  ? "bg-amber-500/15 border-amber-500/25"
+                  : "bg-red-500/15 border-red-500/25"
+            }`}>
+              <span className={`text-[12px] font-bold ${
+                percentualVieram >= 70 ? "text-emerald-400" : percentualVieram >= 40 ? "text-amber-400" : "text-red-400"
+              }`}>
+                {percentualVieram}% vieram
+              </span>
+            </div>
+          )}
+          {/* Onlines marcados */}
+          {onlineCount > 0 && (
+            <div className="px-2.5 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/25">
+              <span className="text-[12px] font-bold text-blue-400">
+                {onlineCount} online{onlineCount > 1 ? "s" : ""}
               </span>
             </div>
           )}
