@@ -115,6 +115,18 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     "Grupo Lr Multimarcas": "Admin",
   }
 
+  // META da quinzena: R$ 5.000.000 até dia 5 do mês seguinte
+  const META_QUINZENA = 5_000_000
+
+  const totalVendidoMes = useMemo(() => {
+    const vendas = data?.vendas || []
+    return vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
+  }, [data])
+
+  const restanteMeta = Math.max(0, META_QUINZENA - totalVendidoMes)
+  const percentualMeta = Math.min(100, Math.round((totalVendidoMes / META_QUINZENA) * 100))
+  const metaBatida = totalVendidoMes >= META_QUINZENA
+
   const top1EquipeMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
 
@@ -419,6 +431,78 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             badgeGradient="linear-gradient(135deg, #fb923c, #fdba74)"
           />
         )}
+
+        {/* Card META da quinzena */}
+        <div className="group relative flex flex-col justify-center gap-2 px-5 py-4 rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.02] overflow-hidden cursor-default min-w-[220px]"
+          style={{
+            background: metaBatida
+              ? "linear-gradient(145deg, rgba(16,185,129,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)"
+              : "linear-gradient(145deg, rgba(212,175,55,0.08) 0%, transparent 50%, rgba(212,175,55,0.05) 100%)",
+            border: metaBatida ? "1px solid rgba(16,185,129,0.25)" : "1px solid rgba(212,175,55,0.25)",
+          }}
+        >
+          {/* Glow hover */}
+          <div
+            className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10"
+            style={{ background: metaBatida ? "radial-gradient(ellipse at center, rgba(16,185,129,0.25), transparent 70%)" : "radial-gradient(ellipse at center, rgba(212,175,55,0.25), transparent 70%)" }}
+          />
+
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <span
+              className="text-[9px] font-black uppercase tracking-widest"
+              style={{ color: metaBatida ? "#10b981" : "#d4af37" }}
+            >
+              {metaBatida ? "Meta Batida!" : "Meta Quinzena"}
+            </span>
+            <span
+              className="text-[10px] font-black px-2 py-0.5 rounded-full"
+              style={{
+                background: metaBatida ? "rgba(16,185,129,0.15)" : "rgba(212,175,55,0.15)",
+                color: metaBatida ? "#10b981" : "#d4af37",
+              }}
+            >
+              {percentualMeta}%
+            </span>
+          </div>
+
+          {/* Valor restante */}
+          <div className="flex flex-col">
+            <span className="text-[10px] text-white/40 font-semibold">
+              {metaBatida ? "Total vendido" : "Faltam"}
+            </span>
+            <span
+              className="text-lg font-black leading-tight"
+              style={{
+                color: metaBatida ? "#10b981" : "#ffffff",
+                textShadow: metaBatida ? "0 0 20px rgba(16,185,129,0.5)" : "0 0 20px rgba(255,255,255,0.1)",
+              }}
+            >
+              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(
+                metaBatida ? totalVendidoMes : restanteMeta
+              )}
+            </span>
+            <span className="text-[9px] text-white/30 mt-0.5">
+              Meta: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(META_QUINZENA)}
+            </span>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000 ease-out"
+              style={{
+                width: `${percentualMeta}%`,
+                background: metaBatida
+                  ? "linear-gradient(90deg, #10b981, #34d399)"
+                  : percentualMeta >= 60
+                    ? "linear-gradient(90deg, #d4af37, #f5d742)"
+                    : "linear-gradient(90deg, #ef4444, #f97316)",
+                boxShadow: metaBatida ? "0 0 8px rgba(16,185,129,0.6)" : "0 0 8px rgba(212,175,55,0.4)",
+              }}
+            />
+          </div>
+        </div>
 
         {(top1VendedorMes || top1EquipeMes) && (top1Agendei || top1Veio) && (
           <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0" />
