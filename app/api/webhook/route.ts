@@ -168,7 +168,52 @@ const ETAPAS_PERMITIDAS = [
   102225923,  // Remarcados
 ]
 const ETAPA_REMARCADOS = 102225923
+const ETAPA_VENDIDO = 69615804   // Vendido Produção
 const PIPELINE_ID = 7012299
+
+// Mapeamento vendedor -> equipe (espelhado do sync/route.ts)
+const vendedorEquipe: Record<string, string> = {
+  "Yuri Ryan Pereira": "Elite", "Yuri Pereira": "Elite",
+  "Gisely Leal": "Guerreiros", "Rafaella Antunes": "Guerreiros", "Lidiane Fonseca": "Guerreiros",
+  "Alexia Cunha": "Gladiadores", "Nathan Caue": "Gladiadores", "Nathan Cauê": "Gladiadores",
+  "Leonardo Freitas": "Samurais", "João Victor": "Samurais", "Joao Victor": "Samurais",
+  "Janaina Dantas": "Legado", "Janaína Dantas": "Legado", "Brayan Bertolai": "Legado",
+  "Nicolas Moraes": "Legado", "Gabrielly Pereira": "Legado",
+  "Alex Negreiros": "Lobos", "Lucas Dionisio": "Lobos", "Lucas Dionísio": "Lobos",
+  "Ana Gabrielly": "Lobos", "Isabelly Ribeiro": "Lobos",
+  "Kleinver Seabra": "TDM", "Emily Machado": "TDM", "Amanda Souza": "TDM",
+}
+
+// Salva venda automaticamente quando lead chega em "Vendido Produção"
+async function salvarVendaAutomatica(lead: { id: number; name: string; price?: number; custom_fields_values?: Array<{ field_id: number; values: Array<{ value: string }> }> }, responsavelNome: string) {
+  const supabase = createSupabaseAdmin()
+  const CAMPO_VALOR_VENDA = 1085703
+
+  // Tenta pegar valor do campo personalizado, senão usa o price padrão do lead
+  let valorVenda = lead.price || 0
+  const campoValor = lead.custom_fields_values?.find((f) => f.field_id === CAMPO_VALOR_VENDA)
+  if (campoValor?.values?.[0]?.value) {
+    const parsed = parseFloat(campoValor.values[0].value.replace(/[^\d.,]/g, "").replace(",", "."))
+    if (!isNaN(parsed)) valorVenda = parsed
+  }
+
+  const equipe = vendedorEquipe[responsavelNome] || "Outro"
+  const hoje = new Date().toISOString().split("T")[0]
+
+  try {
+    await supabase.from("vendas").upsert({
+      kommo_id: lead.id.toString(),
+      nome_lead: lead.name || "Sem nome",
+      responsavel: responsavelNome,
+      atendente: responsavelNome,
+      valor_venda: valorVenda,
+      data_venda: hoje,
+    }, { onConflict: "kommo_id" })
+    console.log("[v0] Venda salva automaticamente:", lead.name, responsavelNome, valorVenda)
+  } catch (err) {
+    console.error("[v0] Erro ao salvar venda automatica:", err)
+  }
+}
 
 // Webhook endpoint para integração com Kommo / Make / Pluga
 export async function POST(request: NextRequest) {
@@ -189,6 +234,25 @@ export async function POST(request: NextRequest) {
       kommoLead = leadsData.status?.[0] || leadsData.add?.[0] || leadsData.update?.[0]
       kommoLeadId = kommoLead?.id?.toString() || null
       statusId = kommoLead?.status_id || null
+
+      // Se chegou na etapa "Vendido Produção", salva a venda automaticamente
+      if (statusId === ETAPA_VENDIDO) {
+        // Busca detalhes completos do lead para pegar o responsável
+        if (kommoLeadId) {
+          const leadDetails = await getKommoLeadDetails(kommoLeadId)
+          if (leadDetails) {
+            const users = await getKommoGroups()
+            const user = users.find((u: { id: number }) => u.id === leadDetails.responsible_user_id)
+            const nomeResponsavel = user?.name || "Não informado"
+            await salvarVendaAutomatica(leadDetails, nomeResponsavel)
+          }
+        }
+        return NextResponse.json({ 
+          success: true, 
+          action: "venda_registrada",
+          reason: "Lead movido para Vendido Produção - venda salva automaticamente"
+        })
+      }
       
       // Se veio do Kommo nativo, só processa se for de uma etapa permitida
       if (statusId && !ETAPAS_PERMITIDAS.includes(statusId)) {
