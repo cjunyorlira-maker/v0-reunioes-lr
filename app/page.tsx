@@ -12,6 +12,7 @@ import { AtendenteModal } from "@/components/quadro/atendente-modal"
 import { RemarcarModal } from "@/components/quadro/remarcar-modal"
 import { NextWeekPreview } from "@/components/quadro/next-week-preview"
 import { AnalyticsDashboard } from "@/components/quadro/analytics-dashboard"
+import { OnlinePresencialStats } from "@/components/quadro/online-presencial-stats"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
@@ -594,6 +595,11 @@ export default function QuadroReunioes() {
           weekLabel={weekLabel}
           dateRange={dateRange}
         />
+      )}
+
+      {/* Comparativo Presencial vs Online */}
+      {mounted && !isLoading && (
+        <OnlinePresencialStats leads={leads} />
       )}
 
       <NewLeadModal
