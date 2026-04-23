@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Mic, Square, Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { upload } from "@vercel/blob/client"
 
 interface AudioRecorderProps {
   atendimentoId: string
@@ -16,15 +17,15 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   const [isPaused, setIsPaused] = useState(false)
   const [duration, setDuration] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState("")
   const [error, setError] = useState("")
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const durationRef = useRef<number>(0)  // Guardar duração em ref para upload
+  const durationRef = useRef<number>(0)
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -72,14 +73,12 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
         await uploadAudio(audioBlob)
       }
 
-      mediaRecorder.start(1000) // Collect data every second
+      mediaRecorder.start(1000)
       setIsRecording(true)
       
-      // Reset duração
       durationRef.current = 0
       setDuration(0)
       
-      // Start timer
       timerRef.current = setInterval(() => {
         durationRef.current += 1
         setDuration(durationRef.current)
@@ -98,15 +97,6 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   }
 
   const MIN_DURATION_SECONDS = 30
-  const MAX_DURATION_SECONDS = 30 * 60 // 30 minutos máximo
-
-  // Auto-stop se atingir limite máximo
-  useEffect(() => {
-    if (isRecording && duration >= MAX_DURATION_SECONDS) {
-      setError(`Limite máximo de ${MAX_DURATION_SECONDS / 60} minutos atingido. Gravação será encerrada.`)
-      stopRecording()
-    }
-  }, [duration, isRecording])
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
@@ -132,45 +122,33 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   const uploadAudio = async (audioBlob: Blob) => {
     setIsUploading(true)
     setError("")
-
-    // Verificar tamanho do arquivo (limite 4MB para segurança)
-    const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4MB
-    if (audioBlob.size > MAX_FILE_SIZE) {
-      setError(`Arquivo muito grande (${(audioBlob.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 4MB. Tente uma gravação mais curta.`)
-      setIsUploading(false)
-      return
-    }
+    setUploadProgress("Enviando audio...")
 
     try {
-      // 1. Upload audio to Vercel Blob
-      const formData = new FormData()
-      formData.append("audio", audioBlob, `atendimento-${atendimentoId}.webm`)
-      formData.append("atendimentoId", atendimentoId)
-      formData.append("duracao", durationRef.current.toString())
-
-      const response = await fetch("/api/atendimentos/upload", {
-        method: "POST",
-        body: formData,
+      // 1. Upload direto para Vercel Blob (client-side, sem limite de tamanho)
+      const filename = `atendimentos/${atendimentoId}-${Date.now()}.webm`
+      
+      const blob = await upload(filename, audioBlob, {
+        access: "public", // Client upload precisa ser public
+        handleUploadUrl: "/api/atendimentos/blob-upload",
       })
 
-      // Tratamento robusto de erro
+      setUploadProgress("Iniciando processamento...")
+
+      // 2. Chamar API para atualizar o banco e iniciar processamento
+      const response = await fetch("/api/atendimentos/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          atendimentoId,
+          audioUrl: blob.url,
+          duracao: durationRef.current,
+        }),
+      })
+
       if (!response.ok) {
-        let errorMessage = "Erro ao fazer upload"
-        try {
-          const data = await response.json()
-          errorMessage = data.error || data.details || errorMessage
-        } catch {
-          // Se não conseguir parsear JSON, ler como texto
-          const text = await response.text()
-          if (text.includes("Request Entity Too Large") || text.includes("413")) {
-            errorMessage = "Arquivo muito grande. Tente uma gravação mais curta (máximo 15 minutos)."
-          } else if (text.includes("timeout") || text.includes("504")) {
-            errorMessage = "Tempo esgotado. Tente novamente."
-          } else {
-            errorMessage = `Erro do servidor: ${response.status}`
-          }
-        }
-        throw new Error(errorMessage)
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || "Erro ao processar audio")
       }
 
       onComplete()
@@ -217,11 +195,9 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
             {isRecording
               ? duration < MIN_DURATION_SECONDS
                 ? `Mínimo ${MIN_DURATION_SECONDS}s — faltam ${MIN_DURATION_SECONDS - duration}s`
-                : duration > MAX_DURATION_SECONDS - 60
-                ? `Atenção: limite em ${MAX_DURATION_SECONDS - duration}s`
-                : `Gravando... (máx ${MAX_DURATION_SECONDS / 60} min)`
+                : "Gravando..."
               : isUploading
-              ? "Enviando..."
+              ? uploadProgress
               : "Pronto para gravar"}
           </p>
           {/* Barra de progresso mínima */}
