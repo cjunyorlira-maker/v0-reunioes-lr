@@ -450,16 +450,16 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
           {/* Header */}
           <div className="flex items-center justify-between">
             <span
-              className="text-[9px] font-black uppercase tracking-widest"
-              style={{ color: metaBatida ? "#10b981" : "#d4af37" }}
+              className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1"
+              style={{ color: metaBatida ? "#34d399" : "#f5d742" }}
             >
-              {metaBatida ? "Meta Batida!" : "Meta Quinzena"}
+              💣 {metaBatida ? "Meta Batida!" : "Meta Quinzena"}
             </span>
             <span
               className="text-[10px] font-black px-2 py-0.5 rounded-full"
               style={{
-                background: metaBatida ? "rgba(16,185,129,0.15)" : "rgba(212,175,55,0.15)",
-                color: metaBatida ? "#10b981" : "#d4af37",
+                background: metaBatida ? "rgba(16,185,129,0.25)" : "rgba(212,175,55,0.25)",
+                color: metaBatida ? "#34d399" : "#f5d742",
               }}
             >
               {percentualMeta}%
@@ -468,21 +468,21 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
           {/* Valor restante */}
           <div className="flex flex-col">
-            <span className="text-[10px] text-white/40 font-semibold">
+            <span className="text-[10px] text-white/60 font-semibold">
               {metaBatida ? "Total vendido" : "Faltam"}
             </span>
             <span
               className="text-lg font-black leading-tight"
               style={{
-                color: metaBatida ? "#10b981" : "#ffffff",
-                textShadow: metaBatida ? "0 0 20px rgba(16,185,129,0.5)" : "0 0 20px rgba(255,255,255,0.1)",
+                color: metaBatida ? "#34d399" : "#f5d742",
+                textShadow: metaBatida ? "0 0 20px rgba(16,185,129,0.8)" : "0 0 20px rgba(245,215,66,0.6)",
               }}
             >
               {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(
                 metaBatida ? totalVendidoMes : restanteMeta
               )}
             </span>
-            <span className="text-[9px] text-white/30 mt-0.5">
+            <span className="text-[9px] text-white/50 mt-0.5 font-medium">
               Meta: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(META_QUINZENA)}
             </span>
           </div>
