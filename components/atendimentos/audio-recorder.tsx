@@ -41,6 +41,18 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
+  // Detecta o melhor mimeType suportado pelo navegador
+  const getSupportedMimeType = () => {
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "video/webm;codecs=opus",
+      "video/webm",
+      "audio/mp4",
+    ]
+    return types.find(type => MediaRecorder.isTypeSupported(type)) || ""
+  }
+
   const startRecording = async () => {
     setError("")
     try {
@@ -53,9 +65,8 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       })
       
       streamRef.current = stream
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
-      })
+      const mimeType = getSupportedMimeType()
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
       
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
@@ -126,7 +137,10 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
 
     try {
       // 1. Upload direto para Vercel Blob (client-side, sem limite de tamanho)
-      const filename = `atendimentos/${atendimentoId}-${Date.now()}.webm`
+      // Extensão dinâmica baseada no mimeType real do MediaRecorder
+      const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm"
+      const extension = mimeType.includes("mp4") ? "mp4" : "webm"
+      const filename = `atendimentos/${atendimentoId}-${Date.now()}.${extension}`
       
       const blob = await upload(filename, audioBlob, {
         access: "public", // Client upload requer store público
