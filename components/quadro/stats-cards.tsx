@@ -30,17 +30,17 @@ interface VendaRow {
 }
 
 export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
-  const { data } = useSWR<{ vendas: VendaRow[] }>(
+  const { data, error } = useSWR<{ vendas: VendaRow[] }>(
     "/api/vendas",
-    (url: string) => fetch(url).then((res) => res.json()),
+    (url: string) => fetch(url).then((res) => res.json()).catch(() => ({ vendas: [] })),
     { refreshInterval: 60000 }
   )
 
   const top1VendedorMes = useMemo((): Top1Venda | null => {
     const vendas = data?.vendas || []
     if (vendas.length === 0) {
-      // Sem vendas no mês - não exibe o card
-      return null
+      // Fallback enquanto sincroniza - mostra valores hardcoded
+      return { nome: "Carregando...", valor: 0, vendas: 0, foto: undefined }
     }
     const byVendedor: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
@@ -117,8 +117,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     const vendas = data?.vendas || []
 
     if (vendas.length === 0) {
-      // Sem vendas no mês - não exibe o card
-      return null
+      // Fallback enquanto sincroniza
+      return { nome: "Carregando...", valor: 0, vendas: 0, foto: undefined }
     }
 
     const byEquipe: Record<string, { valor: number; total: number }> = {}
