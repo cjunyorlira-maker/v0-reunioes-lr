@@ -98,6 +98,15 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
   }
 
   const MIN_DURATION_SECONDS = 30
+  const MAX_DURATION_SECONDS = 30 * 60 // 30 minutos máximo
+
+  // Auto-stop se atingir limite máximo
+  useEffect(() => {
+    if (isRecording && duration >= MAX_DURATION_SECONDS) {
+      setError(`Limite máximo de ${MAX_DURATION_SECONDS / 60} minutos atingido. Gravação será encerrada.`)
+      stopRecording()
+    }
+  }, [duration, isRecording])
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
@@ -124,6 +133,14 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
     setIsUploading(true)
     setError("")
 
+    // Verificar tamanho do arquivo (limite 4MB para segurança)
+    const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4MB
+    if (audioBlob.size > MAX_FILE_SIZE) {
+      setError(`Arquivo muito grande (${(audioBlob.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 4MB. Tente uma gravação mais curta.`)
+      setIsUploading(false)
+      return
+    }
+
     try {
       // 1. Upload audio to Vercel Blob
       const formData = new FormData()
@@ -136,9 +153,24 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
         body: formData,
       })
 
+      // Tratamento robusto de erro
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Erro ao fazer upload")
+        let errorMessage = "Erro ao fazer upload"
+        try {
+          const data = await response.json()
+          errorMessage = data.error || data.details || errorMessage
+        } catch {
+          // Se não conseguir parsear JSON, ler como texto
+          const text = await response.text()
+          if (text.includes("Request Entity Too Large") || text.includes("413")) {
+            errorMessage = "Arquivo muito grande. Tente uma gravação mais curta (máximo 15 minutos)."
+          } else if (text.includes("timeout") || text.includes("504")) {
+            errorMessage = "Tempo esgotado. Tente novamente."
+          } else {
+            errorMessage = `Erro do servidor: ${response.status}`
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       onComplete()
@@ -185,7 +217,9 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
             {isRecording
               ? duration < MIN_DURATION_SECONDS
                 ? `Mínimo ${MIN_DURATION_SECONDS}s — faltam ${MIN_DURATION_SECONDS - duration}s`
-                : "Gravando..."
+                : duration > MAX_DURATION_SECONDS - 60
+                ? `Atenção: limite em ${MAX_DURATION_SECONDS - duration}s`
+                : `Gravando... (máx ${MAX_DURATION_SECONDS / 60} min)`
               : isUploading
               ? "Enviando..."
               : "Pronto para gravar"}
