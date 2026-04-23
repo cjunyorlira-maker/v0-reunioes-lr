@@ -3,7 +3,9 @@ import Anthropic from "@anthropic-ai/sdk"
 import { del } from "@vercel/blob"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-// Aumentar timeout para 5 minutos (Deepgram + Claude demoram)
+// Timeout máximo para processamento de áudios longos
+// Hobby: 60s | Pro: 300s | Enterprise: 900s
+// Para áudios de 120+ minutos, recomenda-se plano Pro
 export const maxDuration = 300
 
 // Cliente Supabase com Service Role (funciona sem sessão de usuário)
