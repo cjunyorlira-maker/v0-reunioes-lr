@@ -70,11 +70,10 @@ export async function POST() {
   try {
     // Período de produção: dia 21 ao dia 20 do mês seguinte
     const periodo = getPeriodoProducaoAtual()
-    const inicioTimestamp = Math.floor(new Date(periodo.inicio).getTime() / 1000)
-    const fimTimestamp = Math.floor(new Date(periodo.fim + "T23:59:59").getTime() / 1000)
 
-    // Busca leads na etapa "Vendido Produção" (69615804) dentro do período
-    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_VENDIDO}&filter[updated_at][from]=${inicioTimestamp}&filter[updated_at][to]=${fimTimestamp}&with=custom_fields_values&limit=250`
+    // Busca TODOS os leads na etapa "Vendido Produção" (69615804)
+    // Filtragem por data será feita no código, pois o Kommo usa updated_at que pode ser diferente da data de venda
+    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_VENDIDO}&with=custom_fields_values&limit=250`
 
     console.log("[v0] Buscando vendas do Kommo - Período:", periodo.mesReferencia, periodo.inicio, "a", periodo.fim)
 
