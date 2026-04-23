@@ -1,47 +1,32 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin"
-import { put } from "@vercel/blob"
 import { NextResponse } from "next/server"
 import { after } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData()
-    const audio = formData.get("audio") as Blob
-    const atendimentoId = formData.get("atendimentoId") as string
-    const duracao = formData.get("duracao") as string
+    const { atendimentoId, audioUrl, duracao } = await request.json()
 
-    if (!audio || !atendimentoId) {
-      console.error("[v0] Dados incompletos - audio:", !!audio, "atendimentoId:", atendimentoId)
+    if (!atendimentoId || !audioUrl) {
+      console.error("[v0] Dados incompletos - atendimentoId:", atendimentoId, "audioUrl:", audioUrl)
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
-    console.log("[v0] Upload iniciando - atendimentoId:", atendimentoId, "audioSize:", audio.size, "audioType:", audio.type)
-
-    // 1. Upload audio to Vercel Blob
-    const filename = `atendimentos/${atendimentoId}-${Date.now()}.webm`
-    console.log("[v0] Enviando para Blob com filename:", filename)
-    
-    const blob = await put(filename, audio, {
-      access: "private",
-      contentType: audio.type || "audio/webm",
-    })
-    
-    console.log("[v0] Blob upload success - url:", blob.url)
+    console.log("[v0] Upload recebido - atendimentoId:", atendimentoId, "audioUrl:", audioUrl, "duracao:", duracao)
 
     const supabase = createSupabaseAdmin()
 
-    // 2. Update atendimento with audio URL and status
+    // Update atendimento with audio URL and status
     await supabase
       .from("atendimentos")
       .update({
-        audio_url: blob.url,
+        audio_url: audioUrl,
         duracao_segundos: parseInt(duracao) || 0,
         status: "processando",
         updated_at: new Date().toISOString(),
       })
       .eq("id", atendimentoId)
 
-    // 3. Trigger async processing (Deepgram + Claude) usando after() para garantir execução
+    // Trigger async processing (Deepgram + Claude) usando after() para garantir execução
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
     const processorUrl = `${baseUrl}/api/atendimentos/processar`
@@ -54,7 +39,7 @@ export async function POST(request: Request) {
         const res = await fetch(processorUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ atendimentoId, audioUrl: blob.url }),
+          body: JSON.stringify({ atendimentoId, audioUrl }),
         })
         console.log("[v0] Resposta do processar:", res.status)
         const data = await res.json()
@@ -66,13 +51,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      audioUrl: blob.url,
-      message: "Audio enviado. Processamento iniciado." 
+      audioUrl: audioUrl,
+      message: "Audio registrado. Processamento iniciado." 
     })
   } catch (error: any) {
     console.error("[v0] Erro no upload:", error)
-    console.error("[v0] Erro message:", error?.message)
-    console.error("[v0] Erro stack:", error?.stack)
     return NextResponse.json({ 
       error: "Erro ao fazer upload", 
       details: error?.message || "Unknown error"
