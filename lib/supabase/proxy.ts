@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest) {
     '/api/atendimentos/upload',     // chamada do cliente mas processa async
     '/api/atendimentos/auth',       // login por equipe/senha (sem sessão Supabase)
     '/api/atendimentos/blob-upload', // client-side blob upload token
+    '/api/vendas/sync',             // sincronizar vendas do Kommo
     '/api/n8n',
     '/api/kommo',
   ]
