@@ -22,6 +22,6 @@ export const config = {
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|api/n8n|api/webhook|api/atendimentos/processar|api/atendimentos/upload|api/atendimentos/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/pluga|api/kommo|api/n8n|api/webhook|api/atendimentos/processar|api/atendimentos/upload|api/atendimentos/auth|api/atendimentos/blob-upload|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

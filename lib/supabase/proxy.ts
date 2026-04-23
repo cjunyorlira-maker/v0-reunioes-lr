@@ -68,6 +68,7 @@ export async function updateSession(request: NextRequest) {
     '/api/atendimentos/processar',  // chamada server-to-server do upload
     '/api/atendimentos/upload',     // chamada do cliente mas processa async
     '/api/atendimentos/auth',       // login por equipe/senha (sem sessão Supabase)
+    '/api/atendimentos/blob-upload', // client-side blob upload token
     '/api/n8n',
     '/api/kommo',
   ]
