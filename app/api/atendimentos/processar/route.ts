@@ -314,19 +314,33 @@ export async function POST(request: Request) {
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Enviar URL diretamente para o Deepgram (mais rápido para áudios grandes)
-  // Deepgram baixa o áudio diretamente, economizando tempo e memória
-  console.log("[v0] Enviando URL para Deepgram:", audioUrl.substring(0, 60))
-  
+  // 1. Baixar o áudio do Vercel Blob (store privado requer token)
+  console.log("[v0] Baixando audio do Blob:", audioUrl.substring(0, 60))
+  const blobResponse = await fetch(audioUrl, {
+    headers: {
+      Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+    },
+  })
+
+  if (!blobResponse.ok) {
+    throw new Error(`Erro ao baixar audio do Blob: ${blobResponse.status}`)
+  }
+
+  const audioBuffer = await blobResponse.arrayBuffer()
+  const audioContentType = blobResponse.headers.get("content-type") || "audio/webm"
+  console.log("[v0] Audio baixado, tamanho:", audioBuffer.byteLength, "tipo:", audioContentType)
+
+  // 2. Enviar buffer para o Deepgram
+  console.log("[v0] Enviando audio para Deepgram...")
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
     {
       method: "POST",
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": audioContentType,
       },
-      body: JSON.stringify({ url: audioUrl }),
+      body: audioBuffer,
     }
   )
 

@@ -129,7 +129,7 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       const filename = `atendimentos/${atendimentoId}-${Date.now()}.webm`
       
       const blob = await upload(filename, audioBlob, {
-        access: "public", // Client upload precisa ser public
+        access: "private", // Store é privado, access deve ser private
         handleUploadUrl: "/api/atendimentos/blob-upload",
       })
 
