@@ -33,6 +33,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             "audio/mpeg",
             "audio/ogg",
             "audio/wav",
+            "video/webm",  // Alguns navegadores gravam audio como video/webm
+            "video/mp4",   // Safari/iOS pode usar video/mp4
           ],
           maximumSizeInBytes: 500 * 1024 * 1024, // 500MB
         }
