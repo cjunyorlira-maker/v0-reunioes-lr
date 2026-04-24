@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { 
   Lock, Mic, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
   TrendingUp, Users, AlertTriangle, DollarSign, Calendar,
-  ChevronRight, Star, BarChart3, Target
+  ChevronRight, Star, BarChart3, Target, Tag, ChevronDown
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
@@ -20,12 +21,14 @@ interface Atendimento {
   kommo_id: string
   nome_lead: string
   responsavel: string
+  atendente: string
   equipe: string
   audio_url: string | null
   duracao_segundos: number | null
   transcricao_completa: string | null
   resumo: string | null
   motivo_nao_fechamento: string | null
+  etiqueta: string | null
   score_geral: number | null
   score_abordagem: number | null
   score_financiamento: number | null
@@ -78,14 +81,61 @@ const EQUIPE_COLORS: Record<string, { gradient: string; glow: string }> = {
   "Admin": { gradient: "from-gray-500 to-gray-600", glow: "rgba(107,114,128,0.3)" },
 }
 
-// Categorias de motivos de nao fechamento para o Kanban
-const MOTIVOS_CATEGORIAS = [
-  { id: "financeiro", label: "Financeiro", icon: DollarSign, color: "from-red-500 to-rose-600" },
-  { id: "timing", label: "Timing", icon: Calendar, color: "from-amber-500 to-orange-600" },
-  { id: "concorrencia", label: "Concorrencia", icon: Users, color: "from-purple-500 to-violet-600" },
-  { id: "indecisao", label: "Indecisao", icon: AlertTriangle, color: "from-yellow-500 to-amber-600" },
-  { id: "outros", label: "Outros", icon: FileText, color: "from-slate-500 to-zinc-600" },
+// Etiquetas Financeiras (perfil do cliente)
+const ETIQUETAS_FINANCEIRO = [
+  { id: "sem_entrada", label: "Sem entrada", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  { id: "vai_levantar_entrada", label: "Vai levantar entrada", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+  { id: "parcela", label: "Parcela", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  { id: "sem_perfil", label: "Sem perfil", color: "bg-red-700/20 text-red-300 border-red-700/30" },
 ]
+
+// Etiquetas de Motivo (razao do nao fechamento)
+const ETIQUETAS_PESSOAL = [
+  { id: "sem_tomador_decisao", label: "Sem o tomador de decisao", color: "bg-violet-500/20 text-violet-400 border-violet-500/30" },
+  { id: "vai_pensar", label: "Vai pensar", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  { id: "tem_entrada_analisando", label: "Tem entrada/Analisando", color: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
+  { id: "concorrencia", label: "Concorrencia", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  { id: "nao_quer_consorcio", label: "Nao quer consorcio", color: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
+  { id: "experiencia_ruim", label: "Experiencia ruim c/ consorcio", color: "bg-pink-500/20 text-pink-400 border-pink-500/30" },
+  { id: "nao_gostou_atendimento", label: "Nao gostou do atendimento", color: "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30" },
+  { id: "indecisao", label: "Indecisao", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+  { id: "faltou_gas_vendedor", label: "Faltou gas do vendedor", color: "bg-red-400/20 text-red-300 border-red-400/30" },
+  { id: "cpf_consultado", label: "CPF consultado", color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+]
+
+// Todas etiquetas juntas para busca rapida
+const TODAS_ETIQUETAS = [...ETIQUETAS_FINANCEIRO, ...ETIQUETAS_PESSOAL]
+
+// Categorias do Kanban de relatorios
+const MOTIVOS_CATEGORIAS = [
+  { id: "financeiro", label: "Financeiro", icon: DollarSign, color: "from-red-500 to-rose-600", etiquetas: ETIQUETAS_FINANCEIRO.map(e => e.id) },
+  { id: "pessoal", label: "Pessoal", icon: Users, color: "from-amber-500 to-orange-600", etiquetas: ["sem_tomador_decisao", "vai_pensar", "tem_entrada_analisando", "indecisao", "faltou_gas_vendedor"] },
+  { id: "concorrencia", label: "Concorrencia", icon: Target, color: "from-purple-500 to-violet-600", etiquetas: ["concorrencia"] },
+  { id: "consorcio", label: "Consorcio", icon: AlertTriangle, color: "from-pink-500 to-rose-600", etiquetas: ["nao_quer_consorcio", "experiencia_ruim", "nao_gostou_atendimento"] },
+  { id: "outros", label: "Outros", icon: FileText, color: "from-slate-500 to-zinc-600", etiquetas: ["cpf_consultado"] },
+]
+
+// Classifica etiqueta automaticamente pelo motivo do nao fechamento
+function classificarEtiqueta(motivo: string, analise: any): string {
+  if (!motivo) return "outros"
+  const m = motivo.toLowerCase()
+
+  if (analise?.situacao_financeira?.tinha_entrada === false) return "sem_entrada"
+  if (m.includes("entrada") && m.includes("levantar")) return "vai_levantar_entrada"
+  if (m.includes("parcela") || m.includes("prestacao") || m.includes("mensalidade")) return "parcela"
+  if (m.includes("sem perfil") || m.includes("nao tem perfil") || m.includes("nao qualif")) return "sem_perfil"
+  if (m.includes("conjuge") || m.includes("esposa") || m.includes("marido") || m.includes("socio") || m.includes("tomador") || m.includes("decisao")) return "sem_tomador_decisao"
+  if (m.includes("pensar") || m.includes("refletir") || m.includes("analisa") || m.includes("decidir") || m.includes("prazo")) return "vai_pensar"
+  if (m.includes("concorr") || m.includes("outra empresa") || m.includes("banco") || m.includes("proposta") || m.includes("outra opcao")) return "concorrencia"
+  if (m.includes("nao quer consorcio") || m.includes("nao gosta consorcio") || m.includes("prefere financ")) return "nao_quer_consorcio"
+  if (m.includes("experiencia ruim") || m.includes("ja fez consorcio") || m.includes("contempla") || m.includes("nao foi contemplado")) return "experiencia_ruim"
+  if (m.includes("atendimento") || m.includes("vendedor") || m.includes("nao gostou")) return "nao_gostou_atendimento"
+  if (m.includes("indeci") || m.includes("duvida") || m.includes("nao tem certeza")) return "indecisao"
+  if (m.includes("gas") || m.includes("nao tentou") || m.includes("nao fechou") || m.includes("faltou")) return "faltou_gas_vendedor"
+  if (m.includes("cpf") || m.includes("score") || m.includes("negativado") || m.includes("consulta")) return "cpf_consultado"
+
+  return "indecisao"
+}
 
 export default function AtendimentosPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -195,30 +245,23 @@ export default function AtendimentosPage() {
     return atendimentos.filter(a => a.equipe === filtroEquipe)
   }, [atendimentos, equipe, filtroEquipe])
 
-  // Agrupa motivos de nao fechamento por categoria (usa lista filtrada para Admin)
+  // Agrupa motivos de nao fechamento por categoria usando as novas etiquetas
   const motivosPorCategoria = useMemo(() => {
-    const naoFechados = atendimentosFiltrados.filter(a => a.status === "concluido" && !a.fechou && a.motivo_nao_fechamento)
+    const naoFechados = atendimentosFiltrados.filter(a => a.status === "concluido" && !a.fechou)
     const categorized: Record<string, Atendimento[]> = {
       financeiro: [],
-      timing: [],
+      pessoal: [],
       concorrencia: [],
-      indecisao: [],
+      consorcio: [],
       outros: [],
     }
 
     naoFechados.forEach(a => {
-      const motivo = (a.motivo_nao_fechamento || "").toLowerCase()
-      if (motivo.includes("preco") || motivo.includes("valor") || motivo.includes("caro") || motivo.includes("financ") || motivo.includes("dinheiro") || motivo.includes("parcela")) {
-        categorized.financeiro.push(a)
-      } else if (motivo.includes("tempo") || motivo.includes("depois") || motivo.includes("pensar") || motivo.includes("agora") || motivo.includes("momento")) {
-        categorized.timing.push(a)
-      } else if (motivo.includes("concorr") || motivo.includes("outra") || motivo.includes("banco") || motivo.includes("proposta")) {
-        categorized.concorrencia.push(a)
-      } else if (motivo.includes("decid") || motivo.includes("duvida") || motivo.includes("certeza") || motivo.includes("avaliar")) {
-        categorized.indecisao.push(a)
-      } else {
-        categorized.outros.push(a)
-      }
+      // Usa a etiqueta ja salva, ou classifica automaticamente pelo motivo
+      const etiqueta = a.etiqueta || (a.motivo_nao_fechamento ? classificarEtiqueta(a.motivo_nao_fechamento, a) : "outros")
+      const categoria = MOTIVOS_CATEGORIAS.find(c => c.etiquetas.includes(etiqueta))
+      const chave = categoria?.id || "outros"
+      categorized[chave]?.push({ ...a, etiqueta: a.etiqueta || etiqueta })
     })
 
     return categorized
@@ -715,20 +758,21 @@ export default function AtendimentosPage() {
               </div>
             )}
 
-            {/* Kanban de Motivos */}
+            {/* Kanban de Motivos com etiquetas */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {MOTIVOS_CATEGORIAS.map((categoria) => {
                 const itens = motivosPorCategoria[categoria.id] || []
                 return (
                   <div 
                     key={categoria.id}
-                    className="flex flex-col rounded-2xl overflow-hidden bg-white/5 border border-white/10"
+                    className="flex flex-col rounded-2xl overflow-hidden border border-white/5"
+                    style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(6px)" }}
                   >
                     {/* Header da Coluna */}
-                    <div className={`p-4 bg-gradient-to-r ${categoria.color}`}>
+                    <div className={`p-3 bg-gradient-to-r ${categoria.color}`}>
                       <div className="flex items-center gap-2">
-                        <categoria.icon className="w-5 h-5 text-white" />
-                        <span className="font-bold text-white">{categoria.label}</span>
+                        <categoria.icon className="w-4 h-4 text-white" />
+                        <span className="font-bold text-white text-sm">{categoria.label}</span>
                         <Badge className="ml-auto bg-white/20 text-white border-0 text-xs">
                           {itens.length}
                         </Badge>
@@ -736,22 +780,37 @@ export default function AtendimentosPage() {
                     </div>
 
                     {/* Cards da Coluna */}
-                    <div className="flex-1 p-3 space-y-3 max-h-[500px] overflow-y-auto">
+                    <div className="flex-1 p-2.5 space-y-2.5 max-h-[520px] overflow-y-auto">
                       {itens.length === 0 ? (
-                        <div className="text-center py-8 text-white/30 text-sm">
+                        <div className="text-center py-8 text-white/30 text-xs">
                           Nenhum lead
                         </div>
                       ) : (
-                        itens.map((item) => (
-                          <div
-                            key={item.id}
-                            className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
-                          >
-                            <p className="font-semibold text-white text-sm truncate">{item.nome_lead}</p>
-                            <p className="text-xs text-white/50 mt-1">{item.responsavel}</p>
-                            {item.score_geral && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        itens.map((item) => {
+                          const etiquetaAtual = item.etiqueta || (item.motivo_nao_fechamento ? classificarEtiqueta(item.motivo_nao_fechamento, item) : null)
+                          const etiquetaInfo = TODAS_ETIQUETAS.find(e => e.id === etiquetaAtual)
+                          return (
+                            <div
+                              key={item.id}
+                              className="p-3 rounded-xl border border-white/5 hover:border-white/15 transition-all duration-200 group"
+                              style={{ background: "rgba(255,255,255,0.04)" }}
+                            >
+                              {/* Nome e Score */}
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <p className="font-semibold text-white text-xs leading-tight truncate">{item.nome_lead}</p>
+                                {item.score_geral && (
+                                  <span className={`text-xs font-black flex-shrink-0 ${item.score_geral >= 7 ? "text-emerald-400" : item.score_geral >= 5 ? "text-amber-400" : "text-red-400"}`}>
+                                    {item.score_geral}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Atendente */}
+                              <p className="text-[10px] text-white/40 mb-2 truncate">{item.responsavel}</p>
+
+                              {/* Barra de score */}
+                              {item.score_geral && (
+                                <div className="h-1 rounded-full bg-white/10 overflow-hidden mb-2">
                                   <div 
                                     className={`h-full rounded-full bg-gradient-to-r ${
                                       item.score_geral >= 7 ? "from-emerald-500 to-teal-500" :
@@ -761,16 +820,73 @@ export default function AtendimentosPage() {
                                     style={{ width: `${(item.score_geral / 10) * 100}%` }}
                                   />
                                 </div>
-                                <span className="text-xs text-white/70 font-semibold">{item.score_geral}</span>
-                              </div>
-                            )}
-                            {item.motivo_nao_fechamento && (
-                              <p className="text-[10px] text-white/40 mt-2 line-clamp-2">
-                                {item.motivo_nao_fechamento}
-                              </p>
-                            )}
-                          </div>
-                        ))
+                              )}
+
+                              {/* Etiqueta atual + botao para trocar */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="w-full flex items-center gap-1.5 group/etq">
+                                    {etiquetaInfo ? (
+                                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${etiquetaInfo.color} flex-1 text-left truncate`}>
+                                        {etiquetaInfo.label}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-white/30 flex-1 text-left flex items-center gap-1">
+                                        <Tag className="w-3 h-3" />
+                                        Sem etiqueta
+                                      </span>
+                                    )}
+                                    <ChevronDown className="w-3 h-3 text-white/30 group-hover/etq:text-white/60 flex-shrink-0" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent 
+                                  className="w-52 border-white/10 p-1" 
+                                  style={{ background: "rgba(10,10,20,0.97)", backdropFilter: "blur(20px)" }}
+                                >
+                                  <p className="text-[10px] text-white/40 px-2 py-1 font-semibold uppercase tracking-wide">Financeiro</p>
+                                  {ETIQUETAS_FINANCEIRO.map(e => (
+                                    <DropdownMenuItem
+                                      key={e.id}
+                                      className="cursor-pointer rounded-lg text-xs"
+                                      onClick={() => {
+                                        fetch(`/api/atendimentos/${item.id}/etiqueta`, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ etiqueta: e.id }),
+                                        }).then(() => fetchAtendimentos())
+                                      }}
+                                    >
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${e.color} mr-2`}>{e.label}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                  <p className="text-[10px] text-white/40 px-2 py-1 mt-1 font-semibold uppercase tracking-wide">Pessoal / Outros</p>
+                                  {ETIQUETAS_PESSOAL.map(e => (
+                                    <DropdownMenuItem
+                                      key={e.id}
+                                      className="cursor-pointer rounded-lg text-xs"
+                                      onClick={() => {
+                                        fetch(`/api/atendimentos/${item.id}/etiqueta`, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ etiqueta: e.id }),
+                                        }).then(() => fetchAtendimentos())
+                                      }}
+                                    >
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${e.color} mr-2`}>{e.label}</span>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+
+                              {/* Motivo resumido */}
+                              {item.motivo_nao_fechamento && (
+                                <p className="text-[10px] text-white/35 mt-1.5 line-clamp-2 leading-relaxed">
+                                  {item.motivo_nao_fechamento}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        })
                       )}
                     </div>
                   </div>

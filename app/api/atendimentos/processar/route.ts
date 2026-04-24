@@ -120,6 +120,28 @@ IMPORTANTE:
 ## Transcrição da Reunião:
 `
 
+// Classifica etiqueta automaticamente pelo motivo retornado pela IA
+function classificarEtiquetaIA(analise: any): string {
+  const motivo = (analise?.motivo_nao_fechamento || "").toLowerCase()
+  if (!motivo) return "indecisao"
+
+  if (analise?.situacao_financeira?.tinha_entrada === false) return "sem_entrada"
+  if (motivo.includes("entrada") && motivo.includes("levantar")) return "vai_levantar_entrada"
+  if (motivo.includes("parcela") || motivo.includes("prestacao") || motivo.includes("mensalidade")) return "parcela"
+  if (motivo.includes("sem perfil") || motivo.includes("nao tem perfil") || motivo.includes("nao qualif")) return "sem_perfil"
+  if (motivo.includes("conjuge") || motivo.includes("esposa") || motivo.includes("marido") || motivo.includes("socio") || motivo.includes("tomador") || motivo.includes("decisao")) return "sem_tomador_decisao"
+  if (motivo.includes("pensar") || motivo.includes("refletir") || motivo.includes("analisa") || motivo.includes("decidir") || motivo.includes("prazo")) return "vai_pensar"
+  if (motivo.includes("concorr") || motivo.includes("outra empresa") || motivo.includes("banco") || motivo.includes("proposta") || motivo.includes("outra opcao")) return "concorrencia"
+  if (motivo.includes("nao quer consorcio") || motivo.includes("nao gosta consorcio") || motivo.includes("prefere financ")) return "nao_quer_consorcio"
+  if (motivo.includes("experiencia ruim") || motivo.includes("ja fez consorcio") || motivo.includes("contempla") || motivo.includes("nao foi contemplado")) return "experiencia_ruim"
+  if (motivo.includes("atendimento") || motivo.includes("vendedor") || motivo.includes("nao gostou")) return "nao_gostou_atendimento"
+  if (motivo.includes("indeci") || motivo.includes("duvida") || motivo.includes("nao tem certeza")) return "indecisao"
+  if (motivo.includes("gas") || motivo.includes("nao tentou") || motivo.includes("nao fechou") || motivo.includes("faltou")) return "faltou_gas_vendedor"
+  if (motivo.includes("cpf") || motivo.includes("score") || motivo.includes("negativado") || motivo.includes("consulta")) return "cpf_consultado"
+
+  return "indecisao"
+}
+
 // Utilitario de retry com backoff exponencial
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -238,6 +260,7 @@ export async function POST(request: Request) {
         usou_prova_social: analise?.usou_prova_social || null,
         tecnicas_fechamento: analise?.tecnicas_fechamento || null,
         proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
+        etiqueta: analise?.motivo_nao_fechamento ? classificarEtiquetaIA(analise) : null,
         status: "concluido",
         fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
         updated_at: new Date().toISOString(),

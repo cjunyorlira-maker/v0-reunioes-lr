@@ -118,6 +118,13 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       durationRef.current = 0
       setDuration(0)
 
+      // Mover card imediatamente para coluna "Gravando"
+      fetch(`/api/atendimentos/${atendimentoId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "gravando" }),
+      }).catch(() => {})
+
       timerRef.current = setInterval(() => {
         durationRef.current += 1
         setDuration(durationRef.current)
@@ -184,6 +191,12 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       stopVisualizer()
       if (timerRef.current) clearInterval(timerRef.current)
       streamRef.current?.getTracks().forEach(t => t.stop())
+      // Voltar para aguardando se cancelar sem enviar
+      fetch(`/api/atendimentos/${atendimentoId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "aguardando" }),
+      }).catch(() => {})
     }
     onCancel()
   }
