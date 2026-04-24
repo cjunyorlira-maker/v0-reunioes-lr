@@ -618,8 +618,8 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
       {/* Frase de motivação quando atinge 4 milhões */}
       {totalVendidoMes >= 4000000 && (
-        <div className="mt-4 text-center">
-          <p className="text-[18px] md:text-[22px] font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-pulse"
+        <div className="mt-6 px-4 py-4 text-center backdrop-blur-sm border border-white/10 rounded-2xl" style={{ background: "rgba(0,0,0,0.12)" }}>
+          <p className="text-[16px] md:text-[20px] font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-pulse"
             style={{
               textShadow: "0 0 30px rgba(16,185,129,0.3), 0 0 60px rgba(34,211,238,0.2)",
               filter: 'drop-shadow(0 2px 8px rgba(16,185,129,0.2))',
