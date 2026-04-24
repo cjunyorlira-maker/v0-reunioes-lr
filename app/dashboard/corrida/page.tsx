@@ -691,8 +691,9 @@ export default function CorridaPage() {
       const v = normalizeVendedorNome(lead.responsavel)
       if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v), genero: getVendedorGenero(v), agendeiDia: 0, agendeiSemana: 0, qualificadosDia: 0, qualificadosSemana: 0 }
       map[v].agendeiSemana++
-      // Compara data_agendei com o dia selecionado
-      if (lead.data_agendei === selectedDay) map[v].agendeiDia++
+      // Agendei do dia: conta por created_at (quando foi criado) - produtividade do dia
+      const createdDate = lead.created_at?.split("T")[0]
+      if (createdDate === selectedDay) map[v].agendeiDia++
     })
 
     qualificados.forEach((q: any) => {
