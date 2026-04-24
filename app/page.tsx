@@ -60,24 +60,20 @@ export default function QuadroReunioes() {
   const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
   const allLeads = allLeadsData || []
 
-  // TOP 1 Agendei (usa data_agendei no período da semana)
+  // TOP 1 Agendei (conta agendamentos CRIADOS HOJE - produtividade do dia)
   // Desempate: quem tiver mais "veio" na semana fica em primeiro
   const top1Agendei = useMemo(() => {
-    if (!dateRange.start || !dateRange.end) return null
+    const today = new Date().toISOString().split("T")[0]
     const count: Record<string, { total: number; veio: number; foto?: string }> = {}
     
-    // Converte para Date para comparação correta
-    const startDate = new Date(dateRange.start)
-    const endDate = new Date(dateRange.end)
-    
-    // Conta agendamentos no período
+    // Conta agendamentos criados HOJE (created_at) que têm data_agendei preenchida
     allLeads.forEach((lead: Lead) => {
       const agendeiDate = (lead as any).data_agendei
       if (!agendeiDate) return
       
-      // Converte para Date e compara
-      const leadDate = new Date(agendeiDate)
-      if (leadDate < startDate || leadDate > endDate) return
+      // Verifica se foi criado hoje
+      const createdDate = lead.created_at?.split("T")[0]
+      if (createdDate !== today) return
       
       const nome = lead.responsavel || "Sem nome"
       if (!count[nome]) count[nome] = { total: 0, veio: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
