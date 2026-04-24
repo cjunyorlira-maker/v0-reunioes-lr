@@ -66,11 +66,18 @@ export default function QuadroReunioes() {
     if (!dateRange.start || !dateRange.end) return null
     const count: Record<string, { total: number; veio: number; foto?: string }> = {}
     
+    // Converte para Date para comparação correta
+    const startDate = new Date(dateRange.start)
+    const endDate = new Date(dateRange.end)
+    
     // Conta agendamentos no período
     allLeads.forEach((lead: Lead) => {
       const agendeiDate = (lead as any).data_agendei
       if (!agendeiDate) return
-      if (agendeiDate < dateRange.start || agendeiDate > dateRange.end) return
+      
+      // Converte para Date e compara
+      const leadDate = new Date(agendeiDate)
+      if (leadDate < startDate || leadDate > endDate) return
       
       const nome = lead.responsavel || "Sem nome"
       if (!count[nome]) count[nome] = { total: 0, veio: 0, foto: lead.foto_responsavel || getFotoVendedor(nome) || undefined }
