@@ -719,7 +719,7 @@ export default function CorridaPage() {
         const progresso = Math.min((valor / meta) * 100, 100)
         return { ...v, valor, progresso, meta }
       })
-      .filter(v => v.valor > 0 || viewMode === "semana")
+      .filter(v => v.valor > 0) // Remove apenas vendedores com 0 em ambas as situações
       .sort((a, b) => b.progresso - a.progresso)
   }, [vendedoresData, viewMode, raceType, meta])
 
