@@ -455,7 +455,7 @@ export default function QuadroReunioes() {
             responsavel: lead.responsavel,
             kommo_id: lead.kommo_id || lead.id,
             atendente: lead.atendente,
-            valor_venda: 0, // Será preenchido posteriormente se necessário
+            valor_venda: lead.valor_venda || 0, // Puxa o valor_venda do lead
             origem: lead.origem || "quadro",
           }),
         })
@@ -496,6 +496,9 @@ export default function QuadroReunioes() {
     responsavel: string
     tipo: string
     kommo_id?: string
+    equipe?: string
+    atendente?: string
+    valor_venda?: number
   }) => {
     try {
       await updateLead(id, data)

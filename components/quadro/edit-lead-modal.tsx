@@ -16,6 +16,7 @@ interface EditLeadModalProps {
     kommo_id?: string
     equipe?: string
     atendente?: string
+    valor_venda?: number
   }) => Promise<void>
 }
 
@@ -29,6 +30,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
     kommo_id: "",
     equipe: "",
     atendente: "",
+    valor_venda: "",
   })
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
         kommo_id: lead.kommo_id || "",
         equipe: lead.equipe || "",
         atendente: lead.atendente || "",
+        valor_venda: lead.valor_venda ? String(lead.valor_venda) : "",
       })
     }
   }, [open, lead])
@@ -65,6 +68,7 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
         kommo_id: formData.kommo_id,
         equipe: formData.equipe,
         atendente: formData.atendente,
+        valor_venda: formData.valor_venda ? parseFloat(formData.valor_venda) : 0,
       })
       onClose()
     } finally {
@@ -170,6 +174,21 @@ export function EditLeadModal({ open, lead, onClose, onSubmit }: EditLeadModalPr
               value={formData.atendente}
               onChange={(e) => setFormData({ ...formData, atendente: e.target.value })}
               placeholder="Nome do atendente (enviado ao Kommo no Veio)"
+              className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
+            />
+          </div>
+          
+          {/* Valor da Venda */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-[#8a8070] uppercase tracking-wider mb-1.5 font-medium">
+              Valor da Venda (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.valor_venda}
+              onChange={(e) => setFormData({ ...formData, valor_venda: e.target.value })}
+              placeholder="Ex: 281657.00"
               className="w-full bg-[#191919] border border-[rgba(212,175,55,0.1)] rounded-[10px] px-3 py-2.5 text-[#f5f0e8] text-[13px] outline-none focus:border-[rgba(212,175,55,0.4)] transition-colors placeholder:text-[#8a8070]/50"
             />
           </div>
