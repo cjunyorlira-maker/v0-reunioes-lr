@@ -37,27 +37,30 @@ ANALISE OS SEGUINTES PONTOS:
 - O cliente demonstrou abertura ou já chegou resistente?
 
 2. APRESENTAÇÃO DO FINANCIAMENTO
+- Se por ventura não for apresentado o financiamento entender o porquê — se o cliente já queria consórcio isso pode ser válido, mas deve estar justificado no atendimento.
 - Foi apresentado de forma dinâmica ou só leu a tela sem argumentação?
 - Houve muitas pausas e silêncios sem propósito?
 - Apresentou os diferenciais e argumentou sobre os juros do mercado?
 - Falou do sistema próprio como diferencial?
 - Usou exemplos reais para ilustrar?
-- Conduziu naturalmente para o consórcio ao mostrar as limitações do financiamento? (sem falar diretamente que o cliente não tem perfil)
+- Conduziu naturalmente para o consórcio ao mostrar as limitações do financiamento? (a ideia é que o cliente saia do financiamento com a sensação de que se não conseguiu aqui, não vai conseguir em lugar nenhum)
 - Argumentou sobre o porquê o financiamento não é a melhor opção naquele momento?
 
 3. APRESENTAÇÃO DO CONSÓRCIO
 - Explicou bem o funcionamento de sorteio e lance?
-- Garantiu data de contemplação? (ATENÇÃO: isso NÃO pode ser feito — marcar como CRÍTICO se acontecer)
+- Falou sobre possibilidade de contemplação? ATENÇÃO: possibilidade é diferente de garantia — o vendedor pode e deve mencionar que existe a possibilidade de contemplação por sorteio ou lance, mas NUNCA pode garantir data ou prazo. Avaliar se o vendedor deixou claro que é uma possibilidade e não uma certeza. Marcar como CRÍTICO se garantiu data ou prazo de contemplação.
 - Apresentou referências e cases de clientes realizados?
 - Mostrou o site da empresa e Reclame Aqui como prova social?
 - Explicou bem os diferenciais do consórcio vs financiamento?
 - Quais foram as objeções do cliente e como foram respondidas?
+- O vendedor identificou e respondeu a REAL dor do cliente, ou apenas contornou superficialmente sem resolver o que realmente estava travando a decisão? Avaliar se as respostas às objeções foram diretas e resolveram a raiz do problema ou se foram desvios que ignoraram o ponto central do cliente.
 - O cliente demonstrou resistência? Em qual momento?
 
 4. SITUAÇÃO FINANCEIRA DO CLIENTE
 - O cliente tinha entrada disponível?
 - Qual foi o impeditivo identificado para fechar?
 - O perfil financeiro foi bem mapeado?
+- Investigar o REAL motivo do não fechamento — muitas vezes o cliente diz "vou pensar" mas há um motivo real por trás (medo, cônjuge, situação financeira, não entendeu o produto, não confiou no vendedor). Avaliar se o vendedor investigou fundo ou aceitou a resposta superficial do cliente.
 
 5. TÉCNICAS DE FECHAMENTO
 - O vendedor tentou fechar? Quantas vezes?
@@ -65,16 +68,24 @@ ANALISE OS SEGUINTES PONTOS:
 - Como respondeu às objeções de fechamento?
 - O cliente ficou de pensar? O vendedor tentou contornar?
 
-6. AVALIAÇÃO GERAL DO TEMPO
+6. COERÊNCIA E QUALIDADE DA ARGUMENTAÇÃO
+- O atendimento teve uma linha lógica e progressiva, ou ficou confuso e sem direção?
+- O vendedor usou os argumentos na ordem e contexto corretos, ou jogou todas as argumentações de forma aleatória sem conexão com o momento da conversa?
+- ATENÇÃO: um atendimento pode aparentemente ter usado "todas as argumentações" mas se foram usadas fora de ordem ou fora de contexto, o efeito é nulo ou negativo. Avaliar se cada argumento foi usado no momento certo e em resposta ao que o cliente estava sentindo naquele instante.
+- O vendedor soube ler o momento do cliente e adaptar o discurso, ou seguiu um roteiro fixo independente das reações?
+
+7. AVALIAÇÃO GERAL DO TEMPO
 - Quanto tempo em cada etapa (financiamento / consórcio)?
 - Houve momento de desengajamento do cliente?
 - O ritmo foi adequado ou apressado/lento demais?
 
 CLASSIFICAÇÕES ESPECIAIS — marcar como CRÍTICO se:
-⛔ Garantiu data de contemplação no consórcio
+⛔ Garantiu data ou prazo de contemplação no consórcio
 ⛔ Foi direto demais dizendo que o cliente não tem perfil para financiamento
 ⛔ Não tentou nenhuma técnica de fechamento
 ⛔ Atendimento completamente robótico sem conexão humana
+⛔ Ignorou completamente a real objeção do cliente e apenas desviou sem resolver
+⛔ Argumentação completamente fora de ordem e de contexto, tornando o atendimento confuso e sem progressão
 
 RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
 {
