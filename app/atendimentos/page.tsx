@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { 
   Lock, Mic, Play, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
-  Zap, TrendingUp, Users, DollarSign, AlertTriangle, Calendar,
+  TrendingUp, Users, DollarSign, AlertTriangle, Calendar,
   ChevronRight, Star, BarChart3, Target
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
@@ -256,12 +256,14 @@ export default function AtendimentosPage() {
 
             {/* Header */}
             <div className="relative text-center mb-8">
-              {/* Icone com glow animado */}
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur-lg opacity-60 animate-pulse" />
-                <div className="relative w-full h-full rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 flex items-center justify-center shadow-2xl border border-white/20">
-                  <Zap className="w-10 h-10 text-white drop-shadow-lg" />
-                </div>
+              {/* Logo LR com glow animado */}
+              <div className="relative mx-auto w-24 h-24 mb-5">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full blur-xl opacity-50 animate-pulse" />
+                <img
+                  src="/logo-lr.png"
+                  alt="LR Multimarcas"
+                  className="relative w-full h-full object-contain drop-shadow-2xl"
+                />
               </div>
               
               <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
