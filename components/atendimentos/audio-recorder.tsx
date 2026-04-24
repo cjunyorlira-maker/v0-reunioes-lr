@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Mic, Square, Loader2, X } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { upload } from "@vercel/blob/client"
 
 interface AudioRecorderProps {
@@ -12,28 +11,24 @@ interface AudioRecorderProps {
   onCancel: () => void
 }
 
+const BAR_COUNT = 24
+
 export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
   const [duration, setDuration] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState("")
   const [error, setError] = useState("")
-  
+  const [bars, setBars] = useState<number[]>(Array(BAR_COUNT).fill(3))
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const durationRef = useRef<number>(0)
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [])
+  const animFrameRef = useRef<number | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -41,7 +36,6 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Detecta o melhor mimeType suportado pelo navegador
   const getSupportedMimeType = () => {
     const types = [
       "audio/webm;codecs=opus",
@@ -53,111 +47,123 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
     return types.find(type => MediaRecorder.isTypeSupported(type)) || ""
   }
 
+  // Loop de animacao sincronizado com o microfone
+  const startVisualizer = useCallback((stream: MediaStream) => {
+    const audioCtx = new AudioContext()
+    audioCtxRef.current = audioCtx
+    const source = audioCtx.createMediaStreamSource(stream)
+    const analyser = audioCtx.createAnalyser()
+    analyser.fftSize = 64
+    analyser.smoothingTimeConstant = 0.75
+    source.connect(analyser)
+    analyserRef.current = analyser
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount)
+
+    const tick = () => {
+      analyser.getByteFrequencyData(dataArray)
+      const newBars = Array.from({ length: BAR_COUNT }, (_, i) => {
+        const idx = Math.floor((i / BAR_COUNT) * dataArray.length)
+        // Normaliza 0-255 para 3-48px
+        return 3 + (dataArray[idx] / 255) * 45
+      })
+      setBars(newBars)
+      animFrameRef.current = requestAnimationFrame(tick)
+    }
+    animFrameRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const stopVisualizer = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current)
+      animFrameRef.current = null
+    }
+    audioCtxRef.current?.close()
+    audioCtxRef.current = null
+    analyserRef.current = null
+    setBars(Array(BAR_COUNT).fill(3))
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      stopVisualizer()
+      streamRef.current?.getTracks().forEach(t => t.stop())
+    }
+  }, [stopVisualizer])
+
   const startRecording = async () => {
     setError("")
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
-        } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
       })
-      
       streamRef.current = stream
+
       const mimeType = getSupportedMimeType()
       const mediaRecorder = new MediaRecorder(stream, { mimeType })
-      
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data)
-        }
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
       }
-
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { 
-          type: mediaRecorder.mimeType 
-        })
-        await uploadAudio(audioBlob)
+        const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType })
+        await uploadAudio(blob)
       }
 
       mediaRecorder.start(1000)
       setIsRecording(true)
-      
       durationRef.current = 0
       setDuration(0)
-      
+
       timerRef.current = setInterval(() => {
         durationRef.current += 1
         setDuration(durationRef.current)
       }, 1000)
 
+      startVisualizer(stream)
     } catch (err: any) {
-      console.error("Erro ao acessar microfone:", err)
       if (err.name === "NotAllowedError") {
-        setError("Permissao do microfone negada. Por favor, permita o acesso ao microfone.")
+        setError("Permissao do microfone negada. Permita o acesso e tente novamente.")
       } else if (err.name === "NotFoundError") {
-        setError("Nenhum microfone encontrado. Conecte um microfone e tente novamente.")
+        setError("Nenhum microfone encontrado.")
       } else {
         setError("Erro ao acessar microfone: " + err.message)
       }
     }
   }
 
-  const MIN_DURATION_SECONDS = 30
-
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      if (duration < MIN_DURATION_SECONDS) {
-        setError(`A gravação deve ter pelo menos ${MIN_DURATION_SECONDS} segundos. Atual: ${duration}s.`)
-        return
-      }
-
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
+    if (!mediaRecorderRef.current || !isRecording) return
+    mediaRecorderRef.current.stop()
+    setIsRecording(false)
+    stopVisualizer()
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    streamRef.current?.getTracks().forEach(t => t.stop())
   }
 
   const uploadAudio = async (audioBlob: Blob) => {
     setIsUploading(true)
     setError("")
     setUploadProgress("Enviando audio...")
-
     try {
-      // 1. Upload direto para Vercel Blob (client-side, sem limite de tamanho)
-      // Extensão dinâmica baseada no mimeType real do MediaRecorder
       const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm"
-      const extension = mimeType.includes("mp4") ? "mp4" : "webm"
-      const filename = `atendimentos/${atendimentoId}-${Date.now()}.${extension}`
-      
+      const ext = mimeType.includes("mp4") ? "mp4" : "webm"
+      const filename = `atendimentos/${atendimentoId}-${Date.now()}.${ext}`
+
       const blob = await upload(filename, audioBlob, {
-        access: "public", // Client upload requer store público
+        access: "public",
         handleUploadUrl: "/api/atendimentos/blob-upload",
       })
 
       setUploadProgress("Iniciando processamento...")
 
-      // 2. Chamar API para atualizar o banco e iniciar processamento
       const response = await fetch("/api/atendimentos/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          atendimentoId,
-          audioUrl: blob.url,
-          duracao: durationRef.current,
-        }),
+        body: JSON.stringify({ atendimentoId, audioUrl: blob.url, duracao: durationRef.current }),
       })
 
       if (!response.ok) {
@@ -167,7 +173,6 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
 
       onComplete()
     } catch (err: any) {
-      console.error("Erro ao fazer upload:", err)
       setError(err.message || "Erro ao enviar audio")
       setIsUploading(false)
     }
@@ -175,129 +180,117 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
 
   const handleCancel = () => {
     if (isRecording) {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop()
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
+      mediaRecorderRef.current?.stop()
+      stopVisualizer()
+      if (timerRef.current) clearInterval(timerRef.current)
+      streamRef.current?.getTracks().forEach(t => t.stop())
     }
     onCancel()
   }
 
   return (
     <div className="space-y-3">
-      {/* Recording UI */}
-      <div className={cn(
-        "p-4 rounded-xl border transition-all",
-        isRecording 
-          ? "bg-red-500/10 border-red-500/30" 
-          : "bg-white/5 border-white/10"
-      )}>
-        {/* Timer */}
-        <div className="text-center mb-4">
-          <p className={cn(
-            "text-3xl font-mono font-bold",
-            isRecording ? "text-red-400" : "text-white/70"
-          )}>
-            {formatDuration(duration)}
-          </p>
-          <p className="text-xs text-white/50 mt-1">
-            {isRecording
-              ? duration < MIN_DURATION_SECONDS
-                ? `Mínimo ${MIN_DURATION_SECONDS}s — faltam ${MIN_DURATION_SECONDS - duration}s`
-                : "Gravando..."
-              : isUploading
-              ? uploadProgress
-              : "Pronto para gravar"}
-          </p>
-          {/* Barra de progresso mínima */}
-          {isRecording && duration < MIN_DURATION_SECONDS && (
-            <div className="w-full mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-red-400 to-orange-400 rounded-full transition-all duration-1000"
-                style={{ width: `${(duration / MIN_DURATION_SECONDS) * 100}%` }}
-              />
-            </div>
-          )}
-        </div>
+      <div className="rounded-xl border border-white/10 overflow-hidden" style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(12px)" }}>
+        {/* Header colorido de estado */}
+        <div className={`h-1 w-full transition-all duration-500 ${isRecording ? "bg-gradient-to-r from-red-500 to-rose-400" : isUploading ? "bg-gradient-to-r from-violet-500 to-purple-400" : "bg-gradient-to-r from-white/10 to-white/5"}`} />
 
-        {/* Visualizer (simple pulse animation when recording) */}
-        {isRecording && (
-          <div className="flex justify-center gap-1 mb-4">
-            {[...Array(5)].map((_, i) => (
+        <div className="p-4 space-y-4">
+          {/* Timer central */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isRecording && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
+              <span className={`text-2xl font-mono font-bold tracking-widest ${isRecording ? "text-red-400" : "text-white/50"}`}>
+                {formatDuration(duration)}
+              </span>
+            </div>
+            <span className="text-xs text-white/50">
+              {isRecording ? "Gravando..." : isUploading ? uploadProgress : "Pronto para gravar"}
+            </span>
+          </div>
+
+          {/* Visualizador de ondas sincronizado */}
+          <div className="flex items-center justify-center gap-[3px] h-14">
+            {bars.map((h, i) => (
               <div
                 key={i}
-                className="w-1 bg-red-400 rounded-full animate-pulse"
+                className="w-[3px] rounded-full transition-all duration-75"
                 style={{
-                  height: `${20 + Math.random() * 20}px`,
-                  animationDelay: `${i * 0.1}s`,
+                  height: `${h}px`,
+                  background: isRecording
+                    ? `rgba(248,113,113,${0.4 + (h / 48) * 0.6})`
+                    : "rgba(255,255,255,0.12)",
                 }}
               />
             ))}
           </div>
-        )}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-3">
-          {!isRecording && !isUploading && (
-            <>
-              <Button
-                onClick={startRecording}
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-              >
-                <Mic className="w-4 h-4 mr-2" />
-                Iniciar Gravacao
-              </Button>
-              <Button
-                onClick={handleCancel}
-                variant="ghost"
-                className="text-white/50 hover:text-white hover:bg-white/5"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Cancelar
-              </Button>
-            </>
-          )}
+          {/* Botoes */}
+          <div className="flex items-center gap-2">
+            {!isRecording && !isUploading && (
+              <>
+                <Button
+                  onClick={startRecording}
+                  size="sm"
+                  className="flex-1 h-9 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white text-xs font-semibold rounded-lg"
+                >
+                  <Mic className="w-3.5 h-3.5 mr-1.5" />
+                  Iniciar Gravacao
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 rounded-lg text-white/40 hover:text-white hover:bg-white/10 border border-white/10"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </>
+            )}
 
-          {isRecording && (
-            <Button
-              onClick={stopRecording}
-              variant="destructive"
-              disabled={duration < MIN_DURATION_SECONDS}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Square className="w-4 h-4 mr-2" />
-              {duration < MIN_DURATION_SECONDS
-                ? `Aguarde ${MIN_DURATION_SECONDS - duration}s...`
-                : "Parar Gravacao"}
-            </Button>
-          )}
+            {isRecording && (
+              <>
+                <Button
+                  onClick={stopRecording}
+                  size="sm"
+                  className="flex-1 h-9 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-semibold rounded-lg"
+                >
+                  <Square className="w-3.5 h-3.5 mr-1.5" />
+                  Parar Gravacao
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-white/10"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </>
+            )}
 
-          {isUploading && (
-            <div className="flex items-center gap-2 text-white/70">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Processando audio...</span>
-            </div>
-          )}
+            {isUploading && (
+              <div className="flex-1 flex items-center justify-center gap-2 h-9 text-white/60 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+                {uploadProgress}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Error */}
+      {/* Erro */}
       {error && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
           {error}
         </div>
       )}
 
-      {/* Tips */}
       {!isRecording && !isUploading && (
-        <div className="text-xs text-white/40 text-center">
-          Certifique-se de que o microfone esta conectado e funcionando
-        </div>
+        <p className="text-[11px] text-white/30 text-center">
+          Certifique-se de que o microfone esta conectado e permitido
+        </p>
       )}
     </div>
   )
