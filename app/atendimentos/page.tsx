@@ -585,8 +585,8 @@ export default function AtendimentosPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-280px)] overflow-hidden">
               {/* Coluna Aguardando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-amber-500/20 to-orange-600/10">
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-amber-500/10">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
                     <Clock className="w-4 h-4 text-white" />
                   </div>
@@ -609,8 +609,8 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna Gravando/Processando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/20 to-cyan-600/10">
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-blue-500/10">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
                     <Mic className="w-4 h-4 text-white" />
                   </div>
@@ -633,8 +633,8 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna Fechados */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/20 to-teal-600/10">
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-emerald-500/10">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
@@ -657,8 +657,8 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna Nao Fechados */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-red-500/20 to-rose-600/10">
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-red-500/10">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-rose-600">
                     <XCircle className="w-4 h-4 text-white" />
                   </div>

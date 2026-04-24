@@ -142,14 +142,14 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
   return (
     <>
       <Card className={cn(
-        'relative overflow-hidden border-white/15 transition-all duration-300 hover:scale-[1.02] hover:border-white/30',
-        atendimento.fechou && 'border-emerald-500/40 bg-emerald-500/5',
-        atendimento.is_benchmark && 'ring-2 ring-amber-500/50',
-        isProcessando && 'ring-2 ring-blue-500/30'
+        'relative overflow-hidden border-white/10 transition-all duration-300 hover:scale-[1.02] hover:border-white/25',
+        atendimento.fechou && 'border-emerald-500/30',
+        atendimento.is_benchmark && 'ring-1 ring-amber-500/40',
+        isProcessando && 'ring-1 ring-blue-500/30'
       )}
       style={{
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)',
-        backdropFilter: 'blur(20px)',
+        background: 'rgba(0,0,0,0.15)',
+        backdropFilter: 'blur(8px)',
       }}>
         {/* Linha colorida no topo */}
         <div className={`h-1.5 w-full bg-gradient-to-r ${statusColor}`} />
@@ -184,7 +184,7 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
           </div>
 
           {/* Atendente, Vendedor e Equipe */}
-          <div className='p-3 rounded-xl bg-white/5 border border-white/10 space-y-2'>
+          <div className='p-3 rounded-xl bg-black/10 border border-white/5 space-y-2'>
             <div className='grid grid-cols-2 gap-3'>
               <div className='flex items-center gap-2'>
                 <User className='w-4 h-4 text-[#d4af37]' />
@@ -220,7 +220,7 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
 
           {/* Score Geral - destaque */}
           {temAnalise && (
-            <div className='p-4 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/10 border border-emerald-500/25'>
+            <div className='p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20'>
               <div className='flex items-end justify-between'>
                 <div>
                   <p className='text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1'>📊 Score Geral</p>
@@ -241,14 +241,14 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
 
           {/* Resumo da análise */}
           {atendimento.resumo && (
-            <p className='text-sm text-white/70 line-clamp-2 bg-white/5 p-3 rounded-xl border border-white/10'>
+            <p className='text-sm text-white/70 line-clamp-2 bg-black/10 p-3 rounded-xl border border-white/5'>
               {atendimento.resumo}
             </p>
           )}
 
-          {/* Motivo não fechamento - alerta */}
+          {/* Motivo nao fechamento - alerta */}
           {atendimento.motivo_nao_fechamento && !atendimento.fechou && (
-            <div className='p-3 rounded-xl bg-red-500/15 border border-red-500/25'>
+            <div className='p-3 rounded-xl bg-red-500/10 border border-red-500/20'>
               <p className='text-xs text-red-400 font-bold mb-1 flex items-center gap-1'>
                 <AlertTriangle className='w-3 h-3' />
                 Motivo do Não Fechamento
