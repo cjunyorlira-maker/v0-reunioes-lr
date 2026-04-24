@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { 
   Lock, Mic, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
-  TrendingUp, Users, AlertTriangle,
+  TrendingUp, Users, AlertTriangle, DollarSign, Calendar,
   ChevronRight, Star, BarChart3, Target
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
