@@ -724,6 +724,7 @@ export default function AtendimentosPage() {
           </div>
         )}
       </div>
+      </div>
     </div>
   )
 }
