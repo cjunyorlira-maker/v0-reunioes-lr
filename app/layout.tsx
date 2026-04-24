@@ -35,6 +35,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
+      <head>
+        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+      </head>
       <body className={`${plusJakarta.variable} ${jetbrains.variable} font-sans antialiased`}>
         <AnimatedBackground />
         <div className="relative z-10">

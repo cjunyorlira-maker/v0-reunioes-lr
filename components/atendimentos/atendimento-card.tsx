@@ -1,31 +1,30 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { 
   Mic, 
-  MicOff, 
   Play, 
-  Square, 
+  Trash2,
   CheckCircle, 
   XCircle, 
   Star, 
-  ChevronDown, 
-  ChevronUp,
-  User,
-  Clock,
-  FileText,
+  Eye,
   Loader2,
   AlertTriangle,
   Target,
   DollarSign,
   MessageSquare,
-  ArrowRight
-} from "lucide-react"
-import { AudioRecorder } from "./audio-recorder"
-import { cn } from "@/lib/utils"
+  ArrowRight,
+  FileText,
+  User,
+  Building2
+} from 'lucide-react'
+import { AudioRecorder } from './audio-recorder'
+import { cn } from '@/lib/utils'
 
 interface Atendimento {
   id: string
@@ -47,7 +46,6 @@ interface Atendimento {
   pontos_positivos: string[] | null
   pontos_criticos: string[] | null
   feedback_coaching: string | null
-  // Novos campos do prompt expandido
   situacao_financeira: {
     tinha_entrada: boolean | null
     impeditivo_principal: string | null
@@ -83,410 +81,388 @@ interface AtendimentoCardProps {
   onUpdate: () => void
 }
 
+const analiseEmojis: Record<string, string> = {
+  'abordagem': '🎯',
+  'empatia': '🤝',
+  'clareza': '📝',
+  'conhecimento': '🧠',
+  'profissionalismo': '💼',
+  'paciencia': '😊',
+  'efetividade': '✅',
+  'fechamento': '🎁',
+}
+
 export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps) {
-  const [expanded, setExpanded] = useState(false)
   const [showRecorder, setShowRecorder] = useState(false)
-  const [markingResult, setMarkingResult] = useState<"fechou" | "nao_fechou" | null>(null)
+  const [showAnalise, setShowAnalise] = useState(false)
+  const [markingResult, setMarkingResult] = useState<'fechou' | 'nao_fechou' | null>(null)
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
+  const temAnalise = atendimento.score_geral !== null
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+  const statusColor = {
+    'aguardando': 'from-amber-500 to-orange-600',
+    'gravando': 'from-blue-500 to-cyan-600',
+    'processando': 'from-purple-500 to-violet-600',
+    'concluido': 'from-emerald-500 to-teal-600',
+    'erro': 'from-red-500 to-rose-600'
+  }[atendimento.status] || 'from-gray-500 to-gray-600'
+
+  const statusLabel = {
+    'aguardando': '⏳ Aguardando',
+    'gravando': '🎤 Gravando',
+    'processando': '⚙️ Processando',
+    'concluido': '✓ Concluído',
+    'erro': '❌ Erro'
+  }[atendimento.status] || 'Desconhecido'
 
   const getScoreColor = (score: number | null) => {
-    if (score === null) return "text-white/50"
-    if (score >= 8) return "text-emerald-400"
-    if (score >= 6) return "text-amber-400"
-    return "text-red-400"
+    if (score === null) return 'text-white/50'
+    if (score >= 8) return 'text-emerald-400'
+    if (score >= 6) return 'text-amber-400'
+    return 'text-red-400'
   }
 
   const handleMarkResult = async (fechou: boolean) => {
-    setMarkingResult(fechou ? "fechou" : "nao_fechou")
+    setMarkingResult(fechou ? 'fechou' : 'nao_fechou')
     try {
       await fetch(`/api/atendimentos/${atendimento.id}/resultado`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fechou }),
       })
       onUpdate()
     } catch (err) {
-      console.error("Erro ao marcar resultado:", err)
+      console.error('Erro ao marcar resultado:', err)
     } finally {
       setMarkingResult(null)
     }
   }
 
-  const isAguardando = atendimento.status === "aguardando"
-  const isProcessando = atendimento.status === "processando" || atendimento.status === "gravando"
-  const isConcluido = atendimento.status === "concluido"
+  const isAguardando = atendimento.status === 'aguardando'
+  const isProcessando = atendimento.status === 'processando' || atendimento.status === 'gravando'
+  const isConcluido = atendimento.status === 'concluido'
 
   return (
-    <Card className={cn(
-      "bg-[#12121a] border-white/10 overflow-hidden transition-all",
-      atendimento.fechou && "border-emerald-500/30",
-      atendimento.is_benchmark && "ring-2 ring-amber-500/50"
-    )}>
-      <CardContent className="p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
+    <>
+      <Card className={cn(
+        'relative overflow-hidden border-white/15 transition-all duration-300 hover:scale-[1.02] hover:border-white/30',
+        atendimento.fechou && 'border-emerald-500/40 bg-emerald-500/5',
+        atendimento.is_benchmark && 'ring-2 ring-amber-500/50',
+        isProcessando && 'ring-2 ring-blue-500/30'
+      )}
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)',
+        backdropFilter: 'blur(20px)',
+      }}>
+        {/* Linha colorida no topo */}
+        <div className={`h-1.5 w-full bg-gradient-to-r ${statusColor}`} />
+
+        <CardContent className='p-5 space-y-4'>
+          {/* Header: Status e Badges */}
+          <div className='flex items-start justify-between gap-2'>
+            <div className={`px-3 py-1.5 rounded-lg bg-gradient-to-r ${statusColor} text-white text-xs font-bold`}>
+              {statusLabel}
+            </div>
+            <div className='flex gap-2'>
+              {atendimento.is_benchmark && (
+                <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[10px]'>
+                  <Star className='w-3 h-3 mr-1' />
+                  Benchmark
+                </Badge>
+              )}
+              {isConcluido && temAnalise && (
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[10px]'>
+                  ✓ Analisado
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Nome do Lead */}
           <div>
-            <h3 className="font-semibold text-white">{atendimento.nome_lead}</h3>
-            <div className="flex items-center gap-2 text-xs text-white/50 mt-1">
-              <User className="w-3 h-3" />
-              {atendimento.responsavel}
-              <span className="text-white/30">|</span>
-              <Clock className="w-3 h-3" />
-              {formatDate(atendimento.data_atendimento)}
+            <h3 className='text-base font-bold text-white mb-1'>
+              {atendimento.nome_lead || 'Sem nome'}
+            </h3>
+            <p className='text-xs text-white/40 line-clamp-1'>ID: {atendimento.kommo_id}</p>
+          </div>
+
+          {/* Atendente e Equipe */}
+          <div className='grid grid-cols-2 gap-3 p-3 rounded-xl bg-white/5 border border-white/10'>
+            <div className='flex items-center gap-2'>
+              <User className='w-4 h-4 text-[#d4af37]' />
+              <div className='min-w-0'>
+                <p className='text-[10px] text-white/40 uppercase tracking-wide'>Atendente</p>
+                <p className='text-xs font-bold text-white truncate'>
+                  {atendimento.responsavel || 'Não informado'}
+                </p>
+              </div>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Building2 className='w-4 h-4 text-[#d4af37]' />
+              <div className='min-w-0'>
+                <p className='text-[10px] text-white/40 uppercase tracking-wide'>Equipe</p>
+                <p className='text-xs font-bold text-white truncate'>
+                  {atendimento.equipe || 'Padrão'}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {atendimento.is_benchmark && (
-              <Badge className="bg-amber-500/20 text-amber-400 border-0">
-                <Star className="w-3 h-3 mr-1" />
-                Benchmark
-              </Badge>
-            )}
-            {isConcluido && (
-              <Badge className={cn(
-                "border-0",
-                atendimento.fechou 
-                  ? "bg-emerald-500/20 text-emerald-400" 
-                  : "bg-red-500/20 text-red-400"
-              )}>
-                {atendimento.fechou ? "Fechou" : "Nao Fechou"}
-              </Badge>
-            )}
-          </div>
-        </div>
+          {/* Score Geral - destaque */}
+          {temAnalise && (
+            <div className='p-4 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/10 border border-emerald-500/25'>
+              <div className='flex items-end justify-between'>
+                <div>
+                  <p className='text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1'>📊 Score Geral</p>
+                  <p className={cn('text-3xl font-black', getScoreColor(atendimento.score_geral))}>
+                    {atendimento.score_geral?.toFixed(1)}
+                    <span className='text-lg text-white/40 font-normal ml-1'>/10</span>
+                  </p>
+                </div>
+                <div className='flex-1 h-2 mx-4 rounded-full bg-white/10 overflow-hidden'>
+                  <div
+                    className='h-full bg-gradient-to-r from-emerald-500 to-teal-500'
+                    style={{ width: `${Math.min((atendimento.score_geral! / 10) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Score geral */}
-        {atendimento.score_geral !== null && (
-          <div className="flex items-center gap-4 mb-3 p-2 rounded-lg bg-white/5">
-            <div className="text-center">
-              <p className={cn("text-2xl font-bold", getScoreColor(atendimento.score_geral))}>
-                {atendimento.score_geral.toFixed(1)}
+          {/* Resumo da análise */}
+          {atendimento.resumo && (
+            <p className='text-sm text-white/70 line-clamp-2 bg-white/5 p-3 rounded-xl border border-white/10'>
+              {atendimento.resumo}
+            </p>
+          )}
+
+          {/* Motivo não fechamento - alerta */}
+          {atendimento.motivo_nao_fechamento && !atendimento.fechou && (
+            <div className='p-3 rounded-xl bg-red-500/15 border border-red-500/25'>
+              <p className='text-xs text-red-400 font-bold mb-1 flex items-center gap-1'>
+                <AlertTriangle className='w-3 h-3' />
+                Motivo do Não Fechamento
               </p>
-              <p className="text-[10px] text-white/40">GERAL</p>
+              <p className='text-xs text-white/70'>{atendimento.motivo_nao_fechamento}</p>
             </div>
-            <div className="flex-1 grid grid-cols-4 gap-2 text-center">
-              <div>
-                <p className={cn("text-sm font-semibold", getScoreColor(atendimento.score_abordagem))}>
-                  {atendimento.score_abordagem?.toFixed(1) || "-"}
-                </p>
-                <p className="text-[9px] text-white/40">Abordagem</p>
-              </div>
-              <div>
-                <p className={cn("text-sm font-semibold", getScoreColor(atendimento.score_financiamento))}>
-                  {atendimento.score_financiamento?.toFixed(1) || "-"}
-                </p>
-                <p className="text-[9px] text-white/40">Financ.</p>
-              </div>
-              <div>
-                <p className={cn("text-sm font-semibold", getScoreColor(atendimento.score_consorcio))}>
-                  {atendimento.score_consorcio?.toFixed(1) || "-"}
-                </p>
-                <p className="text-[9px] text-white/40">Consorcio</p>
-              </div>
-              <div>
-                <p className={cn("text-sm font-semibold", getScoreColor(atendimento.score_fechamento))}>
-                  {atendimento.score_fechamento?.toFixed(1) || "-"}
-                </p>
-                <p className="text-[9px] text-white/40">Fecham.</p>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Resumo */}
-        {atendimento.resumo && (
-          <p className="text-sm text-white/70 mb-3 line-clamp-2">{atendimento.resumo}</p>
-        )}
+          {/* Botões de Ação */}
+          <div className='flex gap-2 pt-2'>
+            {/* Botão Gravar Reunião - Sofisticado */}
+            {isAguardando && !showRecorder && (
+              <Button
+                onClick={() => setShowRecorder(true)}
+                className='flex-1 h-11 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/50 border border-white/20'
+              >
+                <Mic className='w-5 h-5 mr-2' />
+                Gravar Reunião
+              </Button>
+            )}
 
-        {/* Motivo nao fechamento */}
-        {atendimento.motivo_nao_fechamento && !atendimento.fechou && (
-          <div className="mb-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-xs text-red-400 font-medium">Motivo nao fechamento:</p>
-            <p className="text-sm text-white/70 mt-1">{atendimento.motivo_nao_fechamento}</p>
-          </div>
-        )}
+            {/* Botão Ver Análise Completa */}
+            {temAnalise && isConcluido && (
+              <Button
+                onClick={() => setShowAnalise(true)}
+                className='flex-1 h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl transition-all duration-300'
+              >
+                <Eye className='w-5 h-5 mr-2' />
+                Ver Análise
+              </Button>
+            )}
 
-        {/* Acoes - Aguardando */}
-        {isAguardando && !showRecorder && (
-          <Button
-            onClick={() => setShowRecorder(true)}
-            className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
-          >
-            <Mic className="w-4 h-4 mr-2" />
-            Gravar Reuniao
-          </Button>
-        )}
-
-        {/* Gravador de audio */}
-        {showRecorder && isAguardando && (
-          <AudioRecorder
-            atendimentoId={atendimento.id}
-            onComplete={() => {
-              setShowRecorder(false)
-              onUpdate()
-            }}
-            onCancel={() => setShowRecorder(false)}
-          />
-        )}
-
-        {/* Processando */}
-        {isProcessando && (
-          <div className="flex items-center justify-center gap-2 py-4 text-blue-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Processando transcricao...</span>
-          </div>
-        )}
-
-        {/* Acoes - Concluido sem resultado */}
-        {isConcluido && !atendimento.fechou && atendimento.fechou === null && (
-          <div className="flex gap-2 mt-3">
+            {/* Botão Deletar */}
             <Button
-              onClick={() => handleMarkResult(true)}
-              disabled={markingResult !== null}
-              className="flex-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border-0"
+              variant='ghost'
+              size='icon'
+              className='h-11 w-11 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
+              onClick={() => {
+                // TODO: Implementar delete
+              }}
             >
-              {markingResult === "fechou" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Fechou
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={() => handleMarkResult(false)}
-              disabled={markingResult !== null}
-              className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
-            >
-              {markingResult === "nao_fechou" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <XCircle className="w-4 h-4 mr-1" />
-                  Nao Fechou
-                </>
-              )}
+              <Trash2 className='w-5 h-5' />
             </Button>
           </div>
-        )}
 
-        {/* Expandir detalhes */}
-        {isConcluido && (atendimento.pontos_positivos || atendimento.feedback_coaching) && (
-          <Button
-            variant="ghost"
-            onClick={() => setExpanded(!expanded)}
-            className="w-full mt-3 text-white/50 hover:text-white hover:bg-white/5"
-          >
-            {expanded ? (
-              <>
-                <ChevronUp className="w-4 h-4 mr-1" />
-                Ocultar detalhes
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-4 h-4 mr-1" />
-                Ver detalhes da analise
-              </>
-            )}
-          </Button>
-        )}
+          {/* Gravador de Áudio */}
+          {showRecorder && isAguardando && (
+            <div className='mt-3 p-4 rounded-xl bg-blue-500/15 border border-blue-500/25'>
+              <AudioRecorder
+                atendimentoId={atendimento.id}
+                onComplete={() => {
+                  setShowRecorder(false)
+                  onUpdate()
+                }}
+                onCancel={() => setShowRecorder(false)}
+              />
+            </div>
+          )}
 
-        {/* Detalhes expandidos */}
-        {expanded && (
-          <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
-            {/* Pontos positivos */}
-            {atendimento.pontos_positivos && atendimento.pontos_positivos.length > 0 && (
-              <div>
-                <p className="text-xs text-emerald-400 font-medium mb-2">Pontos Positivos:</p>
-                <ul className="space-y-1">
-                  {atendimento.pontos_positivos.map((ponto, i) => (
-                    <li key={i} className="text-sm text-white/70 flex items-start gap-2">
-                      <CheckCircle className="w-3 h-3 text-emerald-400 mt-1 flex-shrink-0" />
-                      {ponto}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          {/* Processando */}
+          {isProcessando && (
+            <div className='flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-500/15 border border-blue-500/25 text-blue-400'>
+              <Loader2 className='w-5 h-5 animate-spin' />
+              <span className='text-sm font-medium'>Processando transcrição...</span>
+            </div>
+          )}
 
-            {/* Pontos criticos */}
-            {atendimento.pontos_criticos && atendimento.pontos_criticos.length > 0 && (
-              <div>
-                <p className="text-xs text-red-400 font-medium mb-2">Pontos a Melhorar:</p>
-                <ul className="space-y-1">
-                  {atendimento.pontos_criticos.map((ponto, i) => (
-                    <li key={i} className="text-sm text-white/70 flex items-start gap-2">
-                      <XCircle className="w-3 h-3 text-red-400 mt-1 flex-shrink-0" />
-                      {ponto}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Feedback coaching */}
-            {atendimento.feedback_coaching && (
-              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                <p className="text-xs text-violet-400 font-medium mb-1">Feedback para o vendedor:</p>
-                <p className="text-sm text-white/70">{atendimento.feedback_coaching}</p>
-              </div>
-            )}
-
-            {/* Proximo passo sugerido */}
-            {atendimento.proximo_passo_sugerido && (
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <p className="text-xs text-blue-400 font-medium mb-1 flex items-center gap-1">
-                  <ArrowRight className="w-3 h-3" />
-                  Proximo Passo Sugerido:
-                </p>
-                <p className="text-sm text-white/70">{atendimento.proximo_passo_sugerido}</p>
-              </div>
-            )}
-
-            {/* Alerta critico - Garantiu contemplacao */}
-            {atendimento.garantiu_contemplacao && (
-              <div className="p-3 rounded-lg bg-red-600/20 border border-red-500/40">
-                <p className="text-xs text-red-400 font-bold flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  ALERTA CRITICO: Vendedor garantiu data de contemplacao!
-                </p>
-              </div>
-            )}
-
-            {/* Situacao financeira do cliente */}
-            {atendimento.situacao_financeira && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
-                  Situacao Financeira do Cliente:
-                </p>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="text-center p-2 rounded bg-white/5">
-                    <p className={atendimento.situacao_financeira.tinha_entrada ? "text-emerald-400" : "text-red-400"}>
-                      {atendimento.situacao_financeira.tinha_entrada === null ? "?" : atendimento.situacao_financeira.tinha_entrada ? "Sim" : "Nao"}
-                    </p>
-                    <p className="text-white/40 text-[10px]">Tinha entrada</p>
-                  </div>
-                  <div className="text-center p-2 rounded bg-white/5">
-                    <p className={atendimento.situacao_financeira.perfil_mapeado ? "text-emerald-400" : "text-amber-400"}>
-                      {atendimento.situacao_financeira.perfil_mapeado === null ? "?" : atendimento.situacao_financeira.perfil_mapeado ? "Sim" : "Nao"}
-                    </p>
-                    <p className="text-white/40 text-[10px]">Perfil mapeado</p>
-                  </div>
-                  <div className="col-span-1 text-center p-2 rounded bg-white/5">
-                    <p className="text-white/70 text-[10px] line-clamp-2">
-                      {atendimento.situacao_financeira.impeditivo_principal || "-"}
-                    </p>
-                    <p className="text-white/40 text-[10px]">Impeditivo</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tecnicas de fechamento */}
-            {atendimento.tecnicas_fechamento && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-cyan-400 font-medium mb-2 flex items-center gap-1">
-                  <Target className="w-3 h-3" />
-                  Tecnicas de Fechamento:
-                </p>
-                <div className="flex items-center gap-4 text-xs mb-2">
-                  <span className={atendimento.tecnicas_fechamento.tentou_fechar ? "text-emerald-400" : "text-red-400"}>
-                    {atendimento.tecnicas_fechamento.tentou_fechar ? "Tentou fechar" : "Nao tentou fechar"}
-                  </span>
-                  {atendimento.tecnicas_fechamento.quantidade_tentativas !== null && (
-                    <span className="text-white/50">
-                      {atendimento.tecnicas_fechamento.quantidade_tentativas} tentativa(s)
-                    </span>
-                  )}
-                </div>
-                {atendimento.tecnicas_fechamento.tecnicas_usadas && atendimento.tecnicas_fechamento.tecnicas_usadas.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {atendimento.tecnicas_fechamento.tecnicas_usadas.map((tecnica, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">
-                        {tecnica}
-                      </Badge>
-                    ))}
-                  </div>
+          {/* Marcar Resultado - Concluído */}
+          {isConcluido && atendimento.fechou === null && (
+            <div className='flex gap-2 pt-2'>
+              <Button
+                onClick={() => handleMarkResult(true)}
+                disabled={markingResult !== null}
+                className='flex-1 h-10 bg-emerald-500/25 text-emerald-400 hover:bg-emerald-500/35 border border-emerald-500/30 rounded-lg transition-all'
+              >
+                {markingResult === 'fechou' ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <>
+                    <CheckCircle className='w-4 h-4 mr-1.5' />
+                    Fechou
+                  </>
                 )}
+              </Button>
+              <Button
+                onClick={() => handleMarkResult(false)}
+                disabled={markingResult !== null}
+                className='flex-1 h-10 bg-red-500/25 text-red-400 hover:bg-red-500/35 border border-red-500/30 rounded-lg transition-all'
+              >
+                {markingResult === 'nao_fechou' ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <>
+                    <XCircle className='w-4 h-4 mr-1.5' />
+                    Não Fechou
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal de Análise Completa */}
+      <Dialog open={showAnalise} onOpenChange={setShowAnalise}>
+        <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto bg-black/90 border border-white/15 backdrop-blur-2xl rounded-2xl'>
+          <DialogHeader>
+            <DialogTitle className='text-white text-xl font-black flex items-center gap-2'>
+              <FileText className='w-6 h-6 text-emerald-400' />
+              Análise Completa
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className='space-y-4 mt-4'>
+            {/* Header com Info */}
+            <div className='p-4 rounded-xl bg-white/5 border border-white/10'>
+              <p className='text-white font-bold text-base mb-2'>{atendimento.nome_lead}</p>
+              <div className='grid grid-cols-2 gap-2 text-xs text-white/60'>
+                <p>👤 {atendimento.responsavel}</p>
+                <p>🏢 {atendimento.equipe}</p>
+                <p>📅 {new Date(atendimento.data_atendimento).toLocaleDateString('pt-BR')}</p>
+                <p>📊 Score: <span className={cn('font-bold', getScoreColor(atendimento.score_geral))}>{atendimento.score_geral}/10</span></p>
+              </div>
+            </div>
+
+            {/* Score Detalhado */}
+            <div className='p-4 rounded-xl bg-gradient-to-br from-violet-500/15 to-purple-500/10 border border-violet-500/25'>
+              <h3 className='text-white font-bold mb-3 flex items-center gap-2'>
+                📈 Scores Detalhados
+              </h3>
+              <div className='grid grid-cols-2 gap-3'>
+                {[
+                  { label: '🎯 Abordagem', score: atendimento.score_abordagem },
+                  { label: '💼 Financiamento', score: atendimento.score_financiamento },
+                  { label: '🏛️ Consórcio', score: atendimento.score_consorcio },
+                  { label: '🎁 Fechamento', score: atendimento.score_fechamento },
+                ].map((item, i) => (
+                  <div key={i} className='p-2 rounded-lg bg-white/5'>
+                    <p className='text-xs text-white/60 mb-1'>{item.label}</p>
+                    <p className={cn('text-xl font-black', getScoreColor(item.score))}>
+                      {item.score?.toFixed(1) || '-'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Resumo */}
+            {atendimento.resumo && (
+              <div className='p-4 rounded-xl bg-white/5 border border-white/10'>
+                <h3 className='text-white font-bold mb-2 flex items-center gap-2'>
+                  📝 Resumo da Análise
+                </h3>
+                <p className='text-sm text-white/70 leading-relaxed'>{atendimento.resumo}</p>
               </div>
             )}
 
-            {/* Prova social utilizada */}
-            {atendimento.usou_prova_social && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-purple-400 font-medium mb-2">Prova Social Utilizada:</p>
-                <div className="flex gap-3 text-xs">
-                  <span className={atendimento.usou_prova_social.reclame_aqui ? "text-emerald-400" : "text-white/30"}>
-                    {atendimento.usou_prova_social.reclame_aqui ? "✓" : "✗"} Reclame Aqui
-                  </span>
-                  <span className={atendimento.usou_prova_social.site_empresa ? "text-emerald-400" : "text-white/30"}>
-                    {atendimento.usou_prova_social.site_empresa ? "✓" : "✗"} Site
-                  </span>
-                  <span className={atendimento.usou_prova_social.referencias_clientes ? "text-emerald-400" : "text-white/30"}>
-                    {atendimento.usou_prova_social.referencias_clientes ? "✓" : "✗"} Referencias
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Objecoes do cliente */}
-            {atendimento.objecoes_cliente && atendimento.objecoes_cliente.length > 0 && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-orange-400 font-medium mb-2 flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" />
-                  Objecoes do Cliente ({atendimento.objecoes_cliente.length}):
-                </p>
-                <div className="space-y-2">
-                  {atendimento.objecoes_cliente.map((obj, i) => (
-                    <div key={i} className="text-xs p-2 rounded bg-white/5">
-                      <p className="text-white/70"><span className="text-orange-400">Cliente:</span> {obj.objecao}</p>
-                      <p className="text-white/50 mt-1"><span className="text-blue-400">Vendedor:</span> {obj.resposta_vendedor}</p>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "mt-1 text-[9px]",
-                          obj.eficaz ? "border-emerald-500/30 text-emerald-400" : "border-red-500/30 text-red-400"
-                        )}
-                      >
-                        {obj.eficaz ? "Resposta eficaz" : "Resposta ineficaz"}
-                      </Badge>
-                    </div>
+            {/* Pontos Positivos */}
+            {atendimento.pontos_positivos && atendimento.pontos_positivos.length > 0 && (
+              <div className='p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/25'>
+                <h3 className='text-emerald-400 font-bold mb-3 flex items-center gap-2'>
+                  ✅ Pontos Positivos
+                </h3>
+                <ul className='space-y-2'>
+                  {atendimento.pontos_positivos.map((ponto, i) => (
+                    <li key={i} className='flex items-start gap-2 text-sm text-white/70'>
+                      <CheckCircle className='w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5' />
+                      {ponto}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
 
-            {/* Audio - USA URL PRIVADA DO BLOB - NAO FUNCIONA SEM TOKEN */}
-            {/* Comentado pois o Blob é privado e não pode ser acessado direto do navegador */}
-            {/* {atendimento.audio_url && (
-              <div>
-                <p className="text-xs text-white/50 mb-2">
-                  Audio ({atendimento.duracao_segundos ? formatDuration(atendimento.duracao_segundos) : "-"})
-                </p>
-                <audio controls className="w-full h-10" src={atendimento.audio_url} />
+            {/* Pontos a Melhorar */}
+            {atendimento.pontos_criticos && atendimento.pontos_criticos.length > 0 && (
+              <div className='p-4 rounded-xl bg-red-500/15 border border-red-500/25'>
+                <h3 className='text-red-400 font-bold mb-3 flex items-center gap-2'>
+                  🎯 Pontos a Melhorar
+                </h3>
+                <ul className='space-y-2'>
+                  {atendimento.pontos_criticos.map((ponto, i) => (
+                    <li key={i} className='flex items-start gap-2 text-sm text-white/70'>
+                      <AlertTriangle className='w-4 h-4 text-red-400 flex-shrink-0 mt-0.5' />
+                      {ponto}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )} */}
+            )}
+
+            {/* Feedback Coaching */}
+            {atendimento.feedback_coaching && (
+              <div className='p-4 rounded-xl bg-blue-500/15 border border-blue-500/25'>
+                <h3 className='text-blue-400 font-bold mb-2 flex items-center gap-2'>
+                  💡 Feedback para o Vendedor
+                </h3>
+                <p className='text-sm text-white/70'>{atendimento.feedback_coaching}</p>
+              </div>
+            )}
+
+            {/* Próximo Passo */}
+            {atendimento.proximo_passo_sugerido && (
+              <div className='p-4 rounded-xl bg-amber-500/15 border border-amber-500/25'>
+                <h3 className='text-amber-400 font-bold mb-2 flex items-center gap-2'>
+                  <ArrowRight className='w-4 h-4' />
+                  Próximo Passo Sugerido
+                </h3>
+                <p className='text-sm text-white/70'>{atendimento.proximo_passo_sugerido}</p>
+              </div>
+            )}
+
+            {/* Alerta Crítico */}
+            {atendimento.garantiu_contemplacao && (
+              <div className='p-4 rounded-xl bg-red-600/25 border-2 border-red-500/50'>
+                <p className='text-red-300 font-bold flex items-center gap-2'>
+                  <AlertTriangle className='w-5 h-5' />
+                  ⚠️ ALERTA CRÍTICO: Vendedor garantiu data de contemplação!
+                </p>
+              </div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

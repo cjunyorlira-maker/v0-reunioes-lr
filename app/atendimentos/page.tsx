@@ -384,21 +384,40 @@ export default function AtendimentosPage() {
 
   // Tela Principal
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Gradient Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div 
-          className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] opacity-20"
-          style={{ background: `linear-gradient(135deg, ${equipeColors.glow}, transparent)` }}
-        />
-        <div 
-          className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] opacity-10"
-          style={{ background: `linear-gradient(135deg, ${equipeColors.glow}, transparent)` }}
-        />
-      </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Video de fundo HLS - 100% transparente */}
+      <video
+        ref={(video) => {
+          if (!video || (video as any)._hlsInitialized) return
+          ;(video as any)._hlsInitialized = true
+          
+          // Tenta carregar com HLS.js se disponível
+          if (typeof window !== 'undefined' && (window as any).Hls) {
+            const Hls = (window as any).Hls
+            const hls = new Hls()
+            hls.loadSource("https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8")
+            hls.attachMedia(video)
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Fallback para navegadores com suporte nativo a HLS
+            video.src = "https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8"
+          }
+        }}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover z-0"
+        style={{ filter: "brightness(0.35) saturate(1.1)" }}
+      />
 
-      {/* Header Premium */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/50 border-b border-white/5">
+      {/* Overlay escuro para profundidade */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70 z-[1] pointer-events-none" />
+
+      {/* Conteudo com transparencia */}
+      <div className="relative z-10">
+
+      {/* Header Premium - Transparente */}
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -499,7 +518,7 @@ export default function AtendimentosPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
         {/* Stats Cards Premium */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
