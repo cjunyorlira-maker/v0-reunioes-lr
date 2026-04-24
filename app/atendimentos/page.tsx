@@ -233,44 +233,38 @@ export default function AtendimentosPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
 
-        {/* Card central */}
+        {/* Card central - totalmente transparente */}
         <div className="relative z-10 w-full max-w-sm mx-4">
 
-          {/* Glow externo do card */}
-          <div className="absolute -inset-2 rounded-3xl opacity-40 blur-2xl"
-            style={{ background: "linear-gradient(135deg, #d4af37, #f5d742, #d4af37)" }}
-          />
-
           <div
-            className="relative rounded-3xl overflow-hidden border border-white/15"
+            className="relative rounded-3xl overflow-hidden"
             style={{
-              background: "linear-gradient(160deg, rgba(20,18,12,0.97) 0%, rgba(10,9,6,0.98) 100%)",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(212,175,55,0.2)",
+              background: "transparent",
+              backdropFilter: "none",
             }}
           >
             {/* Linha dourada no topo */}
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
 
             <div className="px-8 pt-8 pb-8">
-              {/* Logo */}
+              {/* Logo nova */}
               <div className="flex flex-col items-center mb-8">
-                <div className="relative w-28 h-28 mb-4">
-                  {/* Glow dourado atras da logo */}
+                <div className="relative w-44 h-44 mb-2">
                   <div
-                    className="absolute inset-0 rounded-full blur-2xl opacity-60"
-                    style={{ background: "radial-gradient(circle, #d4af37 0%, transparent 70%)" }}
+                    className="absolute inset-0 blur-3xl opacity-30"
+                    style={{ background: "radial-gradient(circle, #d4af37 0%, transparent 65%)" }}
                   />
                   <img
-                    src="/logo-lr.png"
+                    src="/logo-lr-gold.png"
                     alt="LR Multimarcas"
                     className="relative w-full h-full object-contain"
-                    style={{ filter: "drop-shadow(0 0 16px rgba(212,175,55,0.6))" }}
+                    style={{ filter: "drop-shadow(0 0 24px rgba(212,175,55,0.5))" }}
                   />
                 </div>
-                <h1 className="text-2xl font-black text-white tracking-tight text-center">
+                <h1 className="text-2xl font-black text-white tracking-tight text-center drop-shadow-lg">
                   Central de Atendimentos
                 </h1>
-                <p className="text-white/45 text-xs mt-1 font-medium tracking-wide">
+                <p className="text-white/60 text-xs mt-1 font-medium tracking-wide drop-shadow">
                   Acesse com as credenciais da sua equipe
                 </p>
               </div>
@@ -285,15 +279,16 @@ export default function AtendimentosPage() {
                     <SelectTrigger
                       className="h-13 rounded-xl border text-white transition-all duration-200"
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        borderColor: equipe ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.1)",
+                        background: "rgba(0,0,0,0.25)",
+                        backdropFilter: "blur(12px)",
+                        borderColor: equipe ? "rgba(212,175,55,0.6)" : "rgba(255,255,255,0.2)",
                       }}
                     >
                       <SelectValue placeholder="Selecione sua equipe" />
                     </SelectTrigger>
                     <SelectContent
                       className="rounded-xl border-white/10"
-                      style={{ background: "rgba(15,13,8,0.98)", backdropFilter: "blur(20px)" }}
+                      style={{ background: "rgba(10,8,4,0.95)", backdropFilter: "blur(24px)" }}
                     >
                       {EQUIPES.map((eq) => (
                         <SelectItem
@@ -322,10 +317,11 @@ export default function AtendimentosPage() {
                       onChange={(e) => setSenha(e.target.value.replace(/\D/g, "").slice(0, 4))}
                       placeholder="• • • •"
                       maxLength={4}
-                      className="h-13 rounded-xl text-white text-center text-xl tracking-[0.5em] font-bold placeholder:text-white/20 transition-all duration-200 border"
+                      className="h-13 rounded-xl text-white text-center text-xl tracking-[0.5em] font-bold placeholder:text-white/30 transition-all duration-200 border"
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        borderColor: senha.length > 0 ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.1)",
+                        background: "rgba(0,0,0,0.25)",
+                        backdropFilter: "blur(12px)",
+                        borderColor: senha.length > 0 ? "rgba(212,175,55,0.6)" : "rgba(255,255,255,0.2)",
                       }}
                     />
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
@@ -380,8 +376,6 @@ export default function AtendimentosPage() {
               </div>
             </div>
 
-            {/* Linha dourada no fundo */}
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent" />
           </div>
         </div>
       </div>
