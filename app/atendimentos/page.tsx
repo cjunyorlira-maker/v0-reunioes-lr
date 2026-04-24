@@ -1,17 +1,18 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { 
-  Lock, Mic, Play, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
-  TrendingUp, Users, DollarSign, AlertTriangle, Calendar,
+  Lock, Mic, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
+  TrendingUp, Users, AlertTriangle,
   ChevronRight, Star, BarChart3, Target
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 
 interface Atendimento {
   id: string
@@ -105,16 +106,9 @@ export default function AtendimentosPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (isAuthenticated && equipe) {
-      fetchAtendimentos()
-    }
-  }, [isAuthenticated, equipe])
-
-  const fetchAtendimentos = async () => {
+  const fetchAtendimentos = useCallback(async () => {
     setLoadingAtendimentos(true)
     try {
-      // Admin tem acesso a todas as equipes
       const url = equipe === "Admin" 
         ? "/api/atendimentos?equipe=all" 
         : `/api/atendimentos?equipe=${equipe}`
@@ -128,7 +122,36 @@ export default function AtendimentosPage() {
     } finally {
       setLoadingAtendimentos(false)
     }
-  }
+  }, [equipe])
+
+  // Fetch inicial e subscribe para realtime
+  useEffect(() => {
+    if (!isAuthenticated || !equipe) return
+    
+    fetchAtendimentos()
+    
+    // Subscribe para atualizacoes em tempo real
+    const supabase = createClient()
+    const channel = supabase
+      .channel('atendimentos-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'atendimentos'
+        },
+        (payload) => {
+          // Quando qualquer mudanca ocorrer, atualiza a lista
+          fetchAtendimentos()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [isAuthenticated, equipe, fetchAtendimentos])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -384,34 +407,49 @@ export default function AtendimentosPage() {
 
   // Tela Principal
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Video de fundo HLS - 100% transparente */}
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      {/* Video de fundo HLS */}
       <video
-        ref={(video) => {
-          if (!video || (video as any)._hlsInitialized) return
-          ;(video as any)._hlsInitialized = true
-          
-          // Tenta carregar com HLS.js se disponível
-          if (typeof window !== 'undefined' && (window as any).Hls) {
-            const Hls = (window as any).Hls
-            const hls = new Hls()
-            hls.loadSource("https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8")
-            hls.attachMedia(video)
-          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Fallback para navegadores com suporte nativo a HLS
-            video.src = "https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8"
-          }
-        }}
+        id="hls-video-bg"
         autoPlay
         loop
         muted
         playsInline
         className="fixed inset-0 w-full h-full object-cover z-0"
-        style={{ filter: "brightness(0.35) saturate(1.1)" }}
+        style={{ filter: "brightness(0.35) saturate(1.2)" }}
+      />
+      
+      {/* Script para inicializar HLS */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              var video = document.getElementById('hls-video-bg');
+              if (!video || video._hlsInit) return;
+              video._hlsInit = true;
+              
+              var hlsUrl = "https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8";
+              
+              if (window.Hls && Hls.isSupported()) {
+                var hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+                hls.loadSource(hlsUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                  video.play().catch(function() {});
+                });
+              } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = hlsUrl;
+                video.addEventListener('loadedmetadata', function() {
+                  video.play().catch(function() {});
+                });
+              }
+            })();
+          `
+        }}
       />
 
       {/* Overlay escuro para profundidade */}
-      <div className="fixed inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70 z-[1] pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-[1] pointer-events-none" />
 
       {/* Conteudo com transparencia */}
       <div className="relative z-10">
@@ -550,7 +588,7 @@ export default function AtendimentosPage() {
         </div>
 
         {activeTab === "atendimentos" ? (
-          /* Lista de Atendimentos */
+          /* Lista de Atendimentos em Colunas Kanban */
           loadingAtendimentos ? (
             <div className="flex items-center justify-center py-20">
               <div className="flex flex-col items-center gap-4">
@@ -569,60 +607,102 @@ export default function AtendimentosPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-8">
-              {/* Aguardando */}
-              {aguardando.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
-                      <Clock className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className="text-lg font-bold text-white">Aguardando Gravacao</h2>
-                    <Badge className="bg-amber-500/20 text-amber-400 border-0">{aguardando.length}</Badge>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-280px)] overflow-hidden">
+              {/* Coluna Aguardando */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-amber-500/20 to-orange-600/10">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
+                    <Clock className="w-4 h-4 text-white" />
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {aguardando.map((atendimento) => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
-                    ))}
+                  <div className="flex-1">
+                    <h2 className="text-sm font-bold text-white">Aguardando</h2>
+                    <p className="text-[10px] text-white/50">Prontos para gravar</p>
                   </div>
+                  <Badge className="bg-amber-500/30 text-amber-400 border-0 text-xs">{aguardando.length}</Badge>
                 </div>
-              )}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {aguardando.map((atendimento) => (
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
+                  ))}
+                  {aguardando.length === 0 && (
+                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                      Nenhum aguardando
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              {/* Em Processamento */}
-              {processando.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600">
-                      <Mic className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className="text-lg font-bold text-white">Em Gravacao/Processamento</h2>
-                    <Badge className="bg-blue-500/20 text-blue-400 border-0">{processando.length}</Badge>
+              {/* Coluna Gravando/Processando */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-blue-500/20 to-cyan-600/10">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
+                    <Mic className="w-4 h-4 text-white" />
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {processando.map((atendimento) => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
-                    ))}
+                  <div className="flex-1">
+                    <h2 className="text-sm font-bold text-white">Gravando</h2>
+                    <p className="text-[10px] text-white/50">Em andamento</p>
                   </div>
+                  <Badge className="bg-blue-500/30 text-blue-400 border-0 text-xs">{processando.length}</Badge>
                 </div>
-              )}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {processando.map((atendimento) => (
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
+                  ))}
+                  {processando.length === 0 && (
+                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                      Nenhum gravando
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              {/* Concluidos */}
-              {concluidos.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
-                      <CheckCircle className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className="text-lg font-bold text-white">Concluidos</h2>
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-0">{concluidos.length}</Badge>
+              {/* Coluna Fechados */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/20 to-teal-600/10">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
+                    <CheckCircle className="w-4 h-4 text-white" />
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {concluidos.map((atendimento) => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
-                    ))}
+                  <div className="flex-1">
+                    <h2 className="text-sm font-bold text-white">Fechados</h2>
+                    <p className="text-[10px] text-white/50">Vendas concluidas</p>
                   </div>
+                  <Badge className="bg-emerald-500/30 text-emerald-400 border-0 text-xs">{fechados.length}</Badge>
                 </div>
-              )}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {fechados.map((atendimento) => (
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
+                  ))}
+                  {fechados.length === 0 && (
+                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                      Nenhum fechado
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Coluna Nao Fechados */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-gradient-to-r from-red-500/20 to-rose-600/10">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-rose-600">
+                    <XCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-sm font-bold text-white">Nao Fechados</h2>
+                    <p className="text-[10px] text-white/50">Para analise</p>
+                  </div>
+                  <Badge className="bg-red-500/30 text-red-400 border-0 text-xs">{naoFechados.length}</Badge>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {naoFechados.map((atendimento) => (
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} onUpdate={fetchAtendimentos} />
+                  ))}
+                  {naoFechados.length === 0 && (
+                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                      Nenhum nao fechado
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )
         ) : (

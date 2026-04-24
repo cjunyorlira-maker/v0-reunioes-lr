@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { 
   Mic, 
-  Play, 
   Trash2,
   CheckCircle, 
   XCircle, 
@@ -15,13 +14,11 @@ import {
   Eye,
   Loader2,
   AlertTriangle,
-  Target,
-  DollarSign,
-  MessageSquare,
   ArrowRight,
   FileText,
   User,
-  Building2
+  Building2,
+  ExternalLink
 } from 'lucide-react'
 import { AudioRecorder } from './audio-recorder'
 import { cn } from '@/lib/utils'
@@ -247,40 +244,54 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
             </div>
           )}
 
-          {/* Botões de Ação */}
+          {/* Botoes de Acao */}
           <div className='flex gap-2 pt-2'>
-            {/* Botão Gravar Reunião - Sofisticado */}
+            {/* Botao Kommo */}
+            {atendimento.kommo_id && (
+              <a
+                href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${atendimento.kommo_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className='h-9 w-9 flex items-center justify-center rounded-lg bg-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/30 transition-colors border border-[#d4af37]/30'
+              >
+                <ExternalLink className='w-4 h-4' />
+              </a>
+            )}
+
+            {/* Botao Gravar Reuniao - Compacto */}
             {isAguardando && !showRecorder && (
               <Button
                 onClick={() => setShowRecorder(true)}
-                className='flex-1 h-11 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/50 border border-white/20'
+                size='sm'
+                className='flex-1 h-9 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
               >
-                <Mic className='w-5 h-5 mr-2' />
-                Gravar Reunião
+                <Mic className='w-3.5 h-3.5 mr-1.5' />
+                Gravar
               </Button>
             )}
 
-            {/* Botão Ver Análise Completa */}
+            {/* Botao Ver Analise Completa */}
             {temAnalise && isConcluido && (
               <Button
                 onClick={() => setShowAnalise(true)}
-                className='flex-1 h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl transition-all duration-300'
+                size='sm'
+                className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
               >
-                <Eye className='w-5 h-5 mr-2' />
-                Ver Análise
+                <Eye className='w-3.5 h-3.5 mr-1.5' />
+                Analise
               </Button>
             )}
 
-            {/* Botão Deletar */}
+            {/* Botao Deletar */}
             <Button
               variant='ghost'
               size='icon'
-              className='h-11 w-11 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
+              className='h-9 w-9 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
               onClick={() => {
                 // TODO: Implementar delete
               }}
             >
-              <Trash2 className='w-5 h-5' />
+              <Trash2 className='w-4 h-4' />
             </Button>
           </div>
 
