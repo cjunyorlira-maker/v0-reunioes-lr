@@ -24,16 +24,17 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
   }
   
   return (
-    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-5 p-4 backdrop-blur-md border border-white/10 rounded-2xl" style={{ background: "rgba(0,0,0,0.15)" }}>
+    <header className="mx-4 md:mx-6 mt-4 mb-5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden" style={{ background: "rgba(0,0,0,0.15)" }}>
+      <div className="flex items-center gap-3 px-4 py-3 overflow-x-auto scrollbar-none">
       {/* Brand */}
-      <div className="flex items-center gap-3 group">
+      <div className="flex items-center gap-3 group flex-shrink-0">
         <div className="relative transition-transform duration-300 group-hover:scale-105">
           <Image
             src="/images/logo-lr.png"
             alt="LR Multimarcas"
             width={180}
             height={60}
-            className="h-[56px] w-auto object-contain"
+            className="h-[48px] w-auto object-contain"
             priority
           />
         </div>
@@ -46,7 +47,7 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 ml-auto flex-shrink-0">
         {/* Week navigation */}
         <div className="flex items-center bg-white/[0.04] backdrop-blur-md border border-[rgba(212,175,55,0.15)] rounded-xl overflow-hidden transition-all duration-300 hover:border-[rgba(212,175,55,0.3)] hover:shadow-[0_0_20px_rgba(212,175,55,0.1)]">
           <button
@@ -126,11 +127,12 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="w-10 h-10 flex items-center justify-center text-[#8a8070] hover:text-red-400 hover:bg-red-500/15 rounded-xl transition-all duration-300 hover:scale-105"
+          className="w-10 h-10 flex items-center justify-center text-[#8a8070] hover:text-red-400 hover:bg-red-500/15 rounded-xl transition-all duration-300 hover:scale-105 flex-shrink-0"
           title="Sair"
         >
           <LogOut className="h-4 w-4" />
         </button>
+      </div>
       </div>
     </header>
   )
