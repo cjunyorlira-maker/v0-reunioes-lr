@@ -408,45 +408,17 @@ export default function AtendimentosPage() {
   // Tela Principal
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
-      {/* Video de fundo HLS */}
+      {/* Video de fundo MP4 */}
       <video
-        id="hls-video-bg"
         autoPlay
         loop
         muted
         playsInline
         className="fixed inset-0 w-full h-full object-cover z-0"
         style={{ filter: "brightness(0.35) saturate(1.2)" }}
-      />
-      
-      {/* Script para inicializar HLS */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              var video = document.getElementById('hls-video-bg');
-              if (!video || video._hlsInit) return;
-              video._hlsInit = true;
-              
-              var hlsUrl = "https://cms-public-artifacts.motionarray.com/content/motion-array/3288878/PRD-3288878-oBIrSTeTnSLTAESl-original_2160p_1741101605.m3u8";
-              
-              if (window.Hls && Hls.isSupported()) {
-                var hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-                hls.loadSource(hlsUrl);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                  video.play().catch(function() {});
-                });
-              } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = hlsUrl;
-                video.addEventListener('loadedmetadata', function() {
-                  video.play().catch(function() {});
-                });
-              }
-            })();
-          `
-        }}
-      />
+      >
+        <source src="/videos/atendimentos-bg.mp4" type="video/mp4" />
+      </video>
 
       {/* Overlay escuro para profundidade */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-[1] pointer-events-none" />
