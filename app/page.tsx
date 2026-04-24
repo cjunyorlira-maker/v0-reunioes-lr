@@ -439,8 +439,33 @@ export default function QuadroReunioes() {
   const handleVendaFechada = async (id: string) => {
     try {
       const lead = leads.find(l => l.id === id)
-      const newValue = !lead?.venda_fechada
+      if (!lead) return
+      
+      const newValue = !lead.venda_fechada
       await updateLead(id, { venda_fechada: newValue })
+      
+      // Se marcou como venda fechada, cria registro na tabela vendas
+      if (newValue) {
+        await fetch("/api/vendas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            nome_lead: lead.nome,
+            responsavel: lead.responsavel,
+            kommo_id: lead.kommo_id || lead.id,
+            atendente: lead.atendente,
+            valor_venda: 0, // Será preenchido posteriormente se necessário
+            origem: lead.origem || "quadro",
+          }),
+        })
+      } else {
+        // Se desmarcou, remove o registro da tabela vendas
+        await fetch(`/api/vendas?kommo_id=${lead.kommo_id || lead.id}`, {
+          method: "DELETE",
+        })
+      }
+      
       setShowConfetti(newValue)
       toast.success(newValue ? "Venda fechada registrada!" : "Venda fechada removida")
     } catch {
