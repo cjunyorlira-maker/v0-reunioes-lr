@@ -608,27 +608,26 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             >
               {totalVendidoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
+            {/* Frase de motivação dentro do card até atingir 4 milhões */}
+            {totalVendidoMes < 4000000 && (
+              <p className="text-[11px] md:text-[13px] font-bold bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-2 animate-pulse"
+                style={{
+                  textShadow: "0 0 20px rgba(34,211,238,0.2), 0 0 30px rgba(16,185,129,0.2)",
+                  filter: 'drop-shadow(0 1px 4px rgba(16,185,129,0.15))',
+                }}
+              >
+                Papo de estampa de Camisa
+              </p>
+            )}
             <div 
-              className="h-0.5 w-0 group-hover:w-full mt-1 rounded-full transition-all duration-500 ease-out"
+              className="h-0.5 w-0 group-hover:w-full mt-1.5 rounded-full transition-all duration-500 ease-out"
               style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.5), transparent)" }}
             />
           </div>
         </div>
       </div>
 
-      {/* Frase de motivação até atingir 4 milhões */}
-      {totalVendidoMes < 4000000 && (
-        <div className="mt-6 px-4 py-4 text-center backdrop-blur-sm border border-white/10 rounded-2xl" style={{ background: "rgba(0,0,0,0.12)" }}>
-          <p className="text-[16px] md:text-[20px] font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-pulse"
-            style={{
-              textShadow: "0 0 30px rgba(16,185,129,0.3), 0 0 60px rgba(34,211,238,0.2)",
-              filter: 'drop-shadow(0 2px 8px rgba(16,185,129,0.2))',
-            }}
-          >
-            Papo de estampa de Camisa
-          </p>
-        </div>
-      )}
+      {/* Frase de motivação até atingir 4 milhões - removida daqui */}
     </div>
   )
 }
