@@ -30,10 +30,10 @@ interface VendaRow {
 }
 
 export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
-  const { data, error } = useSWR<{ vendas: VendaRow[] }>(
+  const { data, error, mutate } = useSWR<{ vendas: VendaRow[] }>(
     "/api/vendas",
     (url: string) => fetch(url).then((res) => res.json()).catch(() => ({ vendas: [] })),
-    { refreshInterval: 60000 }
+    { refreshInterval: 10000, revalidateOnFocus: true }
   )
 
   const top1VendedorMes = useMemo((): Top1Venda | null => {
