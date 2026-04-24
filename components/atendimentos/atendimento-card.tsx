@@ -17,8 +17,7 @@ import {
   ArrowRight,
   FileText,
   User,
-  Building2,
-  ExternalLink
+  Building2
 } from 'lucide-react'
 import { AudioRecorder } from './audio-recorder'
 import { cn } from '@/lib/utils'
@@ -29,6 +28,7 @@ interface Atendimento {
   kommo_id: string
   nome_lead: string
   responsavel: string
+  atendente: string
   equipe: string
   audio_url: string | null
   duracao_segundos: number | null
@@ -183,26 +183,39 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
             <p className='text-xs text-white/40 line-clamp-1'>ID: {atendimento.kommo_id}</p>
           </div>
 
-          {/* Atendente e Equipe */}
-          <div className='grid grid-cols-2 gap-3 p-3 rounded-xl bg-white/5 border border-white/10'>
-            <div className='flex items-center gap-2'>
-              <User className='w-4 h-4 text-[#d4af37]' />
-              <div className='min-w-0'>
-                <p className='text-[10px] text-white/40 uppercase tracking-wide'>Atendente</p>
-                <p className='text-xs font-bold text-white truncate'>
-                  {atendimento.responsavel || 'Não informado'}
-                </p>
+          {/* Atendente, Vendedor e Equipe */}
+          <div className='p-3 rounded-xl bg-white/5 border border-white/10 space-y-2'>
+            <div className='grid grid-cols-2 gap-3'>
+              <div className='flex items-center gap-2'>
+                <User className='w-4 h-4 text-[#d4af37]' />
+                <div className='min-w-0'>
+                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Atendente</p>
+                  <p className='text-xs font-bold text-white truncate'>
+                    {atendimento.atendente || 'Nao informado'}
+                  </p>
+                </div>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Building2 className='w-4 h-4 text-[#d4af37]' />
+                <div className='min-w-0'>
+                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Equipe</p>
+                  <p className='text-xs font-bold text-white truncate'>
+                    {atendimento.equipe || 'Padrao'}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className='flex items-center gap-2'>
-              <Building2 className='w-4 h-4 text-[#d4af37]' />
-              <div className='min-w-0'>
-                <p className='text-[10px] text-white/40 uppercase tracking-wide'>Equipe</p>
-                <p className='text-xs font-bold text-white truncate'>
-                  {atendimento.equipe || 'Padrão'}
-                </p>
+            {atendimento.responsavel && atendimento.responsavel !== atendimento.atendente && (
+              <div className='flex items-center gap-2 pt-2 border-t border-white/5'>
+                <User className='w-3.5 h-3.5 text-violet-400' />
+                <div className='min-w-0'>
+                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Vendedor</p>
+                  <p className='text-xs font-medium text-white/80 truncate'>
+                    {atendimento.responsavel}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Score Geral - destaque */}
@@ -252,9 +265,14 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
                 href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${atendimento.kommo_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className='h-9 w-9 flex items-center justify-center rounded-lg bg-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/30 transition-colors border border-[#d4af37]/30'
+                className='h-9 w-9 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_15px_rgba(107,79,187,0.3)] transition-all'
+                title="Abrir no Kommo"
               >
-                <ExternalLink className='w-4 h-4' />
+                <img
+                  src="/images/kommo-logo.png"
+                  alt="Kommo"
+                  className="w-5 h-5"
+                />
               </a>
             )}
 
