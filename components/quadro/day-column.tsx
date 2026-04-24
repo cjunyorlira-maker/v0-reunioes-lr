@@ -30,7 +30,7 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
 
   return (
     <div
-      className={`w-[360px] flex-shrink-0 backdrop-blur-sm rounded-2xl p-5 min-h-[560px] transition-all duration-300 border ${
+      className={`w-[310px] flex-shrink-0 backdrop-blur-sm rounded-2xl p-4 min-h-[480px] transition-all duration-300 border ${
         isToday 
           ? "border-[rgba(212,175,55,0.25)]" 
           : "border-white/5 hover:border-white/15"
@@ -38,13 +38,13 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
       style={{ background: "rgba(0,0,0,0.08)" }}
     >
       {/* Day header - mais escuro */}
-      <div className={`flex items-center justify-between mb-4 p-3.5 rounded-xl -mx-2 transition-all duration-300 ${
+      <div className={`flex items-center justify-between mb-3.5 p-3 rounded-xl -mx-1.5 transition-all duration-300 ${
         isToday 
           ? "bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.2)]" 
           : "bg-black/40"
       }`}>
-        <div className="flex items-center gap-3.5">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-[20px] font-extrabold ${
+        <div className="flex items-center gap-3">
+          <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[18px] font-extrabold ${
             isToday 
               ? "bg-gradient-to-br from-[#d4af37] to-[#b8960c] text-[#0a0a0a]" 
               : "bg-[rgba(255,255,255,0.08)] text-[#f5f0e8]"
@@ -52,46 +52,42 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
             {day.dayNumber}
           </div>
           <div>
-            <p className={`text-[15px] font-bold uppercase tracking-wider ${isToday ? "text-[#d4af37]" : "text-[#f5f0e8]"}`}>
+            <p className={`text-[14px] font-bold uppercase tracking-wider ${isToday ? "text-[#d4af37]" : "text-[#f5f0e8]"}`}>
               {day.dayName}
             </p>
             {isToday && (
-              <span className="text-[11px] text-emerald-400 font-bold">Hoje</span>
+              <span className="text-[10px] text-emerald-400 font-bold">Hoje</span>
             )}
           </div>
         </div>
         
         {/* Counts */}
-        <div className="flex flex-col items-end gap-1.5">
-          <div className={`px-3 py-1 rounded-lg ${
+        <div className="flex flex-col items-end gap-1">
+          <div className={`px-2.5 py-0.5 rounded-lg ${
             dayLeads.length > 0 
               ? "bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.2)]" 
               : "bg-[rgba(255,255,255,0.03)]"
           }`}>
-            <span className={`text-[14px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
+            <span className={`text-[13px] font-bold ${dayLeads.length > 0 ? "text-[#d4af37]" : "text-[#3a3a3a]"}`}>
               {dayLeads.length} marc.
             </span>
           </div>
           {/* Percentual de presença */}
           {percentualVieram !== null && (
-            <div className={`px-3 py-1 rounded-lg border ${
+            <div className={`px-2.5 py-0.5 rounded-lg border text-[12px] ${
               percentualVieram >= 70 
-                ? "bg-emerald-500/15 border-emerald-500/25" 
+                ? "bg-emerald-500/15 border-emerald-500/25 font-bold text-emerald-400" 
                 : percentualVieram >= 40 
-                  ? "bg-amber-500/15 border-amber-500/25"
-                  : "bg-red-500/15 border-red-500/25"
+                  ? "bg-amber-500/15 border-amber-500/25 font-bold text-amber-400"
+                  : "bg-red-500/15 border-red-500/25 font-bold text-red-400"
             }`}>
-              <span className={`text-[13px] font-bold ${
-                percentualVieram >= 70 ? "text-emerald-400" : percentualVieram >= 40 ? "text-amber-400" : "text-red-400"
-              }`}>
-                {percentualVieram}% vieram
-              </span>
+              {percentualVieram}% vieram
             </div>
           )}
           {/* Onlines marcados */}
           {onlineCount > 0 && (
-            <div className="px-3 py-1 rounded-lg bg-blue-500/15 border border-blue-500/25">
-              <span className="text-[13px] font-bold text-blue-400">
+            <div className="px-2.5 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/25">
+              <span className="text-[12px] font-bold text-blue-400">
                 {onlineCount} online{onlineCount > 1 ? "s" : ""}
               </span>
             </div>
@@ -100,9 +96,9 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
       </div>
 
       {/* Leads */}
-      <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
+      <div className="space-y-2.5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1.5">
         {dayLeads.length === 0 ? (
-          <p className="text-[12px] text-[#3a3a3a] text-center py-12">
+          <p className="text-[11px] text-[#3a3a3a] text-center py-10">
             Sem reuniões
           </p>
         ) : (
@@ -119,7 +115,7 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
                 onRetorno={onRetorno}
               />
               {index < dayLeads.length - 1 && (
-                <div className="h-px mx-2 mt-3 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="h-px mx-2 mt-2.5 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               )}
             </div>
           ))

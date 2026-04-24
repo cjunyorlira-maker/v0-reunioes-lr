@@ -35,7 +35,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       className="glass-card rounded-xl overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
       onClick={() => onEdit(lead)}
     >
-      <div className="p-4.5 relative">
+      <div className="p-3.5 relative">
         {/* Botão X para remover a tag de venda fechada quando estiver marcado */}
         {lead.venda_fechada && onVendaFechada && (
           <button
@@ -43,7 +43,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               e.stopPropagation()
               onVendaFechada(lead.id)
             }}
-            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center text-[13px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
             title="Remover tag de Venda Fechada"
           >
             x
@@ -58,7 +58,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
                 onDelete(lead.id)
               }
             }}
-            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[13px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
             title="Excluir lead (com confirmação)"
           >
             x
@@ -66,7 +66,7 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
         )}
         
         {/* Header with photo and info */}
-        <div className="flex items-start gap-3.5 mb-3">
+        <div className="flex items-start gap-3 mb-2.5">
           {/* Photo - Larger */}
           {(() => {
             const fotoUrl = lead.foto_responsavel || getFotoVendedor(lead.responsavel || "")
@@ -74,11 +74,11 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               <img 
                 src={fotoUrl} 
                 alt={lead.responsavel}
-                className="w-13 h-13 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
+                className="w-11 h-11 rounded-full object-cover object-top border-2 border-[rgba(212,175,55,0.2)] flex-shrink-0"
               />
             ) : (
-              <div className="w-13 h-13 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[18px] text-[#d4af37] font-semibold">
+              <div className="w-11 h-11 rounded-full bg-[rgba(212,175,55,0.08)] border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[16px] text-[#d4af37] font-semibold">
                   {lead.responsavel?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
@@ -87,9 +87,9 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           
           <div className="flex-1 min-w-0">
             {/* Status + Time row */}
-            <div className="flex items-center gap-2.5 mb-1.5">
-              <div className={`w-2.5 h-2.5 rounded-full ${statusDot}`} />
-              <span className="text-[12px] text-[#8a8070] font-medium">
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
+              <span className="text-[11px] text-[#8a8070] font-medium">
                 {formatTimeDisplay(lead.hora)}
               </span>
               {lead.remarcado && (
@@ -116,26 +116,26 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
             </div>
             
             {/* Client name */}
-            <h3 className="text-[15px] font-semibold text-[#f5f0e8] leading-tight truncate" title={lead.nome}>
+            <h3 className="text-[14px] font-semibold text-[#f5f0e8] leading-tight truncate" title={lead.nome}>
               {lead.nome}
             </h3>
             
             {/* Responsavel */}
-            <p className="text-[13px] text-[#d4af37] font-medium truncate" title={lead.responsavel}>
+            <p className="text-[12px] text-[#d4af37] font-medium truncate" title={lead.responsavel}>
               {lead.responsavel}
             </p>
             
             {/* Equipe */}
             {lead.equipe && lead.equipe !== "Sem equipe" && (
-              <p className="text-[11px] text-[#8a8070] truncate mt-1">{lead.equipe}</p>
+              <p className="text-[10px] text-[#8a8070] truncate mt-0.5">{lead.equipe}</p>
             )}
           </div>
         </div>
         
         {/* Tags row */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {lead.tipo_reuniao && (
-            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md border ${
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${
               lead.tipo_reuniao.toLowerCase().includes("online") 
                 ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
                 : "bg-pink-500/10 text-pink-400 border-pink-500/20"
@@ -145,13 +145,13 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
           )}
           
           {lead.tipo && (
-            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md border ${getTipoClass(lead.tipo)}`}>
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md border ${getTipoClass(lead.tipo)}`}>
               {lead.tipo}
             </span>
           )}
           
           {lead.atendente && (
-            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20">
               Atendente: {lead.atendente}
             </span>
           )}
@@ -159,23 +159,23 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
       </div>
       
       {/* Actions */}
-      <div className="px-4.5 pb-4 pt-1.5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex gap-2 mb-2">
+      <div className="px-3.5 pb-3 pt-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-1.5 mb-1.5">
           <button
             onClick={() => onUpdateStatus(lead.id, "veio")}
-            className="glow-btn glow-green flex-1 text-[12px] py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.25)] font-semibold backdrop-blur-sm"
+            className="glow-btn glow-green flex-1 text-[11px] py-2 rounded-xl border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.25)] font-semibold backdrop-blur-sm"
           >
             Veio
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "nao")}
-            className="glow-btn glow-red flex-1 text-[12px] py-2.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] font-semibold backdrop-blur-sm"
+            className="glow-btn glow-red flex-1 text-[11px] py-2 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] font-semibold backdrop-blur-sm"
           >
             Faltou
           </button>
           <button
             onClick={() => onUpdateStatus(lead.id, "remarcou")}
-            className="glow-btn glow-pink flex-1 text-[12px] py-2.5 rounded-xl border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-[rgba(243,190,255,0.1)] hover:bg-[rgba(243,190,255,0.2)] hover:border-[rgba(243,190,255,0.5)] hover:shadow-[0_0_20px_rgba(243,190,255,0.25)] font-semibold backdrop-blur-sm"
+            className="glow-btn glow-pink flex-1 text-[11px] py-2 rounded-xl border border-[rgba(243,190,255,0.3)] text-[#f3beff] bg-[rgba(243,190,255,0.1)] hover:bg-[rgba(243,190,255,0.2)] hover:border-[rgba(243,190,255,0.5)] hover:shadow-[0_0_20px_rgba(243,190,255,0.25)] font-semibold backdrop-blur-sm"
           >
             Remarcar
           </button>
@@ -184,13 +184,13 @@ export function LeadCard({ lead, onUpdateStatus, onDelete, onEdit, onSync, onRem
               href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lead.kommo_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="glow-btn glow-purple w-11 h-11 flex items-center justify-center rounded-xl border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_20px_rgba(107,79,187,0.3)] backdrop-blur-sm"
+              className="glow-btn glow-purple w-10 h-10 flex items-center justify-center rounded-xl border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_20px_rgba(107,79,187,0.3)] backdrop-blur-sm"
               title="Abrir no Kommo"
             >
               <img 
                 src="/images/kommo-logo.png" 
                 alt="Kommo" 
-                className="w-6 h-6"
+                className="w-5 h-5"
               />
             </a>
           )}
