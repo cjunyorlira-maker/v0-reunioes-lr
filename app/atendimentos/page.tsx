@@ -212,172 +212,177 @@ export default function AtendimentosPage() {
 
   const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
 
-  // Tela de Login com video de fundo e efeito vidro premium
+  // Tela de Login
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center bg-black">
 
-        {/* Video de fundo */}
+        {/* Video de fundo - unico */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover scale-105"
-          style={{ filter: "brightness(0.6) saturate(1.2)" }}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: "brightness(0.45) saturate(1.3)" }}
         >
           <source src="/videos/login-bg.mp4" type="video/mp4" />
         </video>
 
-        {/* Overlay gradiente cinematico */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-950/30 via-transparent to-purple-950/30" />
-        
-        {/* Efeito de brilho central */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-radial from-cyan-500/10 via-transparent to-transparent blur-3xl" />
+        {/* Overlay escuro nas bordas para profundidade */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
 
-        {/* Login Card com efeito vidro premium */}
-        <div className="relative z-10 w-full max-w-md mx-4">
-          {/* Glow atras do card */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/30 via-purple-500/30 to-cyan-500/30 rounded-3xl blur-xl opacity-60 animate-pulse" />
-          
+        {/* Card central */}
+        <div className="relative z-10 w-full max-w-sm mx-4">
+
+          {/* Glow externo do card */}
+          <div className="absolute -inset-2 rounded-3xl opacity-40 blur-2xl"
+            style={{ background: "linear-gradient(135deg, #d4af37, #f5d742, #d4af37)" }}
+          />
+
           <div
-            className="relative backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl overflow-hidden"
-            style={{ 
-              background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 100%)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
+            className="relative rounded-3xl overflow-hidden border border-white/15"
+            style={{
+              background: "linear-gradient(160deg, rgba(20,18,12,0.97) 0%, rgba(10,9,6,0.98) 100%)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(212,175,55,0.2)",
             }}
           >
-            {/* Linha de brilho no topo */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-            
-            {/* Reflexo de luz */}
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/5 to-transparent rounded-t-3xl" />
+            {/* Linha dourada no topo */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
 
-            {/* Header */}
-            <div className="relative text-center mb-8">
-              {/* Logo LR com glow animado */}
-              <div className="relative mx-auto w-24 h-24 mb-5">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full blur-xl opacity-50 animate-pulse" />
-                <img
-                  src="/logo-lr.png"
-                  alt="LR Multimarcas"
-                  className="relative w-full h-full object-contain drop-shadow-2xl"
-                />
-              </div>
-              
-              <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-                Central de Atendimentos
-              </h1>
-              <p className="text-white/60 text-sm font-medium">
-                Acesse com as credenciais da sua equipe
-              </p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleLogin} className="relative space-y-5">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">
-                  Equipe
-                </label>
-                <Select value={equipe} onValueChange={setEquipe}>
-                  <SelectTrigger className="h-14 bg-white/5 border-white/10 text-white rounded-xl hover:bg-white/10 hover:border-white/20 transition-all duration-300 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 backdrop-blur-sm">
-                    <SelectValue placeholder="Selecione sua equipe" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-white/20 rounded-xl shadow-2xl">
-                    {EQUIPES.map((eq) => (
-                      <SelectItem 
-                        key={eq} 
-                        value={eq} 
-                        className="text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center gap-3 py-1">
-                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${EQUIPE_COLORS[eq]?.gradient || "from-gray-500 to-gray-600"} shadow-lg`} />
-                          <span className="font-medium">{eq}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/70 uppercase tracking-widest">
-                  Senha
-                </label>
-                <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/50 to-purple-500/50 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur" />
-                  <Input
-                    type="password"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="****"
-                    maxLength={4}
-                    className="relative h-14 bg-white/5 border-white/10 text-white text-center text-2xl tracking-[0.6em] font-bold placeholder:text-white/20 placeholder:tracking-[0.6em] rounded-xl hover:bg-white/10 hover:border-white/20 transition-all duration-300 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 backdrop-blur-sm"
+            <div className="px-8 pt-8 pb-8">
+              {/* Logo */}
+              <div className="flex flex-col items-center mb-8">
+                <div className="relative w-28 h-28 mb-4">
+                  {/* Glow dourado atras da logo */}
+                  <div
+                    className="absolute inset-0 rounded-full blur-2xl opacity-60"
+                    style={{ background: "radial-gradient(circle, #d4af37 0%, transparent 70%)" }}
                   />
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-cyan-400 transition-colors" />
+                  <img
+                    src="/logo-lr.png"
+                    alt="LR Multimarcas"
+                    className="relative w-full h-full object-contain"
+                    style={{ filter: "drop-shadow(0 0 16px rgba(212,175,55,0.6))" }}
+                  />
                 </div>
+                <h1 className="text-2xl font-black text-white tracking-tight text-center">
+                  Central de Atendimentos
+                </h1>
+                <p className="text-white/45 text-xs mt-1 font-medium tracking-wide">
+                  Acesse com as credenciais da sua equipe
+                </p>
               </div>
 
-              {error && (
-                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/30 py-3 px-4 rounded-xl animate-shake backdrop-blur-sm">
-                  <XCircle className="w-4 h-4" />
-                  {error}
+              {/* Form */}
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#d4af37]/80 uppercase tracking-[0.15em]">
+                    Equipe
+                  </label>
+                  <Select value={equipe} onValueChange={setEquipe}>
+                    <SelectTrigger
+                      className="h-13 rounded-xl border text-white transition-all duration-200"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        borderColor: equipe ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      <SelectValue placeholder="Selecione sua equipe" />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="rounded-xl border-white/10"
+                      style={{ background: "rgba(15,13,8,0.98)", backdropFilter: "blur(20px)" }}
+                    >
+                      {EQUIPES.map((eq) => (
+                        <SelectItem
+                          key={eq}
+                          value={eq}
+                          className="text-white hover:bg-white/8 rounded-lg cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 py-0.5">
+                            <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${EQUIPE_COLORS[eq]?.gradient || "from-gray-500 to-gray-600"}`} />
+                            <span className="font-medium">{eq}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              {/* Botao com efeito neon */}
-              <div className="relative group pt-2">
-                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-xl opacity-70 group-hover:opacity-100 blur-md transition-all duration-500 group-hover:blur-lg" />
-                <Button
-                  type="submit"
-                  disabled={!equipe || senha.length !== 4 || loading}
-                  className="relative w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 hover:from-cyan-400 hover:via-blue-400 hover:to-purple-500 text-white shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Conectando...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <span>Acessar Central</span>
-                      <ChevronRight className="w-6 h-6" />
-                    </div>
-                  )}
-                </Button>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#d4af37]/80 uppercase tracking-[0.15em]">
+                    Senha
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="password"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="• • • •"
+                      maxLength={4}
+                      className="h-13 rounded-xl text-white text-center text-xl tracking-[0.5em] font-bold placeholder:text-white/20 transition-all duration-200 border"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        borderColor: senha.length > 0 ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.1)",
+                      }}
+                    />
+                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/25 py-3 px-4 rounded-xl">
+                    <XCircle className="w-4 h-4 flex-shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                {/* Botao principal - dourado e solido */}
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    disabled={!equipe || senha.length !== 4 || loading}
+                    className="relative w-full h-14 rounded-xl text-base font-black tracking-wide transition-all duration-300 overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      background: "linear-gradient(135deg, #c9a227 0%, #f5d742 50%, #c9a227 100%)",
+                      boxShadow: (!equipe || senha.length !== 4 || loading) ? "none" : "0 0 30px rgba(212,175,55,0.5), 0 4px 20px rgba(0,0,0,0.4)",
+                      color: "#0a0800",
+                    }}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="w-5 h-5 border-2 border-black/30 border-t-black/80 rounded-full animate-spin" />
+                        <span>Conectando...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <span>Acessar Central</span>
+                        <ChevronRight className="w-5 h-5" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* Voltar */}
+              <div className="mt-5 pt-5 border-t border-white/8">
+                <Link href="/">
+                  <Button
+                    variant="ghost"
+                    className="w-full h-10 text-white/40 hover:text-white/70 hover:bg-white/5 rounded-xl transition-all duration-200 text-sm"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Voltar ao Quadro de Leads
+                  </Button>
+                </Link>
               </div>
-            </form>
-
-            {/* Voltar com efeito glass */}
-            <div className="relative mt-6 pt-6 border-t border-white/10">
-              <Link href="/">
-                <Button 
-                  variant="ghost" 
-                  className="w-full h-12 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm border border-transparent hover:border-white/10"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Voltar ao Quadro de Leads
-                </Button>
-              </Link>
             </div>
-          </div>
-        </div>
 
-        {/* Particulas flutuantes decorativas */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-cyan-400/60 rounded-full animate-float"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${5 + Math.random() * 10}s`,
-              }}
-            />
-          ))}
+            {/* Linha dourada no fundo */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent" />
+          </div>
         </div>
       </div>
     )
