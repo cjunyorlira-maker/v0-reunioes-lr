@@ -13,6 +13,7 @@ import { RemarcarModal } from "@/components/quadro/remarcar-modal"
 import { NextWeekPreview } from "@/components/quadro/next-week-preview"
 import { AnalyticsDashboard } from "@/components/quadro/analytics-dashboard"
 import { OnlinePresencialStats } from "@/components/quadro/online-presencial-stats"
+import { AnimatedBackground } from "@/components/ui/animated-background"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
@@ -503,22 +504,11 @@ export default function QuadroReunioes() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Video de fundo */}
-      <video
-        key="quadro-video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        className="fixed inset-0 w-full h-full object-cover z-0"
-        style={{ filter: "brightness(0.35) saturate(1.2)" }}
-      >
-        <source src="/videos/quadro-bg.mp4" type="video/mp4" />
-      </video>
+      {/* Animated Background com partículas */}
+      <AnimatedBackground />
 
       {/* Overlay escuro para profundidade */}
-      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-[1] pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50 z-[1] pointer-events-none" />
 
       {/* Conteudo */}
       <div className="relative z-10">
