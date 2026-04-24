@@ -240,12 +240,14 @@ export default function AtendimentosPage() {
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center bg-black">
 
-        {/* Video de fundo - unico */}
+        {/* Video de fundo - login */}
         <video
+          key="login-video"
           autoPlay
           loop
           muted
           playsInline
+          preload="auto"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ filter: "brightness(0.45) saturate(1.3)" }}
         >
@@ -408,8 +410,9 @@ export default function AtendimentosPage() {
   // Tela Principal
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
-      {/* Video de fundo MP4 */}
+      {/* Video de fundo MP4 - atendimentos */}
       <video
+        key="atendimentos-video"
         autoPlay
         loop
         muted
@@ -418,8 +421,7 @@ export default function AtendimentosPage() {
         className="fixed inset-0 w-full h-full object-cover z-0"
         style={{ filter: "brightness(0.40) saturate(1.3)", backgroundColor: "#000" }}
       >
-        <source src="/videos/atendimentos-bg.mp4?v=1" type="video/mp4" />
-        Your browser does not support the video tag.
+        <source src="/videos/atendimentos-bg.mp4" type="video/mp4" />
       </video>
 
       {/* Overlay escuro para profundidade */}
