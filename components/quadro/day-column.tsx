@@ -35,13 +35,13 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
           ? "border-[rgba(212,175,55,0.25)]" 
           : "border-white/5 hover:border-white/15"
       }`}
-      style={{ background: "rgba(0,0,0,0.12)" }}
+      style={{ background: "rgba(0,0,0,0.08)" }}
     >
-      {/* Day header */}
+      {/* Day header - mais escuro */}
       <div className={`flex items-center justify-between mb-3 p-2.5 rounded-xl -mx-1 transition-all duration-300 ${
         isToday 
-          ? "bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)]" 
-          : "bg-black/10"
+          ? "bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.2)]" 
+          : "bg-black/40"
       }`}>
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-[18px] font-extrabold ${
