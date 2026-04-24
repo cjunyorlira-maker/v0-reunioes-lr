@@ -526,7 +526,7 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         )}
       </div>
 
-      {/* Linha 2: Total, Vieram, Faltaram, Pendentes — grid 2x2 no mobile, flex no desktop */}
+      {/* Linha 2: Total, Vieram, Faltaram, Pendentes + Vendido Produção */}
       <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:gap-4 md:overflow-x-auto pb-1">
         {cards.map((card) => (
           <div
@@ -572,6 +572,48 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             </div>
           </div>
         ))}
+
+        {/* Separador */}
+        <div className="hidden md:block w-px h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent flex-shrink-0 mx-4" />
+
+        {/* Card Vendido Produção */}
+        <div className="col-span-2 md:col-span-1 group relative flex items-center gap-4 px-5 py-4 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden">
+          <div 
+            className="absolute inset-0 rounded-2xl backdrop-blur-sm transition-all duration-500"
+            style={{
+              background: "rgba(0,0,0,0.12)",
+              border: "1px solid rgba(16,185,129,0.15)",
+            }}
+          />
+          <div 
+            className="absolute -inset-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md -z-10"
+            style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.3), transparent, rgba(16,185,129,0.3))" }}
+          />
+          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+            <div 
+              className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}
+            />
+          </div>
+          <div className="relative z-10 flex flex-col">
+            <span className="text-[10px] md:text-[11px] text-white/50 font-bold uppercase tracking-widest transition-colors duration-300 group-hover:text-white/70">
+              Vendido Produção
+            </span>
+            <span 
+              className="text-2xl md:text-3xl font-black text-emerald-400 transition-all duration-500 group-hover:scale-105"
+              style={{ 
+                textShadow: "0 0 30px rgba(16,185,129,0.3), 0 0 60px rgba(16,185,129,0.2)",
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              }}
+            >
+              {totalVendidoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+            <div 
+              className="h-0.5 w-0 group-hover:w-full mt-1 rounded-full transition-all duration-500 ease-out"
+              style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.5), transparent)" }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
