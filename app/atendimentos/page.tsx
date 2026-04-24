@@ -414,10 +414,12 @@ export default function AtendimentosPage() {
         loop
         muted
         playsInline
+        preload="auto"
         className="fixed inset-0 w-full h-full object-cover z-0"
-        style={{ filter: "brightness(0.35) saturate(1.2)" }}
+        style={{ filter: "brightness(0.40) saturate(1.3)", backgroundColor: "#000" }}
       >
-        <source src="/videos/atendimentos-bg.mp4" type="video/mp4" />
+        <source src="/videos/atendimentos-bg.mp4?v=1" type="video/mp4" />
+        Your browser does not support the video tag.
       </video>
 
       {/* Overlay escuro para profundidade */}
