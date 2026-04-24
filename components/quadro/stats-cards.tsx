@@ -204,13 +204,12 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
       <div 
         className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default"
       >
-        {/* Glass background with gradient border - mais transparente */}
+        {/* Glass background - transparente */}
         <div 
-          className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+          className="absolute inset-0 rounded-2xl backdrop-blur-sm transition-all duration-500"
           style={{
-            background: `linear-gradient(145deg, ${glow.replace('0.3', '0.08')} 0%, transparent 50%, ${glow.replace('0.3', '0.05')} 100%)`,
-            border: `1px solid ${borderColor.replace('0.4', '0.25')}`,
-            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+            background: "rgba(0,0,0,0.12)",
+            border: `1px solid ${borderColor.replace('0.4', '0.15')}`,
           }}
         />
         
@@ -319,13 +318,12 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(venda.valor)
 
     return (
-      <div className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default">
+      <div className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default">
         <div
-          className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+          className="absolute inset-0 rounded-2xl transition-all duration-500"
           style={{
-            background: `linear-gradient(145deg, ${glow.replace('0.3', '0.08')} 0%, transparent 50%, ${glow.replace('0.3', '0.05')} 100%)`,
+            background: "rgba(0,0,0,0.12)",
             border: `1px solid ${borderColor}`,
-            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
           }}
         />
         <div
@@ -433,12 +431,10 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
         )}
 
         {/* Card META da quinzena */}
-        <div className="group relative flex flex-col justify-center gap-2 px-5 py-4 rounded-2xl backdrop-blur-xl transition-all duration-500 ease-out hover:scale-[1.02] overflow-hidden cursor-default min-w-[220px]"
+        <div className="group relative flex flex-col justify-center gap-2 px-5 py-4 rounded-2xl backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.02] overflow-hidden cursor-default min-w-[220px]"
           style={{
-            background: metaBatida
-              ? "linear-gradient(145deg, rgba(16,185,129,0.08) 0%, transparent 50%, rgba(16,185,129,0.05) 100%)"
-              : "linear-gradient(145deg, rgba(212,175,55,0.08) 0%, transparent 50%, rgba(212,175,55,0.05) 100%)",
-            border: metaBatida ? "1px solid rgba(16,185,129,0.25)" : "1px solid rgba(212,175,55,0.25)",
+            background: "rgba(0,0,0,0.12)",
+            border: metaBatida ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(212,175,55,0.2)",
           }}
         >
           {/* Glow hover */}
@@ -538,11 +534,10 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
             className="group relative flex items-center gap-3 px-4 py-3.5 md:px-5 rounded-2xl cursor-default transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden"
           >
             <div 
-              className="absolute inset-0 rounded-2xl backdrop-blur-2xl transition-all duration-500"
+              className="absolute inset-0 rounded-2xl backdrop-blur-sm transition-all duration-500"
               style={{
-                background: `linear-gradient(135deg, ${card.glow.replace('0.3', '0.05')} 0%, transparent 50%, ${card.glow.replace('0.3', '0.03')} 100%)`,
-                border: `1px solid ${card.glow.replace('0.3', '0.15')}`,
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                background: "rgba(0,0,0,0.12)",
+                border: `1px solid ${card.glow.replace('0.3', '0.1')}`,
               }}
             />
             <div 

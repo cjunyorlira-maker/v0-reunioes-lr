@@ -88,7 +88,7 @@ export function OnlinePresencialStats({ leads }: OnlinePresencialStatsProps) {
 
   return (
     <div className="px-4 md:px-6 mb-8">
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur-xl p-6">
+      <div className="rounded-2xl border border-white/10 backdrop-blur-sm p-6" style={{ background: "rgba(0,0,0,0.12)" }}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>

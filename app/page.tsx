@@ -502,7 +502,26 @@ export default function QuadroReunioes() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] z-[1]">
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Video de fundo */}
+      <video
+        key="quadro-video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        className="fixed inset-0 w-full h-full object-cover z-0"
+        style={{ filter: "brightness(0.35) saturate(1.2)" }}
+      >
+        <source src="/videos/quadro-bg.mp4" type="video/mp4" />
+      </video>
+
+      {/* Overlay escuro para profundidade */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-[1] pointer-events-none" />
+
+      {/* Conteudo */}
+      <div className="relative z-10">
       {/* Efeito de fogos quando fecha venda */}
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
@@ -647,6 +666,7 @@ export default function QuadroReunioes() {
         currentData={pendingRemarcarLead?.data || ""}
         currentHora={pendingRemarcarLead?.hora || ""}
       />
+      </div>
     </div>
   )
 }

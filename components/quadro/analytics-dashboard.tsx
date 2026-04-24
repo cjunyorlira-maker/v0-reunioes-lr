@@ -502,7 +502,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       )}
 
       {/* Painel LEADS QUALIFICADOS DA SEMANA — automático pelo campo 1026046 */}
-      <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
+      <div className="backdrop-blur-sm border border-cyan-500/15 rounded-xl p-4" style={{ background: "rgba(0,0,0,0.12)" }}>
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-[14px] font-bold text-cyan-400">Leads Qualificados da Semana — Vendendo Reunião</h3>
@@ -566,7 +566,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       </div>
 
       {/* Painel AGENDEI DA SEMANA (leads criados na semana - produtividade) */}
-      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl p-4">
+      <div className="backdrop-blur-sm border border-violet-500/15 rounded-xl p-4" style={{ background: "rgba(0,0,0,0.12)" }}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[14px] font-bold text-violet-400">Agendei da Semana (Produtividade)</h3>
           <span className="text-[11px] text-[#8a8070]">Leads criados nesta semana</span>
@@ -586,7 +586,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       </div>
 
       {/* Painel MARCADOS DA SEMANA (leads agendados para a semana - resultados) */}
-      <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-[rgba(212,175,55,0.2)] rounded-xl p-4">
+      <div className="backdrop-blur-sm border border-[rgba(212,175,55,0.15)] rounded-xl p-4" style={{ background: "rgba(0,0,0,0.12)" }}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[14px] font-bold text-[#d4af37]">Marcados da Semana (Resultados)</h3>
           <span className="text-[11px] text-[#8a8070]">Leads agendados para esta semana</span>
@@ -630,7 +630,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       {/* Grid com tabelas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Tabela de vendedores */}
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="backdrop-blur-sm border border-white/10 rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Vendedor</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
@@ -692,7 +692,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
 
         {/* Tabela de equipes */}
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="backdrop-blur-sm border border-white/10 rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Equipe</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
@@ -731,7 +731,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
 
         {/* Tabela de origens */}
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="backdrop-blur-sm border border-white/10 rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Origem</h3>
           <div className="flex flex-wrap gap-2">
             {origemStats.map(([origem, s]) => (
@@ -751,7 +751,7 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
         </div>
 
         {/* Tabela de atendentes */}
-        <div className="bg-white/[0.04] backdrop-blur-sm border border-[rgba(212,175,55,0.1)] rounded-xl p-4">
+        <div className="backdrop-blur-sm border border-white/10 rounded-xl p-4">
           <h3 className="text-[13px] font-semibold text-[#d4af37] mb-3">Por Atendente</h3>
           {atendenteStats.length === 0 ? (
             <p className="text-[11px] text-[#8a8070]">Nenhum atendimento registrado ainda</p>

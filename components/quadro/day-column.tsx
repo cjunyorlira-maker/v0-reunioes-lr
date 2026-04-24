@@ -30,17 +30,18 @@ export function DayColumn({ day, leads, onUpdateStatus, onDelete, onEdit, onSync
 
   return (
     <div
-      className={`w-[280px] flex-shrink-0 backdrop-blur-xl rounded-2xl p-3.5 min-h-[420px] transition-all duration-300 ${
+      className={`w-[280px] flex-shrink-0 backdrop-blur-sm rounded-2xl p-3.5 min-h-[420px] transition-all duration-300 border ${
         isToday 
-          ? "bg-gradient-to-b from-white/[0.04] to-transparent border border-[rgba(212,175,55,0.35)] shadow-[0_0_40px_rgba(212,175,55,0.15),inset_0_1px_0_rgba(255,255,255,0.05)]" 
-          : "bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.06] hover:border-[rgba(212,175,55,0.2)] hover:bg-white/[0.04]"
+          ? "border-[rgba(212,175,55,0.25)]" 
+          : "border-white/5 hover:border-white/15"
       }`}
+      style={{ background: "rgba(0,0,0,0.12)" }}
     >
       {/* Day header */}
-      <div className={`flex items-center justify-between mb-3 p-2.5 rounded-xl -mx-1 backdrop-blur-sm transition-all duration-300 ${
+      <div className={`flex items-center justify-between mb-3 p-2.5 rounded-xl -mx-1 transition-all duration-300 ${
         isToday 
-          ? "bg-gradient-to-r from-[rgba(212,175,55,0.12)] via-[rgba(212,175,55,0.06)] to-transparent border border-[rgba(212,175,55,0.15)]" 
-          : "bg-gradient-to-r from-white/[0.04] to-transparent hover:from-white/[0.06]"
+          ? "bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)]" 
+          : "bg-black/10"
       }`}>
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-[18px] font-extrabold ${

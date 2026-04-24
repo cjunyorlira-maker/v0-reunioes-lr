@@ -24,7 +24,7 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
   }
   
   return (
-    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-5 p-4 backdrop-blur-2xl border border-[rgba(212,175,55,0.15)] rounded-2xl bg-gradient-to-r from-white/[0.03] to-transparent shadow-[0_4px_30px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <header className="flex items-center justify-between mx-4 md:mx-6 mt-4 mb-5 p-4 backdrop-blur-md border border-white/10 rounded-2xl" style={{ background: "rgba(0,0,0,0.15)" }}>
       {/* Brand */}
       <div className="flex items-center gap-3 group">
         <div className="relative transition-transform duration-300 group-hover:scale-105">
