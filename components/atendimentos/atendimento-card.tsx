@@ -144,14 +144,24 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
   const handleDeleteAtendimento = async () => {
     setDeletingAtendimento(true)
     try {
+      console.log("[v0] Deletando atendimento:", atendimento.id)
       const response = await fetch(`/api/atendimentos/${atendimento.id}`, {
         method: 'DELETE',
       })
+      
+      console.log("[v0] Resposta do delete:", response.status, response.statusText)
+      
       if (response.ok) {
+        console.log("[v0] Atendimento deletado com sucesso")
         onUpdate()
+      } else {
+        const error = await response.json()
+        console.error("[v0] Erro ao deletar:", error)
+        alert(`Erro: ${error.error || 'Falha ao deletar'}`)
       }
     } catch (err) {
-      console.error('Erro ao deletar atendimento:', err)
+      console.error('[v0] Erro na chamada delete:', err)
+      alert('Erro ao deletar atendimento')
     } finally {
       setDeletingAtendimento(false)
       setShowDeleteConfirm(false)
