@@ -65,10 +65,10 @@ export async function POST(request: Request) {
     // Gerar nome do arquivo
     const finalFilename = filename || `audio-teste-${Date.now()}.mp3`
 
-    // Fazer upload para o Vercel Blob publico
-    console.log("[v0] Fazendo upload para Vercel Blob publico...")
+    // Fazer upload para o Vercel Blob privado
+    console.log("[v0] Fazendo upload para Vercel Blob privado...")
     const blobResult = await put(finalFilename, blob, {
-      access: "public",
+      access: "private",
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     })
