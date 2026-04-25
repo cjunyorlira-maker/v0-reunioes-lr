@@ -375,7 +375,6 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
               )}
             </div>
           </div>
-          </div>
 
           {/* Confirmacao de Delete */}
           {showDeleteConfirm && (
