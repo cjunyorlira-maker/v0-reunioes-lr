@@ -78,12 +78,18 @@ export default function TesteAudioPage() {
       }))
 
       // 2. Simular o upload - registrar a URL do audio
+      // Converter caminho relativo em URL absoluta
+      let absoluteAudioUrl = audioUrl
+      if (audioUrl.startsWith('/')) {
+        absoluteAudioUrl = `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}${audioUrl}`
+      }
+      
       const uploadRes = await fetch("/api/atendimentos/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           atendimentoId,
-          audioUrl,
+          audioUrl: absoluteAudioUrl,
           duracao,
         }),
       })
