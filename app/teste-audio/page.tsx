@@ -8,9 +8,9 @@ import { toast } from "sonner"
 // URLs de audios de teste publicos (podcasts longos)
 const AUDIO_SAMPLES = [
   {
-    name: "Arquivo Local - 100 min (WebM)",
-    url: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/audio-teste-100min.webm`,
-    duracao: 6000, // 100 minutos
+    name: "Audio Real - MP3 (8.6M)",
+    url: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/audio-real-teste.mp3`,
+    duracao: 360, // ~6 minutos
     local: true,
   },
   {
