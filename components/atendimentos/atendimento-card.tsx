@@ -100,6 +100,8 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
   const [deletingAtendimento, setDeletingAtendimento] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  console.log("[v0] AtendimentoCard - kommo_id:", atendimento.kommo_id, "nome:", atendimento.nome_lead, "userEquipe:", userEquipe)
+
   const temAnalise = atendimento.score_geral !== null
 
   const statusColor = {
