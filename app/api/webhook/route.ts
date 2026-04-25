@@ -201,6 +201,7 @@ async function salvarVendaAutomatica(lead: { id: number; name: string; price?: n
   const hoje = new Date().toISOString().split("T")[0]
 
   try {
+    // Salva na tabela vendas
     await supabase.from("vendas").upsert({
       kommo_id: lead.id.toString(),
       nome_lead: lead.name || "Sem nome",
@@ -210,6 +211,22 @@ async function salvarVendaAutomatica(lead: { id: number; name: string; price?: n
       data_venda: hoje,
     }, { onConflict: "kommo_id" })
     console.log("[v0] Venda salva automaticamente:", lead.name, responsavelNome, valorVenda)
+
+    // TAMBÉM atualiza o lead no quadro principal para marcar como venda_fechada
+    const { error: leadError } = await supabase
+      .from("leads")
+      .update({ 
+        venda_fechada: true,
+        status: "veio",
+        updated_at: new Date().toISOString()
+      })
+      .eq("kommo_lead_id", lead.id.toString())
+
+    if (leadError) {
+      console.log("[v0] Lead não encontrado no quadro (pode ser novo):", lead.id)
+    } else {
+      console.log("[v0] Lead marcado como venda_fechada no quadro:", lead.name)
+    }
   } catch (err) {
     console.error("[v0] Erro ao salvar venda automatica:", err)
   }
