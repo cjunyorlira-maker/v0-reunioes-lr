@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { del } from "@vercel/blob"
+import { del, getDownloadUrl } from "@vercel/blob"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Timeout máximo para processamento de áudios longos
@@ -379,9 +379,23 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   console.log("[v0] DEEPGRAM_API_KEY presente:", !!DEEPGRAM_API_KEY)
 
   // Converter URLs do Google Drive para formato de download direto
-  const processedUrl = convertGoogleDriveUrl(audioUrl)
+  let processedUrl = convertGoogleDriveUrl(audioUrl)
   
-  // Enviar URL direta para o Deepgram (blob publico ou Google Drive)
+  // Se for URL do Vercel Blob privado, gerar URL assinada para Deepgram acessar
+  if (processedUrl.includes(".private.blob.vercel-storage.com")) {
+    console.log("[v0] Blob privado detectado, gerando URL assinada...")
+    try {
+      processedUrl = await getDownloadUrl(processedUrl, {
+        token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
+      })
+      console.log("[v0] URL assinada gerada com sucesso")
+    } catch (signError: any) {
+      console.error("[v0] Erro ao gerar URL assinada:", signError?.message)
+      throw new Error(`Falha ao gerar URL assinada: ${signError?.message}`)
+    }
+  }
+  
+  // Enviar URL direta para o Deepgram (URL assinada ou Google Drive)
   // Isso economiza tempo e memória para áudios longos (120+ min)
   console.log("[v0] Enviando URL para Deepgram:", processedUrl.substring(0, 80))
   
@@ -494,7 +508,7 @@ async function enviarNotaKommo(
     `  • Geral: ${analise.score_geral || "—"}/10\n` +
     `  • Abordagem: ${analise.score_abordagem || "—"}/10\n` +
     `  • Financiamento: ${analise.score_financiamento || "—"}/10\n` +
-    `  • Consórcio: ${analise.score_consorcio || "—"}/10\n` +
+    `  �� Consórcio: ${analise.score_consorcio || "—"}/10\n` +
     `  • Fechamento: ${analise.score_fechamento || "—"}/10\n\n` +
     (pontosPositivos ? `✅ *Pontos Positivos:*\n${pontosPositivos}\n\n` : "") +
     (pontosCriticos ? `⚠️ *Pontos a Melhorar:*\n${pontosCriticos}\n\n` : "") +
