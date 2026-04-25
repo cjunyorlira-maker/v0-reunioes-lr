@@ -311,7 +311,7 @@ export default function QuadroReunioes() {
       
       // Cria automaticamente um registro em atendimentos quando o lead vai para "Veio"
       try {
-        console.log("[v0] Criando atendimento para lead:", { lead_id: lead.id, nome: lead.nome, equipe: lead.equipe })
+        console.log("[v0] Criando atendimento para lead:", { lead_id: lead.id, nome: lead.nome, equipe: lead.equipe, atendente })
         const response = await fetch("/api/atendimentos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -320,6 +320,7 @@ export default function QuadroReunioes() {
             kommo_id: lead.kommo_id,
             nome_lead: lead.nome,
             responsavel: lead.responsavel,
+            atendente: atendente,
             equipe: lead.equipe,
           })
         })
