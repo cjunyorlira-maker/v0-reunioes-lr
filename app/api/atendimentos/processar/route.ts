@@ -407,9 +407,16 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   )
 
   if (!response.ok) {
-    const error = await response.text()
-    console.error("[v0] Deepgram erro HTTP:", response.status, error)
-    throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
+    const errorText = await response.text()
+    console.error("[v0] Deepgram erro HTTP:", response.status)
+    console.error("[v0] Deepgram resposta:", errorText)
+    
+    try {
+      const errorJson = JSON.parse(errorText)
+      console.error("[v0] Deepgram erro JSON:", JSON.stringify(errorJson, null, 2))
+    } catch {}
+    
+    throw new Error(`Deepgram HTTP ${response.status}: ${errorText.substring(0, 200)}`)
   }
 
   const data = await response.json()
