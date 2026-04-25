@@ -100,8 +100,6 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
   const [deletingAtendimento, setDeletingAtendimento] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  console.log("[v0] AtendimentoCard - kommo_id:", atendimento.kommo_id, "nome:", atendimento.nome_lead, "userEquipe:", userEquipe)
-
   const temAnalise = atendimento.score_geral !== null
 
   const statusColor = {
@@ -293,71 +291,90 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
           )}
 
           {/* Botoes de Acao */}
-          <div className='flex gap-2 pt-2'>
-            {/* Botao Kommo */}
-            {atendimento.kommo_id && (
-              <a
-                href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${atendimento.kommo_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className='h-9 w-9 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_15px_rgba(107,79,187,0.3)] transition-all'
-                title="Abrir no Kommo"
-              >
-                <img
-                  src="/images/kommo-logo.png"
-                  alt="Kommo"
-                  className="w-5 h-5"
-                />
-              </a>
+          <div className='flex flex-col gap-2 pt-2'>
+
+            {/* Linha 1: Gravar Retorno + Analise (apenas Não Fechados) */}
+            {isConcluido && atendimento.fechou === false && (
+              <div className='flex gap-2'>
+                {!showRecorderRetorno && (
+                  <Button
+                    onClick={() => setShowRecorderRetorno(true)}
+                    size='sm'
+                    className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                  >
+                    <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
+                    Gravar Retorno
+                  </Button>
+                )}
+                {temAnalise && (
+                  <Button
+                    onClick={() => setShowAnalise(true)}
+                    size='sm'
+                    className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                  >
+                    <Eye className='w-3.5 h-3.5 mr-1.5' />
+                    Analise
+                  </Button>
+                )}
+              </div>
             )}
 
-            {/* Botao Gravar Reuniao - Compacto */}
-            {isAguardando && !showRecorder && (
-              <Button
-                onClick={() => setShowRecorder(true)}
-                size='sm'
-                className='flex-1 h-9 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
-              >
-                <Mic className='w-3.5 h-3.5 mr-1.5' />
-                Gravar
-              </Button>
-            )}
+            {/* Linha final: Kommo + Gravar (aguardando) + Analise (demais) + Delete */}
+            <div className='flex gap-2'>
+              {/* Botao Kommo - sempre visivel se tiver kommo_id */}
+              {atendimento.kommo_id && (
+                <a
+                  href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${atendimento.kommo_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className='h-9 w-9 flex-shrink-0 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_15px_rgba(107,79,187,0.3)] transition-all'
+                  title="Abrir no Kommo"
+                >
+                  <img
+                    src="/images/kommo-logo.png"
+                    alt="Kommo"
+                    className="w-5 h-5"
+                  />
+                </a>
+              )}
 
-            {/* Botao Gravar Retorno - para Não Fechados Concluidos */}
-            {isConcluido && atendimento.fechou === false && !showRecorderRetorno && (
-              <Button
-                onClick={() => setShowRecorderRetorno(true)}
-                size='sm'
-                className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
-              >
-                <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
-                Gravar Retorno
-              </Button>
-            )}
+              {/* Botao Gravar - aguardando */}
+              {isAguardando && !showRecorder && (
+                <Button
+                  onClick={() => setShowRecorder(true)}
+                  size='sm'
+                  className='flex-1 h-9 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                >
+                  <Mic className='w-3.5 h-3.5 mr-1.5' />
+                  Gravar
+                </Button>
+              )}
 
-            {/* Botao Ver Analise Completa */}
-            {temAnalise && isConcluido && (
-              <Button
-                onClick={() => setShowAnalise(true)}
-                size='sm'
-                className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
-              >
-                <Eye className='w-3.5 h-3.5 mr-1.5' />
-                Analise
-              </Button>
-            )}
+              {/* Botao Ver Analise - concluido mas nao e nao-fechado (fechados ou fechou=null) */}
+              {temAnalise && isConcluido && atendimento.fechou !== false && (
+                <Button
+                  onClick={() => setShowAnalise(true)}
+                  size='sm'
+                  className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                >
+                  <Eye className='w-3.5 h-3.5 mr-1.5' />
+                  Analise
+                </Button>
+              )}
 
-            {/* Botao Deletar - apenas Admin */}
-            {userEquipe === 'Admin' && (
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-9 w-9 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className='w-4 h-4' />
-              </Button>
-            )}
+              {/* Botao Deletar - apenas Admin */}
+              {userEquipe === 'Admin' && (
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-9 w-9 flex-shrink-0 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className='w-4 h-4' />
+                </Button>
+              )}
+            </div>
+          </div>
           </div>
 
           {/* Confirmacao de Delete */}
