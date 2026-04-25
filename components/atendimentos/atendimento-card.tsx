@@ -77,6 +77,7 @@ interface Atendimento {
 
 interface AtendimentoCardProps {
   atendimento: Atendimento
+  userEquipe?: string
   onUpdate: () => void
 }
 
@@ -91,7 +92,7 @@ const analiseEmojis: Record<string, string> = {
   'fechamento': '🎁',
 }
 
-export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps) {
+export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: AtendimentoCardProps) {
   const [showRecorder, setShowRecorder] = useState(false)
   const [showRecorderRetorno, setShowRecorderRetorno] = useState(false)
   const [showAnalise, setShowAnalise] = useState(false)
@@ -335,7 +336,7 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
             )}
 
             {/* Botao Deletar - apenas Admin */}
-            {atendimento.equipe === 'Admin' && (
+            {userEquipe === 'Admin' && (
               <Button
                 variant='ghost'
                 size='icon'
@@ -568,6 +569,48 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
                 </p>
               </div>
             )}
+
+            {/* Análise de Retorno */}
+            {atendimento.retorno_resumo && (
+              <div className='p-4 rounded-xl bg-amber-500/15 border-2 border-amber-500/30'>
+                <h3 className='text-amber-400 font-bold mb-3 flex items-center gap-2'>
+                  <RotateCcw className='w-5 h-5' />
+                  Análise do Retorno
+                </h3>
+                <div className='space-y-3'>
+                  <div>
+                    <p className='text-xs text-white/60 mb-1'>Resultado:</p>
+                    <p className='text-sm text-white font-bold'>
+                      {atendimento.retorno_fechou ? '✅ FECHOU!' : '❌ Não fechou'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className='text-xs text-white/60 mb-1'>Resumo:</p>
+                    <p className='text-sm text-white/70'>{atendimento.retorno_resumo}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Botão Download PDF */}
+            <div className='flex gap-2 pt-2'>
+              <Button
+                onClick={() => {
+                  // Implementar download PDF com transcrição
+                  const element = document.createElement('a')
+                  const file = new Blob([`ATENDIMENTO COMPLETO\n\n${atendimento.nome_lead}\n\n${atendimento.transcricao_completa}`], {type: 'text/plain'})
+                  element.href = URL.createObjectURL(file)
+                  element.download = `transcricao_${atendimento.nome_lead.replace(/\s+/g, '_')}.txt`
+                  document.body.appendChild(element)
+                  element.click()
+                  document.body.removeChild(element)
+                }}
+                size='sm'
+                className='flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white'
+              >
+                📥 Baixar Transcrição
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
