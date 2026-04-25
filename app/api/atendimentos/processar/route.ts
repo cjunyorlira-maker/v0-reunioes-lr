@@ -5,8 +5,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Timeout máximo para processamento de áudios longos
 // Hobby: 60s | Pro: 300s | Enterprise: 900s
-// Para áudios de 120+ minutos, recomenda-se plano Pro
-export const maxDuration = 300
+// Para áudios de 120+ minutos, recomenda-se plano Pro ou Enterprise
+// Aumentado para máximo do Vercel: 900s (15 min)
+export const maxDuration = 900
 
 // Cliente Supabase com Service Role (funciona sem sessão de usuário)
 function createServiceClient() {

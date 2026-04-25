@@ -9,7 +9,7 @@ import { toast } from "sonner"
 const AUDIO_SAMPLES = [
   {
     name: "Arquivo Local - 100 min (WebM)",
-    url: "/audio-teste-100min.webm",
+    url: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/audio-teste-100min.webm`,
     duracao: 6000, // 100 minutos
     local: true,
   },
