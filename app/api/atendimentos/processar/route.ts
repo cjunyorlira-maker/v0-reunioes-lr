@@ -280,12 +280,23 @@ export async function POST(request: Request) {
     console.log("[v0] Transcricao completa:", transcricao?.substring(0, 100))
 
     if (!transcricao) {
-      console.error("[v0] Deepgram falhou após 3 tentativas")
+      console.error("[v0] Deepgram falhou - audio sem fala ou microfone mudo")
+      // VOLTA para aguardando para poder tentar gravar novamente
+      // NAO marca como erro permanente
       await supabase
         .from("atendimentos")
-        .update({ status: "erro", updated_at: new Date().toISOString() })
+        .update({ 
+          status: "aguardando", 
+          gravando: false,
+          gravando_por: null,
+          resumo: "Audio sem fala detectada. Verifique o microfone e grave novamente.",
+          updated_at: new Date().toISOString() 
+        })
         .eq("id", atendimentoId)
-      return NextResponse.json({ error: "Falha na transcricao após 3 tentativas" }, { status: 500 })
+      return NextResponse.json({ 
+        error: "Audio sem fala detectada. Verifique se o microfone esta funcionando e grave novamente.",
+        canRetry: true 
+      }, { status: 400 })
     }
 
     // 3. Analisar com Claude (3 tentativas) - use prompt diferente se for retorno
@@ -496,7 +507,7 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   return transcript
 }
 
-// ─── Claude ───────────────────────────────────────────────────────────────────
+// ─── Claude ────────────────────────────────────────────────────────────��──────
 async function analisarComClaude(transcricao: string, isRetorno: boolean = false, atendimentoAnterior: any = null): Promise<any | null> {
   console.log("[v0] Claude analisarComClaude iniciando")
   console.log("[v0] Claude transcricao length:", transcricao.length)
