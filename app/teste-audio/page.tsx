@@ -8,6 +8,12 @@ import { toast } from "sonner"
 // URLs de audios de teste publicos (podcasts longos)
 const AUDIO_SAMPLES = [
   {
+    name: "Arquivo Local - 100 min (WebM)",
+    url: "/audio-teste-100min.webm",
+    duracao: 6000, // 100 minutos
+    local: true,
+  },
+  {
     name: "Podcast Curto (5 min)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     duracao: 300, // 5 minutos
@@ -33,7 +39,7 @@ export default function TesteAudioPage() {
     endTime?: number
   }>({ status: "idle", message: "" })
   
-  const [selectedAudio, setSelectedAudio] = useState(AUDIO_SAMPLES[2]) // 100 min por padrao
+  const [selectedAudio, setSelectedAudio] = useState(AUDIO_SAMPLES[0]) // Audio local 100 min por padrao
   const [customUrl, setCustomUrl] = useState("")
 
   const runTest = async (audioUrl: string, duracao: number) => {
