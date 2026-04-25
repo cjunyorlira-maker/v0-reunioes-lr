@@ -21,6 +21,87 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
 
+// Prompt para análise de RETORNO - quando cliente volta após não fechar
+const PROMPT_ANALISE_RETORNO = `Você é um especialista em análise de retornos de atendimentos comerciais de financiamento e consórcio imobiliário.
+
+CONTEXTO DO RETORNO:
+Este é um atendimento de RETORNO de um cliente que já foi atendido antes e não fechou. Você vai analisar se o vendedor resolveu os problemas do primeiro atendimento e se conseguiu avançar na venda.
+
+CONTEXTO DO ATENDIMENTO ANTERIOR:
+{contexto_anterior}
+
+ANALISE OS SEGUINTES PONTOS:
+
+1. EVOLUÇÃO DO CLIENTE
+- O cliente chegou mais receptivo desta vez?
+- Ainda tem as mesmas objeções ou evoluiu?
+- Demonstrou mais confiança no vendedor/produto?
+- Investigou o produto entre os atendimentos (indicativo de interesse real)?
+
+2. RESOLUÇÃO DE OBJEÇÕES
+- O vendedor resolveu as objeções que travaram o atendimento anterior?
+- Apresentou novas argumentações ou soluções para os problemas anteriores?
+- O cliente se sentiu ouvido em relação aos motivos de não ter fechado antes?
+- Trouxe novas informações, referências ou dados que não tinha antes?
+
+3. PROGRESSÃO DO ATENDIMENTO
+- Houve avanço em relação ao primeiro atendimento?
+- O cliente se comprometeu mais com o produto?
+- Começou a se visualizar como cliente?
+- Ou ficou no mesmo ponto/piorou?
+
+4. TÉCNICAS DE FECHAMENTO NO RETORNO
+- O vendedor tentou fechar? Com qual energia/convicção?
+- Como respondeu quando o cliente voltou a dizer "vou pensar"?
+- Criou urgência ou datas para próximo contato?
+- Deixou claro os próximos passos?
+
+5. QUALIDADE DA RETOMADA
+- O vendedor demonstrou que realmente se importava em conversar de novo?
+- Revisou o que foi discutido antes ou começou do zero?
+- Mostrou evolução pessoal na abordagem?
+
+COMPARATIVO COM ATENDIMENTO ANTERIOR:
+- Score esperado: deve ser mais alto que o anterior (indicativo de progresso)
+- Se o score for igual ou menor, investigar o porquê
+- Registrar claramente se este retorno foi bem-sucedido ou se precisa de novo retorno
+
+RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
+{
+  "score_geral": número 0-10,
+  "score_abordagem": número 0-10,
+  "score_consorcio": número 0-10,
+  "score_fechamento": número 0-10,
+  "score_retorno": número 0-10,
+  "resumo": "texto de 3-4 linhas resumindo o retorno",
+  "pontos_positivos": ["array de pontos que foram bem"],
+  "pontos_criticos": ["array de pontos CRÍTICOS"],
+  "evolucao_cliente": "texto descrevendo se evoluiu em relação ao primeiro atendimento",
+  "objecoes_resolvidas": true/false,
+  "objecoes_cliente": [
+    {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
+  ],
+  "garantiu_contemplacao": true/false,
+  "tecnicas_fechamento": {
+    "tentou_fechar": true/false,
+    "quantidade_tentativas": número,
+    "tecnicas_usadas": ["array"],
+    "resultado": "fechou/nao_fechou/em_aberto"
+  },
+  "motivo_nao_fechamento": "string principal ou null se fechou",
+  "proximo_passo_sugerido": "string com recomendação clara",
+  "feedback_coaching": "texto de coaching — o que melhorar para fechar na próxima"
+}
+
+IMPORTANTE:
+- Speaker 0 = Supervisor/Vendedor
+- Speaker 1 = Cliente
+- Responda APENAS com o JSON válido, sem texto adicional
+- Se something não ficou claro, indique null
+
+## Transcrição do Retorno:
+`
+
 // Prompt completo do Claude para analise de atendimentos (criado no Workbench)
 const PROMPT_ANALISE = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário.
 
@@ -204,15 +285,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
-    // 1. Buscar dados do atendimento (kommo_id, nome_lead, responsavel)
+    // 1. Buscar dados do atendimento (kommo_id, nome_lead, responsavel, atendimento_original_id)
     console.log("[v0] Buscando dados do atendimento:", atendimentoId)
     const { data: atendimento } = await supabase
       .from("atendimentos")
-      .select("kommo_id, nome_lead, responsavel, equipe")
+      .select("kommo_id, nome_lead, responsavel, equipe, atendimento_original_id")
       .eq("id", atendimentoId)
       .single()
     
     console.log("[v0] Atendimento encontrado:", atendimento?.nome_lead)
+    console.log("[v0] É retorno?", !!atendimento?.atendimento_original_id)
+
+    // Verificar se é retorno e buscar dados do atendimento anterior
+    let isRetorno = !!atendimento?.atendimento_original_id
+    let atendimentoAnterior = null
+    if (isRetorno) {
+      console.log("[v0] Buscando atendimento anterior:", atendimento?.atendimento_original_id)
+      const { data: anterior } = await supabase
+        .from("atendimentos")
+        .select("resumo, motivo_nao_fechamento, score_geral, pontos_criticos, feedback_coaching")
+        .eq("id", atendimento?.atendimento_original_id)
+        .single()
+      atendimentoAnterior = anterior
+      console.log("[v0] Atendimento anterior score:", anterior?.score_geral)
+    }
 
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
@@ -234,10 +330,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falha na transcricao após 3 tentativas" }, { status: 500 })
     }
 
-    // 3. Analisar com Claude (3 tentativas)
+    // 3. Analisar com Claude (3 tentativas) - use prompt diferente se for retorno
     console.log("[v0] Iniciando Claude...")
     const analise = await withRetry(
-      () => analisarComClaude(transcricao),
+      () => analisarComClaude(transcricao, isRetorno, atendimentoAnterior),
       3,
       3000,
       "Claude analise"
@@ -417,9 +513,10 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
 }
 
 // ─── Claude ───────────────────────────────────────────────────────────────────
-async function analisarComClaude(transcricao: string): Promise<any | null> {
+async function analisarComClaude(transcricao: string, isRetorno: boolean = false, atendimentoAnterior: any = null): Promise<any | null> {
   console.log("[v0] Claude analisarComClaude iniciando")
   console.log("[v0] Claude transcricao length:", transcricao.length)
+  console.log("[v0] Claude isRetorno:", isRetorno)
   
   if (!ANTHROPIC_API_KEY) {
     console.error("[v0] Claude ANTHROPIC_API_KEY nao configurada!")
@@ -430,6 +527,19 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
     console.log("[v0] Claude client criado")
 
+    // Selecionar prompt baseado em tipo de atendimento
+    let promptSelecionado = PROMPT_ANALISE
+    if (isRetorno && atendimentoAnterior) {
+      console.log("[v0] Claude usando PROMPT_ANALISE_RETORNO")
+      const contextoAnterior = `
+Score anterior: ${atendimentoAnterior.score_geral}/10
+Motivo de não fechamento anterior: ${atendimentoAnterior.motivo_nao_fechamento || "N/A"}
+Pontos críticos identificados: ${(atendimentoAnterior.pontos_criticos || []).join("; ") || "Nenhum"}
+Recomendação anterior: ${atendimentoAnterior.feedback_coaching || "Nenhuma"}
+`
+      promptSelecionado = PROMPT_ANALISE_RETORNO.replace("{contexto_anterior}", contextoAnterior)
+    }
+
     // Usar streaming para evitar timeout em operacoes longas (thinking pode demorar)
     console.log("[v0] Claude iniciando stream com thinking...")
     const stream = await anthropic.messages.stream({
@@ -439,7 +549,7 @@ async function analisarComClaude(transcricao: string): Promise<any | null> {
         type: "enabled",
         budget_tokens: 16000,
       },
-      messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
+      messages: [{ role: "user", content: promptSelecionado + transcricao }],
     })
 
     // Aguardar resposta completa do stream
