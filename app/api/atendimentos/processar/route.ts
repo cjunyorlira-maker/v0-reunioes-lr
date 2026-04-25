@@ -248,15 +248,16 @@ export async function POST(request: Request) {
     const body = await request.json()
     atendimentoId = body.atendimentoId
     const audioUrl = body.audioUrl
+    const isRetorno = body.isRetorno || false
 
-    console.log("[v0] Body recebido:", { atendimentoId, audioUrl: audioUrl?.substring(0, 50) })
+    console.log("[v0] Body recebido:", { atendimentoId, isRetorno, audioUrl: audioUrl?.substring(0, 50) })
 
     if (!atendimentoId || !audioUrl) {
       console.error("[v0] Dados incompletos - atendimentoId:", atendimentoId, "audioUrl:", !!audioUrl)
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
 
-    // 1. Buscar dados do atendimento (kommo_id, nome_lead, responsavel, atendimento_original_id)
+    // 1. Buscar dados do atendimento
     console.log("[v0] Buscando dados do atendimento:", atendimentoId)
     const { data: atendimento } = await supabase
       .from("atendimentos")
@@ -265,21 +266,7 @@ export async function POST(request: Request) {
       .single()
     
     console.log("[v0] Atendimento encontrado:", atendimento?.nome_lead)
-    console.log("[v0] É retorno?", !!atendimento?.atendimento_original_id)
-
-    // Verificar se é retorno e buscar dados do atendimento anterior
-    let isRetorno = !!atendimento?.atendimento_original_id
-    let atendimentoAnterior = null
-    if (isRetorno) {
-      console.log("[v0] Buscando atendimento anterior:", atendimento?.atendimento_original_id)
-      const { data: anterior } = await supabase
-        .from("atendimentos")
-        .select("resumo, motivo_nao_fechamento, score_geral, pontos_criticos, feedback_coaching")
-        .eq("id", atendimento?.atendimento_original_id)
-        .single()
-      atendimentoAnterior = anterior
-      console.log("[v0] Atendimento anterior score:", anterior?.score_geral)
-    }
+    console.log("[v0] É retorno de gravação?", isRetorno)
 
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
@@ -326,39 +313,49 @@ export async function POST(request: Request) {
     }
 
     // 4. Salvar resultados no Supabase PRIMEIRO
-    console.log("[v0] Salvando resultados no Supabase...")
+    console.log("[v0] Salvando resultados no Supabase - isRetorno:", isRetorno)
+    
+    // Se for retorno, salva nos campos de retorno; senão, salva nos campos normais
+    const updatePayload: any = isRetorno ? {
+      retorno_transcricao: transcricao,
+      retorno_resumo: analise?.resumo || null,
+      retorno_fechou: analise?.tecnicas_fechamento?.resultado === "fechou" || false,
+      retorno_data: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } : {
+      transcricao_completa: transcricao,
+      resumo: analise?.resumo || null,
+      motivo_nao_fechamento: analise?.motivo_nao_fechamento || null,
+      score_geral: analise?.score_geral || null,
+      score_abordagem: analise?.score_abordagem || null,
+      score_financiamento: analise?.score_financiamento || null,
+      score_consorcio: analise?.score_consorcio || null,
+      score_fechamento: analise?.score_fechamento || null,
+      pontos_positivos: analise?.pontos_positivos || null,
+      pontos_criticos: analise?.pontos_criticos || null,
+      objecoes_cliente: analise?.objecoes_cliente || null,
+      feedback_coaching: analise?.feedback_coaching || null,
+      situacao_financeira: analise?.situacao_financeira || null,
+      garantiu_contemplacao: analise?.garantiu_contemplacao ?? null,
+      usou_prova_social: analise?.usou_prova_social || null,
+      tecnicas_fechamento: analise?.tecnicas_fechamento || null,
+      proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
+      etiqueta: analise?.motivo_nao_fechamento ? classificarEtiquetaIA(analise) : null,
+      status: "concluido",
+      fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
+      updated_at: new Date().toISOString(),
+    }
+
     const { error: updateError } = await supabase
       .from("atendimentos")
-      .update({
-        transcricao_completa: transcricao,
-        resumo: analise?.resumo || null,
-        motivo_nao_fechamento: analise?.motivo_nao_fechamento || null,
-        score_geral: analise?.score_geral || null,
-        score_abordagem: analise?.score_abordagem || null,
-        score_financiamento: analise?.score_financiamento || null,
-        score_consorcio: analise?.score_consorcio || null,
-        score_fechamento: analise?.score_fechamento || null,
-        pontos_positivos: analise?.pontos_positivos || null,
-        pontos_criticos: analise?.pontos_criticos || null,
-        objecoes_cliente: analise?.objecoes_cliente || null,
-        feedback_coaching: analise?.feedback_coaching || null,
-        situacao_financeira: analise?.situacao_financeira || null,
-        garantiu_contemplacao: analise?.garantiu_contemplacao ?? null,
-        usou_prova_social: analise?.usou_prova_social || null,
-        tecnicas_fechamento: analise?.tecnicas_fechamento || null,
-        proximo_passo_sugerido: analise?.proximo_passo_sugerido || null,
-        etiqueta: analise?.motivo_nao_fechamento ? classificarEtiquetaIA(analise) : null,
-        status: "concluido",
-        fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq("id", atendimentoId)
 
     if (updateError) {
       console.error("[v0] Erro ao atualizar atendimento no Supabase:", updateError)
       throw new Error(`Erro ao salvar resultados: ${updateError.message}`)
     }
-    console.log("[v0] Atendimento marcado como concluido no Supabase")
+    console.log("[v0] Atendimento salvo no Supabase com sucesso")
 
     // 5. Enviar nota para o Kommo com o resumo da analise (DEPOIS de salvar no Supabase)
     console.log("[v0] Enviando nota para Kommo...")
