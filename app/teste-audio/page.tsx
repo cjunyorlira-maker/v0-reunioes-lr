@@ -49,14 +49,16 @@ export default function TesteAudioPage() {
       // 1. Criar um atendimento de teste no banco
       setTestResults(prev => ({ ...prev, message: "Criando atendimento de teste..." }))
       
+      const testId = `teste-${Date.now()}`
       const createRes = await fetch("/api/atendimentos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          lead_id: testId,
           nome_lead: "TESTE - Audio Longo",
           responsavel: "Sistema de Teste",
           equipe: "Teste",
-          kommo_id: `teste-${Date.now()}`,
+          kommo_id: testId,
           data_atendimento: new Date().toISOString().split("T")[0],
         }),
       })
