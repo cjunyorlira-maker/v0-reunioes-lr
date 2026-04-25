@@ -167,8 +167,17 @@ async function withRetry<T>(
       throw new Error("Resultado vazio")
     } catch (error: any) {
       const isLast = attempt === maxAttempts
-      console.error(`[v0] ${label} - tentativa ${attempt}/${maxAttempts} falhou:`, error?.message)
-      if (isLast) return null
+      console.error(`[v0] ${label} - tentativa ${attempt}/${maxAttempts} falhou`)
+      console.error(`[v0] ${label} - erro.message:`, error?.message)
+      console.error(`[v0] ${label} - erro.stack:`, error?.stack)
+      console.error(`[v0] ${label} - erro.response:`, error?.response?.status, error?.response?.statusText)
+      if (error?.response?.data) {
+        console.error(`[v0] ${label} - erro.response.data:`, JSON.stringify(error.response.data))
+      }
+      if (isLast) {
+        console.error(`[v0] ${label} - FALHA FINAL após ${maxAttempts} tentativas!`)
+        return null
+      }
       // Backoff exponencial: 2s, 4s, 8s...
       const wait = delayMs * Math.pow(2, attempt - 1)
       console.error(`[v0] ${label} - aguardando ${wait}ms antes de tentar novamente...`)
@@ -365,8 +374,19 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   )
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
+    const errorText = await response.text()
+    console.error("[v0] Deepgram erro HTTP:", response.status, response.statusText)
+    console.error("[v0] Deepgram URL usada:", audioUrl.substring(0, 100))
+    console.error("[v0] Deepgram resposta completa:", errorText.substring(0, 500))
+    
+    try {
+      const errorJson = JSON.parse(errorText)
+      console.error("[v0] Deepgram erro JSON:", JSON.stringify(errorJson, null, 2))
+    } catch (e) {
+      console.error("[v0] Deepgram erro (não é JSON):", errorText.substring(0, 200))
+    }
+    
+    throw new Error(`Deepgram HTTP ${response.status}: ${errorText.substring(0, 200)}`)
   }
 
   const data = await response.json()
@@ -398,35 +418,66 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
 
 // ─── Claude ───────────────────────────────────────────────────────────────────
 async function analisarComClaude(transcricao: string): Promise<any | null> {
-  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY nao configurada")
+  console.log("[v0] Claude analisarComClaude iniciando")
+  console.log("[v0] Claude transcricao length:", transcricao.length)
+  
+  if (!ANTHROPIC_API_KEY) {
+    console.error("[v0] Claude ANTHROPIC_API_KEY nao configurada!")
+    throw new Error("ANTHROPIC_API_KEY nao configurada")
+  }
 
-  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+  try {
+    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+    console.log("[v0] Claude client criado")
 
-  // Usar streaming para evitar timeout em operacoes longas (thinking pode demorar)
-  const stream = await anthropic.messages.stream({
-    model: "claude-sonnet-4-6",
-    max_tokens: 28000,  // 16000 thinking + 12000 resposta JSON
-    thinking: {
-      type: "enabled",
-      budget_tokens: 16000,
-    },
-    messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
-  })
+    // Usar streaming para evitar timeout em operacoes longas (thinking pode demorar)
+    console.log("[v0] Claude iniciando stream com thinking...")
+    const stream = await anthropic.messages.stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: 28000,  // 16000 thinking + 12000 resposta JSON
+      thinking: {
+        type: "enabled",
+        budget_tokens: 16000,
+      },
+      messages: [{ role: "user", content: PROMPT_ANALISE + transcricao }],
+    })
 
-  // Aguardar resposta completa do stream
-  const response = await stream.finalMessage()
-  console.log("[v0] Claude stream com thinking finalizado")
+    // Aguardar resposta completa do stream
+    console.log("[v0] Claude aguardando stream finalizar...")
+    const response = await stream.finalMessage()
+    console.log("[v0] Claude stream com thinking finalizado")
+    console.log("[v0] Claude response.content.length:", response.content.length)
 
-  // Quando thinking está ativado, o Claude retorna 2 blocos:
-  // content[0] = bloco de pensamento (type: "thinking")
-  // content[1] = texto com o JSON (type: "text")
-  const content = response.content.find(c => c.type === "text")
-  if (!content || content.type !== "text") throw new Error("Resposta do Claude sem conteudo texto")
+    // Quando thinking está ativado, o Claude retorna 2 blocos:
+    // content[0] = bloco de pensamento (type: "thinking")
+    // content[1] = texto com o JSON (type: "text")
+    const content = response.content.find(c => c.type === "text")
+    if (!content || content.type !== "text") {
+      console.error("[v0] Claude resposta sem conteudo texto!")
+      console.error("[v0] Claude response.content types:", response.content.map((c: any) => c.type))
+      throw new Error("Resposta do Claude sem conteudo texto")
+    }
 
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error("JSON nao encontrado na resposta do Claude")
+    console.log("[v0] Claude texto encontrado, length:", (content as any).text.length)
+    const jsonMatch = (content as any).text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      console.error("[v0] Claude JSON nao encontrado!")
+      console.error("[v0] Claude resposta text:", (content as any).text.substring(0, 200))
+      throw new Error("JSON nao encontrado na resposta do Claude")
+    }
 
-  return JSON.parse(jsonMatch[0])
+    console.log("[v0] Claude JSON encontrado, fazendo parse...")
+    const result = JSON.parse(jsonMatch[0])
+    console.log("[v0] Claude analise completa - score:", result.score_geral)
+    return result
+  } catch (error: any) {
+    console.error("[v0] Claude erro completo:", error?.message)
+    console.error("[v0] Claude erro stack:", error?.stack)
+    if (error?.error) {
+      console.error("[v0] Claude error.error:", JSON.stringify(error.error))
+    }
+    throw error
+  }
 }
 
 // ─── Kommo: Enviar Nota ───────────────────────────────���───────────────────────
