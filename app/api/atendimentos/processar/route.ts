@@ -333,6 +333,8 @@ export async function POST(request: Request) {
       retorno_resumo: analise?.resumo || null,
       retorno_fechou: analise?.tecnicas_fechamento?.resultado === "fechou" || false,
       retorno_data: new Date().toISOString(),
+      gravando: false,
+      gravando_por: null,
       updated_at: new Date().toISOString(),
     } : {
       transcricao_completa: transcricao,
@@ -355,6 +357,8 @@ export async function POST(request: Request) {
       etiqueta: analise?.motivo_nao_fechamento ? classificarEtiquetaIA(analise) : null,
       status: "concluido",
       fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
+      gravando: false,
+      gravando_por: null,
       updated_at: new Date().toISOString(),
     }
 
