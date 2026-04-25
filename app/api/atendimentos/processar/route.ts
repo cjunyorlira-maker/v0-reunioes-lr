@@ -345,13 +345,38 @@ export async function POST(request: Request) {
   }
 }
 
+// ─── Converter URLs do Google Drive para download direto ─────────────────────
+function convertGoogleDriveUrl(url: string): string {
+  // Formato: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+  // Converte para: https://drive.google.com/uc?export=download&id=FILE_ID
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (driveMatch) {
+    const fileId = driveMatch[1]
+    console.log("[v0] Convertendo URL do Google Drive, fileId:", fileId)
+    return `https://drive.google.com/uc?export=download&id=${fileId}`
+  }
+  
+  // Formato alternativo: https://drive.google.com/open?id=FILE_ID
+  const openMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/)
+  if (openMatch) {
+    const fileId = openMatch[1]
+    console.log("[v0] Convertendo URL do Google Drive (open), fileId:", fileId)
+    return `https://drive.google.com/uc?export=download&id=${fileId}`
+  }
+  
+  return url
+}
+
 // ─── Deepgram ────────────────────────────────────────────────────────────────
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
+  // Converter URLs do Google Drive para formato de download direto
+  const processedUrl = convertGoogleDriveUrl(audioUrl)
+  
   // Enviar URL direta para o Deepgram (blob público, sem precisar baixar)
   // Isso economiza tempo e memória para áudios longos (120+ min)
-  console.log("[v0] Enviando URL para Deepgram:", audioUrl.substring(0, 60))
+  console.log("[v0] Enviando URL para Deepgram:", processedUrl.substring(0, 80))
   
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
@@ -361,7 +386,7 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ url: audioUrl }),
+      body: JSON.stringify({ url: processedUrl }),
     }
   )
 
