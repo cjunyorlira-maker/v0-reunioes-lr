@@ -300,9 +300,10 @@ export async function POST(request: Request) {
     }
 
     // 3. Analisar com Claude (3 tentativas) - use prompt diferente se for retorno
+    // Se for retorno, passa os dados do atendimento original como contexto
     console.log("[v0] Iniciando Claude...")
     const analise = await withRetry(
-      () => analisarComClaude(transcricao, isRetorno, atendimentoAnterior),
+      () => analisarComClaude(transcricao, isRetorno, isRetorno ? atendimento : null),
       3,
       3000,
       "Claude analise"
