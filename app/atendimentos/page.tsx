@@ -513,6 +513,16 @@ export default function AtendimentosPage() {
                   Atendimentos
                 </div>
               </button>
+              <Link href="/teste-audio">
+                <button
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30"
+                >
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4" />
+                    Teste Audio
+                  </div>
+                </button>
+              </Link>
               <button
                 onClick={() => setActiveTab("relatorio")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
