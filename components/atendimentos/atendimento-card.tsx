@@ -93,9 +93,11 @@ const analiseEmojis: Record<string, string> = {
 
 export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps) {
   const [showRecorder, setShowRecorder] = useState(false)
+  const [showRecorderRetorno, setShowRecorderRetorno] = useState(false)
   const [showAnalise, setShowAnalise] = useState(false)
   const [markingResult, setMarkingResult] = useState<'fechou' | 'nao_fechou' | null>(null)
-  const [creatingRetorno, setCreatingRetorno] = useState(false)
+  const [deletingAtendimento, setDeletingAtendimento] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const temAnalise = atendimento.score_geral !== null
 
@@ -138,32 +140,20 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
     }
   }
 
-  const handleGravarRetorno = async () => {
-    setCreatingRetorno(true)
+  const handleDeleteAtendimento = async () => {
+    setDeletingAtendimento(true)
     try {
-      // Criar novo atendimento vinculado como retorno
-      const response = await fetch('/api/atendimentos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: atendimento.lead_id,
-          kommo_id: atendimento.kommo_id,
-          nome_lead: `${atendimento.nome_lead} (Retorno)`,
-          responsavel: atendimento.responsavel,
-          atendente: atendimento.atendente,
-          equipe: atendimento.equipe,
-          atendimento_original_id: atendimento.id, // Vincular ao atendimento original
-        }),
+      const response = await fetch(`/api/atendimentos/${atendimento.id}`, {
+        method: 'DELETE',
       })
-      
       if (response.ok) {
-        // Recarregar para mostrar o novo card de retorno na coluna aguardando
         onUpdate()
       }
     } catch (err) {
-      console.error('Erro ao criar retorno:', err)
+      console.error('Erro ao deletar atendimento:', err)
     } finally {
-      setCreatingRetorno(false)
+      setDeletingAtendimento(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -321,18 +311,13 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
             )}
 
             {/* Botao Gravar Retorno - para Não Fechados Concluidos */}
-            {isConcluido && atendimento.fechou === false && !showRecorder && (
+            {isConcluido && atendimento.fechou === false && !showRecorderRetorno && (
               <Button
-                onClick={handleGravarRetorno}
-                disabled={creatingRetorno}
+                onClick={() => setShowRecorderRetorno(true)}
                 size='sm'
                 className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
               >
-                {creatingRetorno ? (
-                  <Loader2 className='w-3.5 h-3.5 mr-1.5 animate-spin' />
-                ) : (
-                  <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
-                )}
+                <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
                 Gravar Retorno
               </Button>
             )}
@@ -349,20 +334,46 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
               </Button>
             )}
 
-            {/* Botao Deletar */}
-            <Button
-              variant='ghost'
-              size='icon'
-              className='h-9 w-9 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
-              onClick={() => {
-                // TODO: Implementar delete
-              }}
-            >
-              <Trash2 className='w-4 h-4' />
-            </Button>
+            {/* Botao Deletar - apenas Admin */}
+            {atendimento.equipe === 'Admin' && (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-9 w-9 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className='w-4 h-4' />
+              </Button>
+            )}
           </div>
 
-          {/* Gravador de Áudio */}
+          {/* Confirmacao de Delete */}
+          {showDeleteConfirm && (
+            <div className='mt-3 p-4 rounded-xl bg-red-500/15 border border-red-500/25'>
+              <p className='text-red-400 text-sm font-bold mb-3'>Confirmar exclusao?</p>
+              <p className='text-white/60 text-xs mb-3'>Esta acao nao pode ser desfeita.</p>
+              <div className='flex gap-2'>
+                <Button
+                  onClick={handleDeleteAtendimento}
+                  disabled={deletingAtendimento}
+                  size='sm'
+                  className='flex-1 h-8 bg-red-500 hover:bg-red-600 text-white text-xs'
+                >
+                  {deletingAtendimento ? <Loader2 className='w-3 h-3 animate-spin' /> : 'Sim, Excluir'}
+                </Button>
+                <Button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  size='sm'
+                  variant='ghost'
+                  className='flex-1 h-8 text-white/60 hover:text-white text-xs'
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Gravador de Áudio - Atendimento inicial */}
           {showRecorder && isAguardando && (
             <div className='mt-3 p-4 rounded-xl bg-blue-500/15 border border-blue-500/25'>
               <AudioRecorder
@@ -372,6 +383,25 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
                   onUpdate()
                 }}
                 onCancel={() => setShowRecorder(false)}
+              />
+            </div>
+          )}
+
+          {/* Gravador de Retorno - no mesmo card */}
+          {showRecorderRetorno && isConcluido && atendimento.fechou === false && (
+            <div className='mt-3 p-4 rounded-xl bg-amber-500/15 border border-amber-500/25'>
+              <p className='text-amber-400 text-xs font-bold mb-2 flex items-center gap-1'>
+                <RotateCcw className='w-3 h-3' />
+                Gravando Retorno
+              </p>
+              <AudioRecorder
+                atendimentoId={atendimento.id}
+                isRetorno={true}
+                onComplete={() => {
+                  setShowRecorderRetorno(false)
+                  onUpdate()
+                }}
+                onCancel={() => setShowRecorderRetorno(false)}
               />
             </div>
           )}

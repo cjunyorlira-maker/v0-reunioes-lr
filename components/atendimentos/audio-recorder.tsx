@@ -7,13 +7,14 @@ import { upload } from "@vercel/blob/client"
 
 interface AudioRecorderProps {
   atendimentoId: string
+  isRetorno?: boolean
   onComplete: () => void
   onCancel: () => void
 }
 
 const BAR_COUNT = 24
 
-export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioRecorderProps) {
+export function AudioRecorder({ atendimentoId, isRetorno = false, onComplete, onCancel }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [duration, setDuration] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -170,7 +171,7 @@ export function AudioRecorder({ atendimentoId, onComplete, onCancel }: AudioReco
       const response = await fetch("/api/atendimentos/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ atendimentoId, audioUrl: blob.url, duracao: durationRef.current }),
+        body: JSON.stringify({ atendimentoId, audioUrl: blob.url, duracao: durationRef.current, isRetorno }),
       })
 
       if (!response.ok) {
