@@ -1,16 +1,38 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
+import { after } from "next/server"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Controle simples para nao sincronizar a cada request - apenas a cada 2 minutos
+let ultimaSinc: number = 0
+const INTERVALO_SINC_MS = 2 * 60 * 1000 // 2 minutos
+
 export async function GET() {
   try {
     // Período de produção: dia 21 ao dia 20 do mês seguinte
     const periodo = getPeriodoProducaoAtual()
+
+    // Dispara sincronizacao com Kommo em background (nao bloqueia a resposta)
+    // Apenas sincroniza se passaram mais de 2 minutos desde a ultima vez
+    const agora = Date.now()
+    if (agora - ultimaSinc > INTERVALO_SINC_MS) {
+      ultimaSinc = agora
+      after(async () => {
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+          await fetch(`${baseUrl}/api/vendas/sync`, { method: "POST" })
+          console.log("[v0] Sincronizacao de vendas disparada em background")
+        } catch (e) {
+          console.error("[v0] Erro ao disparar sync de vendas:", e)
+        }
+      })
+    }
 
     const { data: vendas, error } = await supabase
       .from("vendas")
