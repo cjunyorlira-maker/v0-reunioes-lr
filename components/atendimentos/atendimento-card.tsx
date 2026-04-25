@@ -73,6 +73,11 @@ interface Atendimento {
   data_atendimento: string
   created_at: string
   atendimento_original_id?: string | null
+  retorno_audio_url?: string | null
+  retorno_transcricao?: string | null
+  retorno_resumo?: string | null
+  retorno_fechou?: boolean | null
+  retorno_data?: string | null
 }
 
 interface AtendimentoCardProps {
