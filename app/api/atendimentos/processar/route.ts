@@ -393,23 +393,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
-    console.error("[v0] Erro geral no processamento:", errorMsg, error)
+    console.error("[v0] ERRO CRITICO no processamento:", errorMsg, error)
 
-    // Marca como erro no banco se tiver o ID
+    // SO marca como erro se for falha CRITICA (Deepgram, Claude, banco de dados, transcricao)
+    // Se o atendimento ja foi salvo com analise, nao sobrescrever com status "erro"
     if (atendimentoId) {
       try {
         const supabaseErr = createServiceClient()
-        await supabaseErr
+        
+        // Verificar se ja foi salvo com dados de analise
+        const { data: check } = await supabaseErr
           .from("atendimentos")
-          .update({ 
-            status: "erro",
-            resumo: `Erro no processamento: ${errorMsg}`,
-            updated_at: new Date().toISOString() 
-          })
+          .select("resumo, status")
           .eq("id", atendimentoId)
-        console.log("[v0] Atendimento marcado como erro com mensagem:", errorMsg)
+          .single()
+        
+        // Se ja tem resumo salvo, significa que o processamento funcionou
+        // Nao marcar como erro - deixar como "concluido"
+        if (!check?.resumo) {
+          // SO marca como erro se nao tem nada salvo ainda
+          await supabaseErr
+            .from("atendimentos")
+            .update({ 
+              status: "erro",
+              resumo: `Erro no processamento: ${errorMsg}`,
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", atendimentoId)
+          console.log("[v0] Atendimento marcado como ERRO (critico):", errorMsg)
+        } else {
+          console.log("[v0] Atendimento ja foi salvo com analise, mantendo status concluido")
+        }
       } catch (dbError) {
-        console.error("[v0] Erro ao salvar erro no banco:", dbError)
+        console.error("[v0] Erro ao verificar/salvar erro no banco:", dbError)
       }
     }
 
