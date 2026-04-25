@@ -72,6 +72,8 @@ interface Atendimento {
   retorno_resumo?: string | null
   retorno_fechou?: boolean | null
   retorno_data?: string | null
+  gravando?: boolean
+  gravando_por?: string | null
 }
 
 const EQUIPES = ["Elite", "Guerreiros", "Gladiadores", "Samurais", "Legado", "Lobos", "TDM", "Admin"]
@@ -647,7 +649,7 @@ export default function AtendimentosPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {aguardando.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} onUpdate={fetchAtendimentos} />
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
                   ))}
                   {aguardando.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">
@@ -671,7 +673,7 @@ export default function AtendimentosPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {processando.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} onUpdate={fetchAtendimentos} />
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
                   ))}
                   {processando.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">
@@ -695,7 +697,7 @@ export default function AtendimentosPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {fechados.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} onUpdate={fetchAtendimentos} />
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
                   ))}
                   {fechados.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">
@@ -719,7 +721,7 @@ export default function AtendimentosPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {naoFechados.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} onUpdate={fetchAtendimentos} />
+                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
                   ))}
                   {naoFechados.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">

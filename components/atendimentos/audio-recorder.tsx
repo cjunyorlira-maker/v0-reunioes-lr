@@ -8,13 +8,14 @@ import { upload } from "@vercel/blob/client"
 interface AudioRecorderProps {
   atendimentoId: string
   isRetorno?: boolean
+  userName?: string
   onComplete: () => void
   onCancel: () => void
 }
 
 const BAR_COUNT = 24
 
-export function AudioRecorder({ atendimentoId, isRetorno = false, onComplete, onCancel }: AudioRecorderProps) {
+export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Alguem", onComplete, onCancel }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [duration, setDuration] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -119,11 +120,11 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, onComplete, on
       durationRef.current = 0
       setDuration(0)
 
-      // Mover card imediatamente para coluna "Gravando"
-      fetch(`/api/atendimentos/${atendimentoId}/status`, {
+      // Marcar que está gravando (aparece em tempo real para todos)
+      fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "gravando" }),
+        body: JSON.stringify({ gravando: true, gravando_por: userName }),
       }).catch(() => {})
 
       timerRef.current = setInterval(() => {
@@ -150,6 +151,13 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, onComplete, on
     stopVisualizer()
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     streamRef.current?.getTracks().forEach(t => t.stop())
+    
+    // Desmarcar gravando
+    fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gravando: false, gravando_por: null }),
+    }).catch(() => {})
   }
 
   const uploadAudio = async (audioBlob: Blob) => {

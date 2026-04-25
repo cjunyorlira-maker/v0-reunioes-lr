@@ -78,11 +78,14 @@ interface Atendimento {
   retorno_resumo?: string | null
   retorno_fechou?: boolean | null
   retorno_data?: string | null
+  gravando?: boolean
+  gravando_por?: string | null
 }
 
 interface AtendimentoCardProps {
   atendimento: Atendimento
   userEquipe?: string
+  userName?: string
   onUpdate: () => void
 }
 
@@ -97,7 +100,7 @@ const analiseEmojis: Record<string, string> = {
   'fechamento': '🎁',
 }
 
-export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: AtendimentoCardProps) {
+export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }: AtendimentoCardProps) {
   const [showRecorder, setShowRecorder] = useState(false)
   const [showRecorderRetorno, setShowRecorderRetorno] = useState(false)
   const [showAnalise, setShowAnalise] = useState(false)
@@ -191,6 +194,19 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
       }}>
         {/* Linha colorida no topo */}
         <div className={`h-1.5 w-full bg-gradient-to-r ${statusColor}`} />
+
+        {/* Indicador de Gravacao em Tempo Real */}
+        {atendimento.gravando && (
+          <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500/20 to-orange-500/20 border-b border-red-500/30'>
+            <span className='relative flex h-3 w-3'>
+              <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75'></span>
+              <span className='relative inline-flex rounded-full h-3 w-3 bg-red-500'></span>
+            </span>
+            <p className='text-red-400 text-xs font-bold animate-pulse'>
+              {atendimento.gravando_por || 'Alguem'} esta gravando...
+            </p>
+          </div>
+        )}
 
         <CardContent className='p-5 space-y-4'>
           {/* Header: Status e Badges */}
@@ -412,6 +428,7 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
             <div className='mt-3 p-4 rounded-xl bg-blue-500/15 border border-blue-500/25'>
               <AudioRecorder
                 atendimentoId={atendimento.id}
+                userName={userName || atendimento.atendente || 'Alguem'}
                 onComplete={() => {
                   setShowRecorder(false)
                   onUpdate()
@@ -431,6 +448,7 @@ export function AtendimentoCard({ atendimento, userEquipe, onUpdate }: Atendimen
               <AudioRecorder
                 atendimentoId={atendimento.id}
                 isRetorno={true}
+                userName={userName || atendimento.atendente || 'Alguem'}
                 onComplete={() => {
                   setShowRecorderRetorno(false)
                   onUpdate()
