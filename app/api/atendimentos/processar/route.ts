@@ -169,6 +169,7 @@ async function withRetry<T>(
     } catch (error: any) {
       const isLast = attempt === maxAttempts
       console.error(`[v0] ${label} - tentativa ${attempt}/${maxAttempts} falhou:`, error?.message)
+      console.error(`[v0] ${label} - erro completo:`, JSON.stringify(error, Object.getOwnPropertyNames(error)))
       if (isLast) return null
       // Backoff exponencial: 2s, 4s, 8s...
       const wait = delayMs * Math.pow(2, attempt - 1)
@@ -369,7 +370,13 @@ function convertGoogleDriveUrl(url: string): string {
 
 // ─── Deepgram ────────────────────────────────────────────────────────────────
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
-  if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
+  console.log("[v0] transcreverAudio iniciando com URL:", audioUrl.substring(0, 80))
+  
+  if (!DEEPGRAM_API_KEY) {
+    console.error("[v0] DEEPGRAM_API_KEY nao configurada!")
+    throw new Error("DEEPGRAM_API_KEY nao configurada")
+  }
+  console.log("[v0] DEEPGRAM_API_KEY presente:", !!DEEPGRAM_API_KEY)
 
   // Converter URLs do Google Drive para formato de download direto
   let processedUrl = convertGoogleDriveUrl(audioUrl)
