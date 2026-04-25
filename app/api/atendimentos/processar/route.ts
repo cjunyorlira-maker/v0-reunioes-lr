@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { del } from "@vercel/blob"
+import { del, getDownloadUrl } from "@vercel/blob"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Timeout máximo para processamento de áudios longos
@@ -372,9 +372,19 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
   // Converter URLs do Google Drive para formato de download direto
-  const processedUrl = convertGoogleDriveUrl(audioUrl)
+  let processedUrl = convertGoogleDriveUrl(audioUrl)
   
-  // Enviar URL direta para o Deepgram (blob público, sem precisar baixar)
+  // Se for URL do Vercel Blob privado, gerar URL assinada
+  if (processedUrl.includes(".private.blob.vercel-storage.com")) {
+    console.log("[v0] Gerando URL assinada para Blob privado...")
+    const signedUrl = await getDownloadUrl(processedUrl, {
+      token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
+    })
+    processedUrl = signedUrl
+    console.log("[v0] URL assinada gerada com sucesso")
+  }
+  
+  // Enviar URL direta para o Deepgram (blob público ou URL assinada)
   // Isso economiza tempo e memória para áudios longos (120+ min)
   console.log("[v0] Enviando URL para Deepgram:", processedUrl.substring(0, 80))
   
