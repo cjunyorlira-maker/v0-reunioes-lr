@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { lead_id, kommo_id, nome_lead, responsavel, equipe } = body
+    const { lead_id, kommo_id, nome_lead, responsavel, atendente, equipe } = body
 
     if (!lead_id || !nome_lead || !responsavel || !equipe) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
         kommo_id,
         nome_lead,
         responsavel,
+        atendente,
         equipe,
         status: "aguardando",
         data_atendimento: new Date().toISOString(),

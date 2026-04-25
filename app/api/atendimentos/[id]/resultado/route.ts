@@ -67,6 +67,8 @@ ${atendimento.motivo_nao_fechamento}
 
 💡 Feedback:
 ${atendimento.feedback_coaching || "Não disponível"}
+
+👤 Atendente: ${atendimento.atendente || "Não informado"}
 `.trim()
 
   // Enviar para API do Kommo
