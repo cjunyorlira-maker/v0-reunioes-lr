@@ -21,50 +21,24 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
 
-// Prompt para análise de RETORNO - quando cliente volta após não fechar
-const PROMPT_ANALISE_RETORNO = `Você é um especialista em análise de retornos de atendimentos comerciais de financiamento e consórcio imobiliário.
+// Prompt para análise de RETORNO - COMPLEMENTO do atendimento anterior
+const PROMPT_ANALISE_RETORNO = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário.
 
-CONTEXTO DO RETORNO:
-Este é um atendimento de RETORNO de um cliente que já foi atendido antes e não fechou. Você vai analisar se o vendedor resolveu os problemas do primeiro atendimento e se conseguiu avançar na venda.
+CONTEXTO IMPORTANTE:
+Este é um RETORNO/COMPLEMENTO de um atendimento anterior que não fechou. O cliente voltou para continuar a negociação.
+NÃO é uma reanálise - é um COMPLEMENTO para verificar se o vendedor conseguiu fechar desta vez.
 
-CONTEXTO DO ATENDIMENTO ANTERIOR:
+DADOS DO ATENDIMENTO ANTERIOR:
 {contexto_anterior}
 
-ANALISE OS SEGUINTES PONTOS:
+FOCO DA ANÁLISE:
+O objetivo principal é verificar se o CLIENTE FECHOU ou não neste retorno.
 
-1. EVOLUÇÃO DO CLIENTE
-- O cliente chegou mais receptivo desta vez?
-- Ainda tem as mesmas objeções ou evoluiu?
-- Demonstrou mais confiança no vendedor/produto?
-- Investigou o produto entre os atendimentos (indicativo de interesse real)?
-
-2. RESOLUÇÃO DE OBJEÇÕES
-- O vendedor resolveu as objeções que travaram o atendimento anterior?
-- Apresentou novas argumentações ou soluções para os problemas anteriores?
-- O cliente se sentiu ouvido em relação aos motivos de não ter fechado antes?
-- Trouxe novas informações, referências ou dados que não tinha antes?
-
-3. PROGRESSÃO DO ATENDIMENTO
-- Houve avanço em relação ao primeiro atendimento?
-- O cliente se comprometeu mais com o produto?
-- Começou a se visualizar como cliente?
-- Ou ficou no mesmo ponto/piorou?
-
-4. TÉCNICAS DE FECHAMENTO NO RETORNO
-- O vendedor tentou fechar? Com qual energia/convicção?
-- Como respondeu quando o cliente voltou a dizer "vou pensar"?
-- Criou urgência ou datas para próximo contato?
-- Deixou claro os próximos passos?
-
-5. QUALIDADE DA RETOMADA
-- O vendedor demonstrou que realmente se importava em conversar de novo?
-- Revisou o que foi discutido antes ou começou do zero?
-- Mostrou evolução pessoal na abordagem?
-
-COMPARATIVO COM ATENDIMENTO ANTERIOR:
-- Score esperado: deve ser mais alto que o anterior (indicativo de progresso)
-- Se o score for igual ou menor, investigar o porquê
-- Registrar claramente se este retorno foi bem-sucedido ou se precisa de novo retorno
+ANALISE APENAS:
+1. O cliente FECHOU a venda neste retorno?
+2. Resumo breve do que aconteceu neste retorno
+3. Se não fechou, qual foi o motivo
+4. O que o vendedor pode fazer para fechar numa próxima
 
 RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
 {
@@ -72,12 +46,9 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   "score_abordagem": número 0-10,
   "score_consorcio": número 0-10,
   "score_fechamento": número 0-10,
-  "score_retorno": número 0-10,
-  "resumo": "texto de 3-4 linhas resumindo o retorno",
-  "pontos_positivos": ["array de pontos que foram bem"],
-  "pontos_criticos": ["array de pontos CRÍTICOS"],
-  "evolucao_cliente": "texto descrevendo se evoluiu em relação ao primeiro atendimento",
-  "objecoes_resolvidas": true/false,
+  "resumo": "texto de 2-3 linhas resumindo O QUE ACONTECEU neste retorno",
+  "pontos_positivos": ["array de pontos positivos deste retorno"],
+  "pontos_criticos": ["array de pontos críticos deste retorno"],
   "objecoes_cliente": [
     {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
   ],
@@ -90,14 +61,14 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   },
   "motivo_nao_fechamento": "string principal ou null se fechou",
   "proximo_passo_sugerido": "string com recomendação clara",
-  "feedback_coaching": "texto de coaching — o que melhorar para fechar na próxima"
+  "feedback_coaching": "texto breve - o que fazer para fechar"
 }
 
 IMPORTANTE:
 - Speaker 0 = Supervisor/Vendedor
 - Speaker 1 = Cliente
 - Responda APENAS com o JSON válido, sem texto adicional
-- Se something não ficou claro, indique null
+- O mais importante é identificar se FECHOU ou NÃO FECHOU
 
 ## Transcrição do Retorno:
 `
@@ -166,7 +137,7 @@ CLASSIFICAÇÕES ESPECIAIS — marcar como CRÍTICO se:
 ⛔ Não tentou nenhuma técnica de fechamento
 ⛔ Atendimento completamente robótico sem conexão humana
 ⛔ Ignorou completamente a real objeção do cliente e apenas desviou sem resolver
-⛔ Argumentação completamente fora de ordem e de contexto, tornando o atendimento confuso e sem progressão
+⛔ Argumentaç��o completamente fora de ordem e de contexto, tornando o atendimento confuso e sem progressão
 
 RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
 {

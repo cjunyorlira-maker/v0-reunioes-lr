@@ -142,25 +142,23 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
     setCreatingRetorno(true)
     try {
       // Criar novo atendimento vinculado como retorno
-      const novoRetorno = await fetch('/api/atendimentos', {
+      const response = await fetch('/api/atendimentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead_id: atendimento.lead_id,
           kommo_id: atendimento.kommo_id,
-          nome_lead: atendimento.nome_lead,
+          nome_lead: `${atendimento.nome_lead} (Retorno)`,
           responsavel: atendimento.responsavel,
           atendente: atendimento.atendente,
           equipe: atendimento.equipe,
           atendimento_original_id: atendimento.id, // Vincular ao atendimento original
         }),
-      }).then(r => r.json())
-
-      if (novoRetorno.id) {
-        // Atualizar para mostrar recorder do novo atendimento
-        setShowRecorder(true)
-        // Forcar reload para mostrar o novo atendimento
-        setTimeout(() => onUpdate(), 500)
+      })
+      
+      if (response.ok) {
+        // Recarregar para mostrar o novo card de retorno na coluna aguardando
+        onUpdate()
       }
     } catch (err) {
       console.error('Erro ao criar retorno:', err)
