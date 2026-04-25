@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { del, getDownloadUrl } from "@vercel/blob"
+import { del } from "@vercel/blob"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Timeout máximo para processamento de áudios longos
 // Hobby: 60s | Pro: 300s | Enterprise: 900s
-// Para áudios de 120+ minutos, recomenda-se plano Pro ou Enterprise
-// Aumentado para máximo do Vercel: 900s (15 min)
-export const maxDuration = 900
+// Para áudios de 120+ minutos, recomenda-se plano Pro
+export const maxDuration = 300
 
 // Cliente Supabase com Service Role (funciona sem sessão de usuário)
 function createServiceClient() {
@@ -169,7 +168,6 @@ async function withRetry<T>(
     } catch (error: any) {
       const isLast = attempt === maxAttempts
       console.error(`[v0] ${label} - tentativa ${attempt}/${maxAttempts} falhou:`, error?.message)
-      console.error(`[v0] ${label} - erro completo:`, JSON.stringify(error, Object.getOwnPropertyNames(error)))
       if (isLast) return null
       // Backoff exponencial: 2s, 4s, 8s...
       const wait = delayMs * Math.pow(2, attempt - 1)
@@ -346,58 +344,13 @@ export async function POST(request: Request) {
   }
 }
 
-// ─── Converter URLs do Google Drive para download direto ─────────────────────
-function convertGoogleDriveUrl(url: string): string {
-  // Formato: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-  // Converte para: https://drive.google.com/uc?export=download&id=FILE_ID
-  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
-  if (driveMatch) {
-    const fileId = driveMatch[1]
-    console.log("[v0] Convertendo URL do Google Drive, fileId:", fileId)
-    return `https://drive.google.com/uc?export=download&id=${fileId}`
-  }
-  
-  // Formato alternativo: https://drive.google.com/open?id=FILE_ID
-  const openMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/)
-  if (openMatch) {
-    const fileId = openMatch[1]
-    console.log("[v0] Convertendo URL do Google Drive (open), fileId:", fileId)
-    return `https://drive.google.com/uc?export=download&id=${fileId}`
-  }
-  
-  return url
-}
-
 // ─── Deepgram ────────────────────────────────────────────────────────────────
 async function transcreverAudio(audioUrl: string): Promise<string | null> {
-  console.log("[v0] transcreverAudio iniciando com URL:", audioUrl.substring(0, 80))
-  
-  if (!DEEPGRAM_API_KEY) {
-    console.error("[v0] DEEPGRAM_API_KEY nao configurada!")
-    throw new Error("DEEPGRAM_API_KEY nao configurada")
-  }
-  console.log("[v0] DEEPGRAM_API_KEY presente:", !!DEEPGRAM_API_KEY)
+  if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
 
-  // Converter URLs do Google Drive para formato de download direto
-  let processedUrl = convertGoogleDriveUrl(audioUrl)
-  
-  // Se for URL do Vercel Blob privado, gerar URL assinada para Deepgram acessar
-  if (processedUrl.includes(".private.blob.vercel-storage.com")) {
-    console.log("[v0] Blob privado detectado, gerando URL assinada...")
-    try {
-      processedUrl = await getDownloadUrl(processedUrl, {
-        token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
-      })
-      console.log("[v0] URL assinada gerada com sucesso")
-    } catch (signError: any) {
-      console.error("[v0] Erro ao gerar URL assinada:", signError?.message)
-      throw new Error(`Falha ao gerar URL assinada: ${signError?.message}`)
-    }
-  }
-  
-  // Enviar URL direta para o Deepgram (URL assinada ou Google Drive)
+  // Enviar URL direta para o Deepgram (blob público, sem precisar baixar)
   // Isso economiza tempo e memória para áudios longos (120+ min)
-  console.log("[v0] Enviando URL para Deepgram:", processedUrl.substring(0, 80))
+  console.log("[v0] Enviando URL para Deepgram:", audioUrl.substring(0, 60))
   
   const response = await fetch(
     "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
@@ -407,21 +360,13 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ url: processedUrl }),
+      body: JSON.stringify({ url: audioUrl }),
     }
   )
 
   if (!response.ok) {
-    const errorText = await response.text()
-    console.error("[v0] Deepgram erro HTTP:", response.status)
-    console.error("[v0] Deepgram resposta:", errorText)
-    
-    try {
-      const errorJson = JSON.parse(errorText)
-      console.error("[v0] Deepgram erro JSON:", JSON.stringify(errorJson, null, 2))
-    } catch {}
-    
-    throw new Error(`Deepgram HTTP ${response.status}: ${errorText.substring(0, 200)}`)
+    const error = await response.text()
+    throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
   }
 
   const data = await response.json()
@@ -508,7 +453,7 @@ async function enviarNotaKommo(
     `  • Geral: ${analise.score_geral || "—"}/10\n` +
     `  • Abordagem: ${analise.score_abordagem || "—"}/10\n` +
     `  • Financiamento: ${analise.score_financiamento || "—"}/10\n` +
-    `  �� Consórcio: ${analise.score_consorcio || "—"}/10\n` +
+    `  • Consórcio: ${analise.score_consorcio || "—"}/10\n` +
     `  • Fechamento: ${analise.score_fechamento || "—"}/10\n\n` +
     (pontosPositivos ? `✅ *Pontos Positivos:*\n${pontosPositivos}\n\n` : "") +
     (pontosCriticos ? `⚠️ *Pontos a Melhorar:*\n${pontosCriticos}\n\n` : "") +
