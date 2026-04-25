@@ -14,19 +14,14 @@ const AUDIO_SAMPLES = [
     local: true,
   },
   {
-    name: "Podcast Curto (5 min)",
+    name: "Podcast Publico - Deepgram (10 min)",
+    url: "https://static.deepgram.com/examples/Cocktail%20Party%20Effect.wav",
+    duracao: 600, // 10 minutos
+  },
+  {
+    name: "Audio Sample - MP3 (Real)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    duracao: 300, // 5 minutos
-  },
-  {
-    name: "Audio Medio (30 min simulado)",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    duracao: 1800, // 30 minutos
-  },
-  {
-    name: "Audio Longo (100 min simulado)",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    duracao: 6000, // 100 minutos
+    duracao: 330, // ~5.5 minutos
   },
 ]
 
@@ -217,15 +212,18 @@ export default function TesteAudioPage() {
 
           <div className="pt-4 border-t border-white/10">
             <label className="block text-sm text-white/60 mb-2">
-              Ou use uma URL personalizada:
+              Ou use uma URL personalizada (debe ser publicamente acessivel):
             </label>
             <input
               type="url"
               value={customUrl}
               onChange={(e) => setCustomUrl(e.target.value)}
-              placeholder="https://exemplo.com/audio.mp3"
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-[#d4af37]/50 outline-none"
+              placeholder="https://exemplo.com/audio.mp3 ou https://drive.google.com/file/d/FILE_ID/view"
+              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-[#d4af37]/50 outline-none text-sm"
             />
+            <p className="text-xs text-white/40 mt-2">
+              ⚠️ URLs do Google Drive sao convertidas automaticamente, mas podem nao funcionar se nao estao compartilhadas publicamente.
+            </p>
           </div>
         </div>
 
