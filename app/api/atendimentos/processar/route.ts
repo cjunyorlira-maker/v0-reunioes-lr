@@ -377,12 +377,13 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   // Se for URL do Vercel Blob privado, gerar URL assinada
   if (processedUrl.includes(".private.blob.vercel-storage.com")) {
     console.log("[v0] Gerando URL assinada para Blob privado...")
+    console.log("[v0] Token presente:", !!process.env.BLOB_READ_WRITE_TOKEN)
     try {
       const signedUrl = await getDownloadUrl(processedUrl, {
         token: process.env.BLOB_READ_WRITE_TOKEN,
       })
       processedUrl = signedUrl
-      console.log("[v0] URL assinada gerada com sucesso")
+      console.log("[v0] URL assinada gerada:", signedUrl.substring(0, 100))
     } catch (error) {
       console.error("[v0] Erro ao gerar URL assinada:", error)
       // Continuar com URL original se falhar
@@ -407,6 +408,7 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
 
   if (!response.ok) {
     const error = await response.text()
+    console.error("[v0] Deepgram erro HTTP:", response.status, error)
     throw new Error(`Deepgram HTTP ${response.status}: ${error}`)
   }
 
