@@ -17,7 +17,8 @@ import {
   ArrowRight,
   FileText,
   User,
-  Building2
+  Building2,
+  RotateCcw
 } from 'lucide-react'
 import { AudioRecorder } from './audio-recorder'
 import { cn } from '@/lib/utils'
@@ -71,6 +72,7 @@ interface Atendimento {
   is_benchmark: boolean
   data_atendimento: string
   created_at: string
+  atendimento_original_id?: string | null
 }
 
 interface AtendimentoCardProps {
@@ -93,6 +95,7 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
   const [showRecorder, setShowRecorder] = useState(false)
   const [showAnalise, setShowAnalise] = useState(false)
   const [markingResult, setMarkingResult] = useState<'fechou' | 'nao_fechou' | null>(null)
+  const [creatingRetorno, setCreatingRetorno] = useState(false)
 
   const temAnalise = atendimento.score_geral !== null
 
@@ -132,6 +135,37 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
       console.error('Erro ao marcar resultado:', err)
     } finally {
       setMarkingResult(null)
+    }
+  }
+
+  const handleGravarRetorno = async () => {
+    setCreatingRetorno(true)
+    try {
+      // Criar novo atendimento vinculado como retorno
+      const novoRetorno = await fetch('/api/atendimentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: atendimento.lead_id,
+          kommo_id: atendimento.kommo_id,
+          nome_lead: atendimento.nome_lead,
+          responsavel: atendimento.responsavel,
+          atendente: atendimento.atendente,
+          equipe: atendimento.equipe,
+          atendimento_original_id: atendimento.id, // Vincular ao atendimento original
+        }),
+      }).then(r => r.json())
+
+      if (novoRetorno.id) {
+        // Atualizar para mostrar recorder do novo atendimento
+        setShowRecorder(true)
+        // Forcar reload para mostrar o novo atendimento
+        setTimeout(() => onUpdate(), 500)
+      }
+    } catch (err) {
+      console.error('Erro ao criar retorno:', err)
+    } finally {
+      setCreatingRetorno(false)
     }
   }
 
@@ -285,6 +319,23 @@ export function AtendimentoCard({ atendimento, onUpdate }: AtendimentoCardProps)
               >
                 <Mic className='w-3.5 h-3.5 mr-1.5' />
                 Gravar
+              </Button>
+            )}
+
+            {/* Botao Gravar Retorno - para Não Fechados Concluidos */}
+            {isConcluido && atendimento.fechou === false && !showRecorder && (
+              <Button
+                onClick={handleGravarRetorno}
+                disabled={creatingRetorno}
+                size='sm'
+                className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+              >
+                {creatingRetorno ? (
+                  <Loader2 className='w-3.5 h-3.5 mr-1.5 animate-spin' />
+                ) : (
+                  <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
+                )}
+                Gravar Retorno
               </Button>
             )}
 
