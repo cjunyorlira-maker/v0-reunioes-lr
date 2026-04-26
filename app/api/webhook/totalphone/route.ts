@@ -504,7 +504,7 @@ export async function POST(request: Request) {
           `ligacoes/${callid}.mp3`,
           audioBuffer,
           {
-            access: "private",
+            access: "public",
             contentType: "audio/mpeg",
             token: process.env.BLOB_READ_WRITE_TOKEN,
           }
