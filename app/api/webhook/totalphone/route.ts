@@ -483,10 +483,35 @@ export async function POST(request: Request) {
           }
           
           const req = http.request(options, (res) => {
-            const chunks: Buffer[] = []
+            // Segue redirect (301, 302, 307, 308)
+            if ([301, 302, 307, 308].includes(res.statusCode || 0) && res.headers.location) {
+              console.log("[TotalPhone] Redirect para:", res.headers.location)
+              
+              // Faz nova requisição para a URL de redirect
+              const redirectUrl = res.headers.location as string
+              fetch(redirectUrl, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                  'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
+                }
+              }).then(async (redirectRes) => {
+                const contentType = redirectRes.headers.get('content-type') || ''
+                if (contentType.includes('text/html')) {
+                  reject(new Error('Redirect retornou HTML em vez de áudio'))
+                  return
+                }
+                
+                const arrayBuffer = await redirectRes.arrayBuffer()
+                const buffer = Buffer.from(arrayBuffer)
+                console.log("[TotalPhone] Áudio baixado do redirect:", buffer.length, "bytes, tipo:", contentType)
+                resolve(buffer)
+              }).catch(reject)
+              return
+            }
             
-            // Verifica se é HTML
+            const chunks: Buffer[] = []
             const contentType = res.headers['content-type'] || ''
+            
             if (contentType.includes('text/html')) {
               reject(new Error('Servidor retornou HTML em vez de áudio'))
               return
@@ -498,6 +523,7 @@ export async function POST(request: Request) {
               console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
               resolve(buffer)
             })
+            res.on('error', reject)
           })
           
           req.on('error', (err) => reject(err))
