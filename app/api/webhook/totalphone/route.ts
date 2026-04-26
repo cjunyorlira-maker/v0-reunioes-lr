@@ -460,32 +460,53 @@ export async function POST(request: Request) {
     let audioBuffer: Buffer | null = null
     
     if (audioUrlOriginal) {
-      try {
-        console.log("[TotalPhone] Baixando áudio...")
-        const audioResponse = await fetch(audioUrlOriginal, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-            'Referer': 'https://portal.totalphone.com.br',
-          }
-        })
-        
-        if (audioResponse.ok) {
-          // Verifica se realmente recebeu áudio (não HTML)
-          const contentType = audioResponse.headers.get('content-type') || ''
-          if (contentType.includes('text/html')) {
-            console.error('[TotalPhone] Servidor retornou HTML em vez de áudio — URL inválida ou expirada')
-            audioBuffer = null
-          } else {
+      // Tenta HTTPS primeiro, fallback para HTTP
+      const urlsToTry = [
+        audioUrlOriginal,
+        audioUrlOriginal.replace('https://', 'http://'),
+        audioUrlOriginal.replace('http://', 'https://'),
+      ].filter((url, i, arr) => arr.indexOf(url) === i) // Remove duplicatas
+      
+      for (const urlToTry of urlsToTry) {
+        try {
+          console.log("[TotalPhone] Tentando baixar áudio de:", urlToTry)
+          const audioResponse = await fetch(urlToTry, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
+              'Referer': 'https://portal.totalphone.com.br',
+            }
+          })
+          
+          if (audioResponse.ok) {
+            const contentType = audioResponse.headers.get('content-type') || ''
+            if (contentType.includes('text/html')) {
+              console.error('[TotalPhone] Servidor retornou HTML em vez de áudio')
+              continue // Tenta próxima URL
+            }
+            
             const arrayBuffer = await audioResponse.arrayBuffer()
             audioBuffer = Buffer.from(arrayBuffer)
-            console.log("[TotalPhone] Áudio baixado:", audioBuffer.length, "bytes, tipo:", contentType)
+            
+            // Verifica se o buffer tem tamanho válido (>1KB = provavelmente áudio)
+            if (audioBuffer.length > 1000) {
+              console.log("[TotalPhone] Áudio baixado:", audioBuffer.length, "bytes, tipo:", contentType)
+              break // Sucesso, para o loop
+            } else {
+              console.error('[TotalPhone] Áudio muito pequeno, pode ser erro:', audioBuffer.length, 'bytes')
+              audioBuffer = null
+              continue
+            }
+          } else {
+            console.error("[TotalPhone] Erro:", audioResponse.status, audioResponse.statusText)
           }
-        } else {
-          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status, audioResponse.statusText)
+        } catch (audioError) {
+          console.error("[TotalPhone] Erro ao baixar de", urlToTry, ":", audioError)
         }
-      } catch (audioError) {
-        console.error("[TotalPhone] Erro ao baixar áudio:", audioError)
+      }
+      
+      if (!audioBuffer) {
+        console.error("[TotalPhone] Não foi possível baixar o áudio de nenhuma URL")
       }
     }
     
