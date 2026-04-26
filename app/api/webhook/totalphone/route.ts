@@ -60,9 +60,34 @@ function determinarStatus(duracao: number): string {
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
+    // Primeiro tenta ler como texto para debug
+    const rawBody = await request.text()
+    console.log("[TotalPhone Webhook] Body RAW recebido:", rawBody)
     
-    console.log("[TotalPhone Webhook] Dados recebidos:", JSON.stringify(data, null, 2))
+    // Tenta fazer parse do JSON, tratando possíveis problemas
+    let data: any
+    try {
+      data = JSON.parse(rawBody)
+    } catch (parseError) {
+      console.error("[TotalPhone Webhook] Erro ao fazer parse do JSON:", parseError)
+      console.error("[TotalPhone Webhook] Body que causou erro:", rawBody)
+      
+      // Tenta limpar o JSON (remover caracteres inválidos)
+      try {
+        const cleanedBody = rawBody
+          .replace(/[\x00-\x1F\x7F]/g, '') // Remove caracteres de controle
+          .trim()
+        data = JSON.parse(cleanedBody)
+        console.log("[TotalPhone Webhook] JSON limpo com sucesso")
+      } catch (cleanError) {
+        return NextResponse.json({ 
+          error: "JSON inválido recebido", 
+          rawBody: rawBody.substring(0, 500) 
+        }, { status: 400 })
+      }
+    }
+    
+    console.log("[TotalPhone Webhook] Dados parseados:", JSON.stringify(data, null, 2))
     
     // Extrai dados do webhook
     const {
