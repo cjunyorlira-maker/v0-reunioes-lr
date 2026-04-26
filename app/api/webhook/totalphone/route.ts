@@ -129,8 +129,46 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
   return "atendida"
 }
 
-// Baixa áudio do TotalPhone (requer 2 requisições: 1 para session, 2 para download)
+// Baixa áudio do TotalPhone via proxy Railway (evita bloqueio de IP)
 const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> => {
+  const PROXY_URL = process.env.PROXY_TOTALPHONE_URL
+  const PROXY_SECRET = process.env.PROXY_TOTALPHONE_SECRET
+  
+  // Se não tiver proxy configurado, tenta direto (fallback)
+  if (!PROXY_URL || !PROXY_SECRET) {
+    console.log('[TotalPhone] Proxy não configurado, tentando download direto...')
+    return baixarAudioDireto(audioUrl)
+  }
+  
+  try {
+    const proxyEndpoint = `${PROXY_URL}/download?url=${encodeURIComponent(audioUrl)}`
+    console.log('[TotalPhone] Baixando via proxy:', PROXY_URL)
+    
+    const response = await fetch(proxyEndpoint, {
+      headers: {
+        'Authorization': `Bearer ${PROXY_SECRET}`,
+      },
+    })
+    
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('[TotalPhone] Erro do proxy:', response.status, error)
+      return null
+    }
+    
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    
+    console.log('[TotalPhone] Áudio baixado via proxy:', buffer.length, 'bytes')
+    return buffer
+  } catch (error) {
+    console.error('[TotalPhone] Erro ao chamar proxy:', error)
+    return null
+  }
+}
+
+// Fallback: tenta baixar direto (pode falhar por bloqueio de IP)
+const baixarAudioDireto = async (audioUrl: string): Promise<Buffer | null> => {
   return new Promise((resolve) => {
     try {
       const url = new URL(audioUrl.replace('https://', 'http://'))
@@ -141,32 +179,14 @@ const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> =
         path: url.pathname + url.search,
         method: 'GET',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-          'Referer': 'http://45.170.138.80/suite/',
         },
       }
 
-      // PASSO 1: primeira requisição para obter o PHPSESSID
-      console.log('[TotalPhone] Headers enviados na REQ1:', JSON.stringify(opcoes.headers, null, 2))
-      
       const req1 = http.request(opcoes, (res1: any) => {
-        console.log('[TotalPhone] REQ1 Status:', res1.statusCode)
-        console.log('[TotalPhone] REQ1 Headers:', JSON.stringify(res1.headers, null, 2))
-        
-        // Extrai o cookie PHPSESSID da resposta
         const cookies = res1.headers['set-cookie'] || []
-        const phpSession = cookies
-          .find((c: string) => c.startsWith('PHPSESSID='))
-          ?.split(';')[0] || ''
-        const idioma = cookies
-          .find((c: string) => c.startsWith('idioma='))
-          ?.split(';')[0] || 'idioma=pt'
-
-        console.log('[TotalPhone] PHPSESSID obtido:', phpSession.substring(0, 30))
-
-        // Descarta o body da primeira resposta
+        const phpSession = cookies.find((c: string) => c.startsWith('PHPSESSID='))?.split(';')[0] || ''
         res1.resume()
 
         if (!phpSession) {
@@ -175,52 +195,22 @@ const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> =
           return
         }
 
-        // PASSO 2: segunda requisição com o cookie para baixar o áudio
-        const opcoes2 = {
-          ...opcoes,
-          headers: {
-            ...opcoes.headers,
-            'Cookie': `${phpSession}; ${idioma}`,
-          },
-        }
-
-        console.log('[TotalPhone] Headers enviados na REQ2:', JSON.stringify(opcoes2.headers, null, 2))
+        const opcoes2 = { ...opcoes, headers: { ...opcoes.headers, 'Cookie': phpSession } }
 
         const req2 = http.request(opcoes2, (res2: any) => {
-          console.log('[TotalPhone] REQ2 Status:', res2.statusCode)
-          console.log('[TotalPhone] REQ2 Headers:', JSON.stringify(res2.headers, null, 2))
-          
-          const contentType = res2.headers['content-type'] || ''
-
-          if (contentType.includes('text/html')) {
+          if ((res2.headers['content-type'] || '').includes('text/html')) {
             res2.resume()
-            console.error('[TotalPhone] Ainda retornou HTML mesmo com cookie')
             resolve(null)
             return
           }
 
           const chunks: Buffer[] = []
           res2.on('data', (chunk: Buffer) => chunks.push(chunk))
-          res2.on('end', () => {
-            const buffer = Buffer.concat(chunks)
-            if (buffer.length < 1024) {
-              console.error(`[TotalPhone] Áudio muito pequeno: ${buffer.length} bytes`)
-              resolve(null)
-              return
-            }
-            console.log('[TotalPhone] Áudio baixado com sucesso:', buffer.length, 'bytes')
-            resolve(buffer)
-          })
-          res2.on('error', (err: any) => {
-            console.error('[TotalPhone] Erro no download:', err.message)
-            resolve(null)
-          })
+          res2.on('end', () => resolve(Buffer.concat(chunks)))
+          res2.on('error', () => resolve(null))
         })
-
-        req2.on('error', (err: any) => {
-          console.error('[TotalPhone] Erro na req2:', err.message)
-          resolve(null)
-        })
+        req2.on('error', () => resolve(null))
+        
         req2.setTimeout(30000, () => {
           req2.destroy()
           resolve(null)
