@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Inicializa Supabase apenas se as variáveis estiverem disponíveis
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+  : null
 
 // Gera relatório formatado para WhatsApp
 export async function GET(req: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase não configurado" },
+        { status: 500 }
+      )
+    }
+    
     const { searchParams } = new URL(req.url)
     const date = searchParams.get("date") || new Date().toISOString().split("T")[0]
     
