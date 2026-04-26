@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 
@@ -113,7 +113,7 @@ export async function POST(
   const { id } = await params
   
   try {
-    const supabase = createServiceClient()
+    const supabase = createSupabaseAdmin()
 
     // 1. Busca a ligação
     const { data: ligacao, error: fetchError } = await supabase

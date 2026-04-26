@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase/server"
+import { createSupabaseAdmin } from "@/lib/supabase/admin"
 
 interface VendedorStats {
   vendedor: string
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const dataInicio = searchParams.get("dataInicio")
     const dataFim = searchParams.get("dataFim")
 
-    const supabase = createServiceClient()
+    const supabase = createSupabaseAdmin()
 
     let query = supabase
       .from("ligacoes")
