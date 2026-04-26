@@ -37,16 +37,18 @@ const RAMAIS: Record<string, { vendedor: string; equipe: string }> = {
 
 // Extrai o ramal do numero de origem ou destino
 function extrairRamal(numero: string): string | null {
-  // O ramal geralmente é um numero de 4 digitos (1000-1099)
   if (!numero) return null
   
+  // Remove o prefixo "grupolr-" se existir
+  const cleaned = numero.replace(/^grupolr-/i, "")
+  
   // Se o numero tem 4 digitos e comeca com 10, é um ramal
-  if (/^10\d{2}$/.test(numero)) {
-    return numero
+  if (/^10\d{2}$/.test(cleaned)) {
+    return cleaned
   }
   
   // Se tem mais digitos, tenta extrair os ultimos 4
-  const match = numero.match(/10\d{2}$/)
+  const match = cleaned.match(/10\d{2}$/)
   if (match) return match[0]
   
   return null
@@ -70,18 +72,22 @@ export async function POST(request: Request) {
       data = JSON.parse(rawBody)
     } catch (parseError) {
       console.error("[TotalPhone Webhook] Erro ao fazer parse do JSON:", parseError)
-      console.error("[TotalPhone Webhook] Body que causou erro:", rawBody)
       
-      // Tenta limpar o JSON (remover caracteres inválidos)
+      // Remove vírgulas extras antes de } ou ]
+      const fixedBody = rawBody
+        .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas antes de } ou ]
+        .replace(/[\x00-\x1F\x7F]/g, '') // Remove caracteres de controle
+        .trim()
+      
+      console.log("[TotalPhone Webhook] Tentando com JSON corrigido")
+      
       try {
-        const cleanedBody = rawBody
-          .replace(/[\x00-\x1F\x7F]/g, '') // Remove caracteres de controle
-          .trim()
-        data = JSON.parse(cleanedBody)
-        console.log("[TotalPhone Webhook] JSON limpo com sucesso")
+        data = JSON.parse(fixedBody)
+        console.log("[TotalPhone Webhook] JSON corrigido com sucesso!")
       } catch (cleanError) {
+        console.error("[TotalPhone Webhook] Falha ao corrigir JSON:", cleanError)
         return NextResponse.json({ 
-          error: "JSON inválido recebido", 
+          error: "JSON inválido recebido após tentativa de correção", 
           rawBody: rawBody.substring(0, 500) 
         }, { status: 400 })
       }
