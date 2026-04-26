@@ -41,6 +41,16 @@ const RAMAIS: Record<string, { vendedor: string; equipe: string }> = {
   "9999": { vendedor: "Suporte TotalPhone", equipe: "Admin" },
 }
 
+// Normaliza telefone removendo DDI e zeros extras
+function normalizarTelefone(numero: string): string {
+  const digits = numero.replace(/\D/g, '')
+  // Remove DDI 55 se tiver
+  if (digits.startsWith('55') && digits.length > 11) return digits.slice(2)
+  // Remove 0 inicial
+  if (digits.startsWith('0') && digits.length > 10) return digits.slice(1)
+  return digits
+}
+
 // Extrai o ramal do numero de origem ou destino
 function extrairRamal(numero: string): string | null {
   if (!numero) return null
@@ -144,16 +154,15 @@ async function transcreverComDeepgram(audioInput: Buffer | string): Promise<stri
 
     let body: any
 
-    // Se for Buffer (arquivo de áudio), envia como multipart
+    // Se for Buffer (arquivo de áudio), envia direto no body
     if (Buffer.isBuffer(audioInput)) {
-      const formData = new FormData()
-      const blob = new Blob([audioInput], { type: "audio/mpeg" })
-      formData.append("files", blob, "audio.mp3")
-      
       const response = await fetch(url, {
         method: "POST",
-        headers,
-        body: formData as any,
+        headers: {
+          ...headers,
+          "Content-Type": "audio/mpeg",
+        },
+        body: audioInput,
       })
 
       if (!response.ok) {
@@ -455,14 +464,23 @@ export async function POST(request: Request) {
         console.log("[TotalPhone] Baixando áudio...")
         const audioResponse = await fetch(audioUrlOriginal, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
+            'Referer': 'https://portal.totalphone.com.br',
           }
         })
         
         if (audioResponse.ok) {
-          const arrayBuffer = await audioResponse.arrayBuffer()
-          audioBuffer = Buffer.from(arrayBuffer)
-          console.log("[TotalPhone] Áudio baixado com sucesso:", audioBuffer.length, "bytes")
+          // Verifica se realmente recebeu áudio (não HTML)
+          const contentType = audioResponse.headers.get('content-type') || ''
+          if (contentType.includes('text/html')) {
+            console.error('[TotalPhone] Servidor retornou HTML em vez de áudio — URL inválida ou expirada')
+            audioBuffer = null
+          } else {
+            const arrayBuffer = await audioResponse.arrayBuffer()
+            audioBuffer = Buffer.from(arrayBuffer)
+            console.log("[TotalPhone] Áudio baixado:", audioBuffer.length, "bytes, tipo:", contentType)
+          }
         } else {
           console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status, audioResponse.statusText)
         }
@@ -554,8 +572,11 @@ export async function POST(request: Request) {
     
     // 6. Envia para Kommo
     if (audioBlobUrl && telefoneCliente) {
+      const telefoneNormalizado = normalizarTelefone(telefoneCliente)
+      console.log("[TotalPhone] Telefone normalizado:", telefoneCliente, "->", telefoneNormalizado)
+      
       const kommoCallId = await enviarChamadaKommo(
-        telefoneCliente,
+        telefoneNormalizado,
         duracaoSegundos,
         statusFinal,
         audioBlobUrl
