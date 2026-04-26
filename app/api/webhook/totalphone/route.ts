@@ -131,8 +131,8 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
 
 // Baixa áudio do TotalPhone via proxy Railway (evita bloqueio de IP)
 const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> => {
-  const PROXY_URL = process.env.PROXY_TOTALPHONE_URL
-  const PROXY_SECRET = process.env.PROXY_TOTALPHONE_SECRET
+  const PROXY_URL = process.env.PROXY_URL
+  const PROXY_SECRET = process.env.PROXY_SECRET
   
   // Se não tiver proxy configurado, tenta direto (fallback)
   if (!PROXY_URL || !PROXY_SECRET) {
