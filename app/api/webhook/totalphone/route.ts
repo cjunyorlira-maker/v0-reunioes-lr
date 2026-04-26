@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
+import https from "https"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -456,57 +457,65 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio primeiro (porque a URL pode retornar HTML sem headers corretos)
+    // 1. Baixa o áudio primeiro (usando HTTPS com SSL ignorado)
     let audioBuffer: Buffer | null = null
     
     if (audioUrlOriginal) {
-      // Tenta HTTPS primeiro, fallback para HTTP
-      const urlsToTry = [
-        audioUrlOriginal,
-        audioUrlOriginal.replace('https://', 'http://'),
-        audioUrlOriginal.replace('http://', 'https://'),
-      ].filter((url, i, arr) => arr.indexOf(url) === i) // Remove duplicatas
+      // Garante que usa HTTPS (servidor retorna HTML via HTTP)
+      const httpsUrl = audioUrlOriginal.replace('http://', 'https://')
       
-      for (const urlToTry of urlsToTry) {
-        try {
-          console.log("[TotalPhone] Tentando baixar áudio de:", urlToTry)
-          const audioResponse = await fetch(urlToTry, {
+      console.log("[TotalPhone] Baixando áudio via HTTPS (ignorando SSL):", httpsUrl)
+      
+      try {
+        audioBuffer = await new Promise<Buffer>((resolve, reject) => {
+          const url = new URL(httpsUrl)
+          
+          const options = {
+            hostname: url.hostname,
+            port: 443,
+            path: url.pathname + url.search,
+            method: 'GET',
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
               'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-              'Referer': 'https://portal.totalphone.com.br',
+            },
+            rejectUnauthorized: false, // Ignora certificado SSL inválido
+          }
+          
+          const req = https.request(options, (res) => {
+            const chunks: Buffer[] = []
+            
+            // Verifica se é HTML
+            const contentType = res.headers['content-type'] || ''
+            if (contentType.includes('text/html')) {
+              reject(new Error('Servidor retornou HTML em vez de áudio'))
+              return
             }
+            
+            res.on('data', (chunk) => chunks.push(chunk))
+            res.on('end', () => {
+              const buffer = Buffer.concat(chunks)
+              console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
+              resolve(buffer)
+            })
           })
           
-          if (audioResponse.ok) {
-            const contentType = audioResponse.headers.get('content-type') || ''
-            if (contentType.includes('text/html')) {
-              console.error('[TotalPhone] Servidor retornou HTML em vez de áudio')
-              continue // Tenta próxima URL
-            }
-            
-            const arrayBuffer = await audioResponse.arrayBuffer()
-            audioBuffer = Buffer.from(arrayBuffer)
-            
-            // Verifica se o buffer tem tamanho válido (>1KB = provavelmente áudio)
-            if (audioBuffer.length > 1000) {
-              console.log("[TotalPhone] Áudio baixado:", audioBuffer.length, "bytes, tipo:", contentType)
-              break // Sucesso, para o loop
-            } else {
-              console.error('[TotalPhone] Áudio muito pequeno, pode ser erro:', audioBuffer.length, 'bytes')
-              audioBuffer = null
-              continue
-            }
-          } else {
-            console.error("[TotalPhone] Erro:", audioResponse.status, audioResponse.statusText)
-          }
-        } catch (audioError) {
-          console.error("[TotalPhone] Erro ao baixar de", urlToTry, ":", audioError)
+          req.on('error', (err) => reject(err))
+          req.setTimeout(30000, () => {
+            req.destroy()
+            reject(new Error('Timeout ao baixar áudio'))
+          })
+          req.end()
+        })
+        
+        // Verifica tamanho mínimo
+        if (audioBuffer.length < 1000) {
+          console.error('[TotalPhone] Áudio muito pequeno:', audioBuffer.length, 'bytes')
+          audioBuffer = null
         }
-      }
-      
-      if (!audioBuffer) {
-        console.error("[TotalPhone] Não foi possível baixar o áudio de nenhuma URL")
+      } catch (downloadError) {
+        console.error("[TotalPhone] Erro ao baixar áudio:", downloadError)
+        audioBuffer = null
       }
     }
     
