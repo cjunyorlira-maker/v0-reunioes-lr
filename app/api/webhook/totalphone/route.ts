@@ -148,6 +148,12 @@ export async function POST(request: Request) {
       dataLigacaoFormatada = new Date(dataLigacao).toISOString()
     }
     
+    // Monta URL completa do áudio se for relativa
+    let audioUrlCompleta = gravacao || null
+    if (audioUrlCompleta && !audioUrlCompleta.startsWith("http")) {
+      audioUrlCompleta = `https://45.170.138.80/suite/${audioUrlCompleta}`
+    }
+    
     // Salva no banco
     const { data: ligacao, error } = await supabase
       .from("ligacoes")
@@ -161,7 +167,7 @@ export async function POST(request: Request) {
         duracao_segundos: duracaoSegundos,
         status: determinarStatus(duracaoSegundos),
         tipo_origem: tipo_origem || null,
-        audio_url_original: gravacao || null,
+        audio_url_original: audioUrlCompleta,
         data_ligacao: dataLigacaoFormatada,
         updated_at: new Date().toISOString(),
       }, { 
