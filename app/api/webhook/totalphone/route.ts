@@ -354,7 +354,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "callid obrigatório" }, { status: 400 })
     }
     
-    // Determina se é entrada ou saida e quem é o vendedor
+    // Determina se �� entrada ou saida e quem é o vendedor
     const isEntrada = direcao === "entrada" || direcao === "inbound"
     const ramal = extrairRamal(isEntrada ? destino : origem)
     const telefoneCliente = isEntrada ? origem : destino
@@ -395,9 +395,10 @@ export async function POST(request: Request) {
     }
     
     // Monta URL completa do áudio se for relativa
+    // Usa HTTP (sem S) porque o certificado SSL do servidor é inválido para o IP
     let audioUrlOriginal = gravacao || null
     if (audioUrlOriginal && !audioUrlOriginal.startsWith("http")) {
-      audioUrlOriginal = `https://45.170.138.80/suite/${audioUrlOriginal}`
+      audioUrlOriginal = `http://45.170.138.80/suite/${audioUrlOriginal}`
     }
     
     console.log("[TotalPhone] Processando ligação:", {
@@ -416,10 +417,34 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio e salva no Blob (se tiver URL)
+    // 1. Transcreve o áudio diretamente com Deepgram (envia URL do TotalPhone)
+    if (audioUrlOriginal && DEEPGRAM_API_KEY) {
+      try {
+        console.log("[TotalPhone] Transcrevendo áudio diretamente da URL:", audioUrlOriginal)
+        transcricao = await transcreverComDeepgram(audioUrlOriginal)
+        
+        if (transcricao) {
+          console.log("[TotalPhone] Transcrição:", transcricao.substring(0, 200))
+          
+          // 2. Detecta status pela transcrição
+          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
+          console.log("[TotalPhone] Status detectado:", statusFinal)
+          
+          // 3. Analisa com Claude (só se foi atendida e tem conversa)
+          if (statusFinal === "atendida" && transcricao.length > 50) {
+            console.log("[TotalPhone] Analisando com Claude...")
+            analise = await analisarComClaude(transcricao)
+          }
+        }
+      } catch (transcricaoError) {
+        console.error("[TotalPhone] Erro na transcrição:", transcricaoError)
+      }
+    }
+    
+    // 2. Baixa o áudio e salva no Blob (para o Kommo player funcionar)
     if (audioUrlOriginal) {
       try {
-        console.log("[TotalPhone] Baixando áudio...")
+        console.log("[TotalPhone] Baixando áudio para o Blob...")
         const audioResponse = await fetch(audioUrlOriginal)
         
         if (audioResponse.ok) {
@@ -437,31 +462,14 @@ export async function POST(request: Request) {
           
           audioBlobUrl = blobResult.url
           console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl)
-          
-          // 2. Transcreve com Deepgram
-          if (DEEPGRAM_API_KEY) {
-            console.log("[TotalPhone] Transcrevendo...")
-            transcricao = await transcreverComDeepgram(audioBlobUrl)
-            
-            if (transcricao) {
-              console.log("[TotalPhone] Transcrição:", transcricao.substring(0, 200))
-              
-              // 3. Detecta status pela transcrição
-              statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
-              console.log("[TotalPhone] Status detectado:", statusFinal)
-              
-              // 4. Analisa com Claude (só se foi atendida e tem conversa)
-              if (statusFinal === "atendida" && transcricao.length > 50) {
-                console.log("[TotalPhone] Analisando com Claude...")
-                analise = await analisarComClaude(transcricao)
-              }
-            }
-          }
         } else {
-          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status)
+          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status, audioResponse.statusText)
+          // Se não conseguir baixar, mantém a URL original para referência
+          audioBlobUrl = null
         }
       } catch (audioError) {
-        console.error("[TotalPhone] Erro no processamento de áudio:", audioError)
+        console.error("[TotalPhone] Erro ao baixar áudio:", audioError)
+        audioBlobUrl = null
       }
     }
     
