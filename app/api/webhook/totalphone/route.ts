@@ -137,58 +137,70 @@ const baixarComRedirect = (urlStr: string, tentativas = 0): Promise<Buffer> => {
       return
     }
     
+    let url: URL
     try {
-      const url = new URL(urlStr)
-      const isHttps = url.protocol === "https:"
-      const lib = isHttps ? https : http
-      
-      const options: any = {
-        hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname + url.search,
-        method: "GET",
-        rejectUnauthorized: false, // ignora SSL inválido em qualquer protocolo
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "Accept": "audio/mpeg, audio/wav, audio/*, */*",
-        },
+      url = new URL(urlStr)
+    } catch {
+      reject(new Error(`URL inválida: ${urlStr}`))
+      return
+    }
+    
+    const isHttps = url.protocol === "https:"
+    const lib = isHttps ? https : http
+    const port = url.port ? parseInt(url.port) : (isHttps ? 443 : 80)
+    
+    const options: any = {
+      hostname: url.hostname,
+      port,
+      path: url.pathname + url.search,
+      method: "GET",
+      rejectUnauthorized: false,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "audio/mpeg, audio/wav, audio/*, */*",
+      },
+    }
+    
+    const req = lib.request(options, (res: any) => {
+      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+        // Monta URL absoluta se vier relativa
+        let redirectUrl = res.headers.location
+        if (redirectUrl.startsWith("/")) {
+          redirectUrl = `${url.protocol}//${url.hostname}:${port}${redirectUrl}`
+        }
+        console.log("[TotalPhone] Redirect:", res.statusCode, "->", redirectUrl.substring(0, 80))
+        res.resume()
+        baixarComRedirect(redirectUrl, tentativas + 1).then(resolve).catch(reject)
+        return
       }
       
-      const req = lib.request(options, (res: any) => {
-        // Segue redirect com a mesma função (suporta HTTP e HTTPS)
-        if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-          console.log("[TotalPhone] Redirect:", res.statusCode, "->", res.headers.location.substring(0, 80))
-          res.resume() // descarta o body
-          baixarComRedirect(res.headers.location, tentativas + 1).then(resolve).catch(reject)
-          return
-        }
-        
-        const contentType = res.headers["content-type"] || ""
-        if (contentType.includes("text/html")) {
-          res.resume()
-          reject(new Error("Servidor retornou HTML em vez de áudio"))
-          return
-        }
-        
-        const chunks: Buffer[] = []
-        res.on("data", (chunk: Buffer) => chunks.push(chunk))
-        res.on("end", () => {
-          const buffer = Buffer.concat(chunks)
-          console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
-          resolve(buffer)
-        })
-        res.on("error", reject)
-      })
+      const contentType = res.headers["content-type"] || ""
+      if (contentType.includes("text/html")) {
+        res.resume()
+        reject(new Error("Servidor retornou HTML em vez de áudio"))
+        return
+      }
       
-      req.on("error", reject)
-      req.setTimeout(30000, () => {
-        req.destroy()
-        reject(new Error("Timeout ao baixar áudio"))
+      const chunks: Buffer[] = []
+      res.on("data", (chunk: Buffer) => chunks.push(chunk))
+      res.on("end", () => {
+        const buffer = Buffer.concat(chunks)
+        if (buffer.length < 1024) {
+          reject(new Error(`Áudio muito pequeno: ${buffer.length} bytes`))
+          return
+        }
+        console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
+        resolve(buffer)
       })
-      req.end()
-    } catch (err) {
-      reject(err)
-    }
+      res.on("error", reject)
+    })
+    
+    req.on("error", reject)
+    req.setTimeout(30000, () => {
+      req.destroy()
+      reject(new Error("Timeout no download"))
+    })
+    req.end()
   })
 }
 
