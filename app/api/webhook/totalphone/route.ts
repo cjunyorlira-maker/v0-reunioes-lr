@@ -129,31 +129,61 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
   return duracao > 15 ? "atendida" : "nao_atendida"
 }
 
-// Transcreve audio com Deepgram
-async function transcreverComDeepgram(audioUrl: string): Promise<string | null> {
+// Transcreve audio com Deepgram (aceita Buffer ou URL)
+async function transcreverComDeepgram(audioInput: Buffer | string): Promise<string | null> {
   if (!DEEPGRAM_API_KEY) {
     console.log("[TotalPhone] DEEPGRAM_API_KEY não configurada, pulando transcrição")
     return null
   }
 
   try {
-    const response = await fetch("https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&diarize=true", {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${DEEPGRAM_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url: audioUrl }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[TotalPhone] Deepgram error:", response.status, errorText)
-      return null
+    const url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&diarize=true"
+    const headers = {
+      "Authorization": `Token ${DEEPGRAM_API_KEY}`,
     }
 
-    const data = await response.json()
-    return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || null
+    let body: any
+
+    // Se for Buffer (arquivo de áudio), envia como multipart
+    if (Buffer.isBuffer(audioInput)) {
+      const formData = new FormData()
+      const blob = new Blob([audioInput], { type: "audio/mpeg" })
+      formData.append("files", blob, "audio.mp3")
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: formData as any,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[TotalPhone] Deepgram error:", response.status, errorText)
+        return null
+      }
+
+      const data = await response.json()
+      return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || null
+    } else {
+      // Se for string (URL), envia como JSON
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: audioInput }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[TotalPhone] Deepgram error:", response.status, errorText)
+        return null
+      }
+
+      const data = await response.json()
+      return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || null
+    }
   } catch (error) {
     console.error("[TotalPhone] Erro na transcrição:", error)
     return null
@@ -417,20 +447,44 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Transcreve o áudio diretamente com Deepgram (envia URL do TotalPhone)
-    if (audioUrlOriginal && DEEPGRAM_API_KEY) {
+    // 1. Baixa o áudio primeiro (porque a URL pode retornar HTML sem headers corretos)
+    let audioBuffer: Buffer | null = null
+    
+    if (audioUrlOriginal) {
       try {
-        console.log("[TotalPhone] Transcrevendo áudio diretamente da URL:", audioUrlOriginal)
-        transcricao = await transcreverComDeepgram(audioUrlOriginal)
+        console.log("[TotalPhone] Baixando áudio...")
+        const audioResponse = await fetch(audioUrlOriginal, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        })
+        
+        if (audioResponse.ok) {
+          const arrayBuffer = await audioResponse.arrayBuffer()
+          audioBuffer = Buffer.from(arrayBuffer)
+          console.log("[TotalPhone] Áudio baixado com sucesso:", audioBuffer.length, "bytes")
+        } else {
+          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status, audioResponse.statusText)
+        }
+      } catch (audioError) {
+        console.error("[TotalPhone] Erro ao baixar áudio:", audioError)
+      }
+    }
+    
+    // 2. Transcreve o áudio (agora com buffer em vez de URL)
+    if (audioBuffer && DEEPGRAM_API_KEY) {
+      try {
+        console.log("[TotalPhone] Transcrevendo áudio com Deepgram...")
+        transcricao = await transcreverComDeepgram(audioBuffer)
         
         if (transcricao) {
           console.log("[TotalPhone] Transcrição:", transcricao.substring(0, 200))
           
-          // 2. Detecta status pela transcrição
+          // 3. Detecta status pela transcrição
           statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
           console.log("[TotalPhone] Status detectado:", statusFinal)
           
-          // 3. Analisa com Claude (só se foi atendida e tem conversa)
+          // 4. Analisa com Claude (só se foi atendida e tem conversa)
           if (statusFinal === "atendida" && transcricao.length > 50) {
             console.log("[TotalPhone] Analisando com Claude...")
             analise = await analisarComClaude(transcricao)
@@ -441,35 +495,25 @@ export async function POST(request: Request) {
       }
     }
     
-    // 2. Baixa o áudio e salva no Blob (para o Kommo player funcionar)
-    if (audioUrlOriginal) {
+    // 5. Salva áudio no Blob (para o Kommo player funcionar)
+    if (audioBuffer) {
       try {
-        console.log("[TotalPhone] Baixando áudio para o Blob...")
-        const audioResponse = await fetch(audioUrlOriginal)
+        console.log("[TotalPhone] Salvando áudio no Blob...")
         
-        if (audioResponse.ok) {
-          const audioBlob = await audioResponse.blob()
-          
-          const blobResult = await put(
-            `ligacoes/${callid}.mp3`,
-            audioBlob,
-            {
-              access: "public",
-              contentType: "audio/mpeg",
-              token: process.env.BLOB_READ_WRITE_TOKEN,
-            }
-          )
-          
-          audioBlobUrl = blobResult.url
-          console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl)
-        } else {
-          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status, audioResponse.statusText)
-          // Se não conseguir baixar, mantém a URL original para referência
-          audioBlobUrl = null
-        }
-      } catch (audioError) {
-        console.error("[TotalPhone] Erro ao baixar áudio:", audioError)
-        audioBlobUrl = null
+        const blobResult = await put(
+          `ligacoes/${callid}.mp3`,
+          audioBuffer,
+          {
+            access: "private",
+            contentType: "audio/mpeg",
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          }
+        )
+        
+        audioBlobUrl = blobResult.url
+        console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl)
+      } catch (blobError) {
+        console.error("[TotalPhone] Erro ao salvar no Blob:", blobError)
       }
     }
     
