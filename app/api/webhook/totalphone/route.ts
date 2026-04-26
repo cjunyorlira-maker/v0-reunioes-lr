@@ -100,6 +100,126 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
     }
   }
   
+  // Padroes de nao atendida
+  const padroesNaoAtendida = [
+    "fora de área",
+    "fora de area",
+    "número inexistente",
+    "numero inexistente",
+    "não foi possível",
+    "nao foi possivel",
+    "número inválido",
+    "numero invalido",
+    "chamada cancelada",
+    "ocupado"
+  ]
+  
+  for (const padrao of padroesNaoAtendida) {
+    if (textoLower.includes(padrao)) {
+      return "nao_atendida"
+    }
+  }
+  
+  // Se a conversa foi muito curta (< 5 segundos) e não tem conteúdo, pode ser cancelada
+  if (duracao < 5 && transcricao.length < 30) {
+    return "cancelada"
+  }
+  
+  // Default: foi atendida
+  return "atendida"
+}
+
+// Baixa audio seguindo redirects recursivamente (suporta HTTP e HTTPS)
+const baixarComRedirect = (urlStr: string, tentativas = 0): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    if (tentativas > 5) {
+      reject(new Error("Muitos redirects"))
+      return
+    }
+    
+    try {
+      const url = new URL(urlStr)
+      const isHttps = url.protocol === "https:"
+      const lib = isHttps ? https : http
+      
+      const options: any = {
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        path: url.pathname + url.search,
+        method: "GET",
+        rejectUnauthorized: false, // ignora SSL inválido em qualquer protocolo
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "audio/mpeg, audio/wav, audio/*, */*",
+        },
+      }
+      
+      const req = lib.request(options, (res: any) => {
+        // Segue redirect com a mesma função (suporta HTTP e HTTPS)
+        if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+          console.log("[TotalPhone] Redirect:", res.statusCode, "->", res.headers.location.substring(0, 80))
+          res.resume() // descarta o body
+          baixarComRedirect(res.headers.location, tentativas + 1).then(resolve).catch(reject)
+          return
+        }
+        
+        const contentType = res.headers["content-type"] || ""
+        if (contentType.includes("text/html")) {
+          res.resume()
+          reject(new Error("Servidor retornou HTML em vez de áudio"))
+          return
+        }
+        
+        const chunks: Buffer[] = []
+        res.on("data", (chunk: Buffer) => chunks.push(chunk))
+        res.on("end", () => {
+          const buffer = Buffer.concat(chunks)
+          console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
+          resolve(buffer)
+        })
+        res.on("error", reject)
+      })
+      
+      req.on("error", reject)
+      req.setTimeout(30000, () => {
+        req.destroy()
+        reject(new Error("Timeout ao baixar áudio"))
+      })
+      req.end()
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+// Detecta status da ligacao pela transcricao
+function detectarStatusPorTranscricao(transcricao: string, duracao: number): string {
+  if (!transcricao || transcricao.trim().length === 0) {
+    return duracao > 0 ? "atendida" : "nao_atendida"
+  }
+  
+  const textoLower = transcricao.toLowerCase()
+  
+  // Padroes de caixa postal
+  const padroesCaixaPostal = [
+    "caixa postal",
+    "deixe uma mensagem",
+    "deixe sua mensagem",
+    "após o sinal",
+    "apos o sinal",
+    "voicemail",
+    "não está disponível no momento",
+    "nao esta disponivel no momento",
+    "grave sua mensagem",
+    "caixa de mensagens"
+  ]
+  
+  for (const padrao of padroesCaixaPostal) {
+    if (textoLower.includes(padrao)) {
+      return "caixa_postal"
+    }
+  }
+  
   // Padroes de nao atendida / fora de area
   const padroesNaoAtendida = [
     "fora de área",
@@ -458,78 +578,13 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio primeiro (usando HTTP - HTTPS retorna HTML)
+    // 1. Baixa o áudio (seguindo redirects recursivamente)
     let audioBuffer: Buffer | null = null
     
     if (audioUrlOriginal) {
-      // Força HTTP (HTTPS retorna HTML por causa do certificado inválido para IP)
-      const httpUrl = audioUrlOriginal.replace('https://', 'http://')
-      
-      console.log("[TotalPhone] Baixando áudio via HTTP:", httpUrl)
-      
       try {
-        audioBuffer = await new Promise<Buffer>((resolve, reject) => {
-          const url = new URL(httpUrl)
-          
-          const options = {
-            hostname: url.hostname,
-            port: 80,
-            path: url.pathname + url.search,
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-              'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-            },
-          }
-          
-          const req = http.request(options, (res) => {
-            // Segue redirect (301, 302, 307, 308)
-            if ([301, 302, 307, 308].includes(res.statusCode || 0) && res.headers.location) {
-              console.log("[TotalPhone] Redirect para:", res.headers.location)
-              
-              // Faz nova requisição para a URL de redirect
-              const redirectUrl = res.headers.location as string
-              fetch(redirectUrl, {
-                headers: {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                  'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-                }
-              }).then(async (redirectRes) => {
-                const contentType = redirectRes.headers.get('content-type') || ''
-                if (contentType.includes('text/html')) {
-                  reject(new Error('Redirect retornou HTML em vez de áudio'))
-                  return
-                }
-                
-                const arrayBuffer = await redirectRes.arrayBuffer()
-                const buffer = Buffer.from(arrayBuffer)
-                console.log("[TotalPhone] Áudio baixado do redirect:", buffer.length, "bytes, tipo:", contentType)
-                resolve(buffer)
-              }).catch(reject)
-              return
-            }
-            
-            const chunks: Buffer[] = []
-            const contentType = res.headers['content-type'] || ''
-            
-            if (contentType.includes('text/html')) {
-              reject(new Error('Servidor retornou HTML em vez de áudio'))
-              return
-            }
-            
-            res.on('data', (chunk) => chunks.push(chunk))
-            res.on('end', () => {
-              const buffer = Buffer.concat(chunks)
-              console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
-              resolve(buffer)
-            })
-            res.on('error', reject)
-          })
-          
-          req.on('error', (err) => reject(err))
-          req.end()
-        })
-        
+        console.log("[TotalPhone] Baixando áudio com redirect recursivo:", audioUrlOriginal.substring(0, 80))
+        audioBuffer = await baixarComRedirect(audioUrlOriginal)
       } catch (downloadError) {
         console.error("[TotalPhone] Erro ao baixar áudio:", downloadError)
         audioBuffer = null
