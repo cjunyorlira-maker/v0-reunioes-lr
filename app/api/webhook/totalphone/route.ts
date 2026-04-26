@@ -1,38 +1,44 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { put } from "@vercel/blob"
+import Anthropic from "@anthropic-ai/sdk"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Mapeamento de ramais para vendedores e equipes
+const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
+const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
+
+// Mapeamento de ramais para vendedores e equipes (ATUALIZADO)
 const RAMAIS: Record<string, { vendedor: string; equipe: string }> = {
   "1000": { vendedor: "Leonardo Freitas", equipe: "Admin" },
   "1001": { vendedor: "Amanda Souza", equipe: "Elite" },
-  "1002": { vendedor: "Thalia Fernanda", equipe: "Elite" },
+  "1002": { vendedor: "Ana Beatriz", equipe: "Elite" },
   "1003": { vendedor: "Bianca Isabela", equipe: "TDM" },
-  "1004": { vendedor: "Paulo Victor", equipe: "Guerreiros" },
-  "1005": { vendedor: "Felipe Santos", equipe: "Guerreiros" },
-  "1006": { vendedor: "Ana Gabrielly", equipe: "Gladiadores" },
-  "1007": { vendedor: "Lucas Oliveira", equipe: "Gladiadores" },
-  "1008": { vendedor: "Mariana Costa", equipe: "Samurais" },
-  "1009": { vendedor: "Pedro Henrique", equipe: "Samurais" },
-  "1010": { vendedor: "Julia Santos", equipe: "Legado" },
-  "1011": { vendedor: "Gabriel Silva", equipe: "Legado" },
-  "1012": { vendedor: "Isabelly Ribeiro", equipe: "Lobos" },
-  "1013": { vendedor: "Carlos Eduardo", equipe: "Lobos" },
-  "1014": { vendedor: "Fernanda Lima", equipe: "Elite" },
-  "1015": { vendedor: "Rafael Costa", equipe: "Guerreiros" },
-  "1016": { vendedor: "Beatriz Almeida", equipe: "Gladiadores" },
-  "1017": { vendedor: "Matheus Souza", equipe: "Samurais" },
-  "1018": { vendedor: "Larissa Oliveira", equipe: "Legado" },
-  "1019": { vendedor: "Diego Ferreira", equipe: "Lobos" },
-  "1020": { vendedor: "Camila Rodrigues", equipe: "TDM" },
+  "1004": { vendedor: "Alexia Cunha", equipe: "Guerreiros" },
+  "1005": { vendedor: "Lidiane Fonseca", equipe: "Guerreiros" },
+  "1006": { vendedor: "Rafaella Antunes", equipe: "Gladiadores" },
+  "1007": { vendedor: "Nicolas Moraes", equipe: "Gladiadores" },
+  "1008": { vendedor: "Gabrielly Pereira", equipe: "Samurais" },
+  "1009": { vendedor: "Lucas Dionisio", equipe: "Samurais" },
+  "1010": { vendedor: "João Victor", equipe: "Legado" },
+  "1011": { vendedor: "Gisely Leal", equipe: "Legado" },
+  "1012": { vendedor: "Emily Machado", equipe: "Lobos" },
+  "1013": { vendedor: "Isabelly", equipe: "Lobos" },
+  "1014": { vendedor: "Ana Gabrielly", equipe: "Elite" },
+  "1015": { vendedor: "João Lucas", equipe: "Guerreiros" },
+  "1016": { vendedor: "Willy Santana", equipe: "Gladiadores" },
+  "1017": { vendedor: "Nathan Caue", equipe: "Samurais" },
+  "1018": { vendedor: "Yuri Ryan Pereira", equipe: "Legado" },
+  "1019": { vendedor: "Evelyn Rodrigues", equipe: "Lobos" },
+  "1020": { vendedor: "Anaina Dantas", equipe: "TDM" },
   "1021": { vendedor: "Alex Negreiros", equipe: "Lobos" },
-  "1022": { vendedor: "Priscila Martins", equipe: "Elite" },
-  "1023": { vendedor: "Rodrigo Alves", equipe: "Guerreiros" },
-  "1024": { vendedor: "Stephanie", equipe: "Gladiadores" },
+  "1022": { vendedor: "Kleinver Seabra", equipe: "Elite" },
+  "1023": { vendedor: "Brayan", equipe: "Guerreiros" },
+  "1024": { vendedor: "Rogério Martins", equipe: "Gladiadores" },
+  "9999": { vendedor: "Suporte TotalPhone", equipe: "Admin" },
 }
 
 // Extrai o ramal do numero de origem ou destino
@@ -54,46 +60,283 @@ function extrairRamal(numero: string): string | null {
   return null
 }
 
-// Determina o status da ligacao baseado na duracao
-function determinarStatus(duracao: number): string {
-  if (duracao > 0) return "atendida"
-  return "nao_atendida"
+// Detecta status da ligacao pela transcricao
+function detectarStatusPorTranscricao(transcricao: string, duracao: number): string {
+  if (!transcricao || transcricao.trim().length === 0) {
+    return duracao > 0 ? "atendida" : "nao_atendida"
+  }
+  
+  const textoLower = transcricao.toLowerCase()
+  
+  // Padroes de caixa postal
+  const padroesCaixaPostal = [
+    "caixa postal",
+    "deixe uma mensagem",
+    "deixe sua mensagem",
+    "após o sinal",
+    "apos o sinal",
+    "voicemail",
+    "não está disponível no momento",
+    "nao esta disponivel no momento",
+    "grave sua mensagem",
+    "caixa de mensagens"
+  ]
+  
+  for (const padrao of padroesCaixaPostal) {
+    if (textoLower.includes(padrao)) {
+      return "caixa_postal"
+    }
+  }
+  
+  // Padroes de nao atendida / fora de area
+  const padroesNaoAtendida = [
+    "fora de área",
+    "fora de area",
+    "fora da área",
+    "fora da area",
+    "número inexistente",
+    "numero inexistente",
+    "não foi possível completar",
+    "nao foi possivel completar",
+    "número não existe",
+    "numero nao existe",
+    "temporariamente fora",
+    "desligado ou fora",
+    "não está recebendo",
+    "nao esta recebendo",
+    "tente mais tarde",
+    "chamada não pode ser completada",
+    "chamada nao pode ser completada"
+  ]
+  
+  for (const padrao of padroesNaoAtendida) {
+    if (textoLower.includes(padrao)) {
+      return "nao_atendida"
+    }
+  }
+  
+  // Se duracao muito curta (< 10s) e transcricao muito curta, provavelmente cancelada
+  if (duracao < 10 && transcricao.length < 50) {
+    return "cancelada"
+  }
+  
+  // Se tem conversa real (duracao > 30s e transcricao > 100 chars), foi atendida
+  if (duracao > 30 && transcricao.length > 100) {
+    return "atendida"
+  }
+  
+  // Default baseado na duracao
+  return duracao > 15 ? "atendida" : "nao_atendida"
+}
+
+// Transcreve audio com Deepgram
+async function transcreverComDeepgram(audioUrl: string): Promise<string | null> {
+  if (!DEEPGRAM_API_KEY) {
+    console.log("[TotalPhone] DEEPGRAM_API_KEY não configurada, pulando transcrição")
+    return null
+  }
+
+  try {
+    const response = await fetch("https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&diarize=true", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${DEEPGRAM_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url: audioUrl }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[TotalPhone] Deepgram error:", response.status, errorText)
+      return null
+    }
+
+    const data = await response.json()
+    return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || null
+  } catch (error) {
+    console.error("[TotalPhone] Erro na transcrição:", error)
+    return null
+  }
+}
+
+// Analisa com Claude
+async function analisarComClaude(transcricao: string): Promise<any> {
+  try {
+    const anthropic = new Anthropic()
+    
+    const prompt = `Você é um especialista em análise de vendas por telefone de consórcios.
+Analise esta ligação e forneça:
+
+1. **Resumo** (2-3 frases): O que aconteceu na ligação
+2. **Score Geral** (0-10): Qualidade geral da ligação
+3. **Pontos Positivos**: O que o vendedor fez bem
+4. **Pontos a Melhorar**: O que pode melhorar
+5. **Próximo Passo**: Sugestão de ação
+
+Retorne APENAS um JSON válido no formato:
+{
+  "resumo": "string",
+  "score_geral": number,
+  "pontos_positivos": ["string"],
+  "pontos_criticos": ["string"],
+  "proximo_passo_sugerido": "string",
+  "cliente_interessado": boolean,
+  "agendou_retorno": boolean
+}
+
+TRANSCRIÇÃO DA LIGAÇÃO:
+${transcricao}`
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    })
+
+    const content = response.content[0]
+    if (content.type !== "text") return null
+
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
+
+    return JSON.parse(jsonMatch[0])
+  } catch (error) {
+    console.error("[TotalPhone] Erro na análise Claude:", error)
+    return null
+  }
+}
+
+// Envia chamada para o Kommo
+async function enviarChamadaKommo(
+  telefone: string,
+  duracao: number,
+  status: string,
+  audioUrl: string,
+  vendedorKommoId?: string
+): Promise<string | null> {
+  if (!KOMMO_ACCESS_TOKEN) {
+    console.log("[TotalPhone] KOMMO_ACCESS_TOKEN não configurado")
+    return null
+  }
+
+  try {
+    // Mapeia status para call_status do Kommo
+    // 1 = deixou voicemail, 2 = retornar, 3 = não atendeu, 4 = conversou, 5 = errado, 6 = ocupado
+    let callStatus = 4 // conversou (default)
+    if (status === "nao_atendida") callStatus = 3
+    else if (status === "caixa_postal") callStatus = 1
+    else if (status === "cancelada") callStatus = 3
+    else if (status === "ocupado") callStatus = 6
+
+    const callData = {
+      direction: "outbound",
+      duration: duracao,
+      source: "TotalPhone",
+      phone: telefone,
+      link: audioUrl,
+      call_status: callStatus,
+      created_at: Math.floor(Date.now() / 1000),
+    }
+
+    const response = await fetch(
+      "https://crm2lrmultimarcascom.kommo.com/api/v4/calls",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${KOMMO_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([callData]),
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[TotalPhone] Erro ao enviar chamada Kommo:", response.status, errorText)
+      return null
+    }
+
+    const result = await response.json()
+    console.log("[TotalPhone] Chamada enviada para Kommo:", result)
+    return result?._embedded?.calls?.[0]?.id || null
+  } catch (error) {
+    console.error("[TotalPhone] Erro ao enviar chamada Kommo:", error)
+    return null
+  }
+}
+
+// Envia nota de analise para o Kommo
+async function enviarNotaKommo(leadId: string, analise: any): Promise<void> {
+  if (!KOMMO_ACCESS_TOKEN || !leadId) return
+
+  try {
+    const notaKommo = `[IA - Análise de Ligação]
+
+Resumo: ${analise.resumo}
+
+Score: ${analise.score_geral}/10
+
+Pontos Positivos:
+${analise.pontos_positivos?.map((p: string) => `- ${p}`).join('\n') || 'N/A'}
+
+Pontos a Melhorar:
+${analise.pontos_criticos?.map((p: string) => `- ${p}`).join('\n') || 'N/A'}
+
+Próximo Passo: ${analise.proximo_passo_sugerido || 'N/A'}
+Cliente Interessado: ${analise.cliente_interessado ? 'Sim' : 'Não'}
+`
+    
+    await fetch(
+      `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadId}/notes`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${KOMMO_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([{
+          note_type: "common",
+          params: { text: notaKommo }
+        }]),
+      }
+    )
+    console.log("[TotalPhone] Nota enviada para Kommo")
+  } catch (error) {
+    console.error("[TotalPhone] Erro ao enviar nota Kommo:", error)
+  }
 }
 
 export async function POST(request: Request) {
   try {
     // Primeiro tenta ler como texto para debug
     const rawBody = await request.text()
-    console.log("[TotalPhone Webhook] Body RAW recebido:", rawBody)
+    console.log("[TotalPhone] Body RAW recebido:", rawBody)
     
     // Tenta fazer parse do JSON, tratando possíveis problemas
     let data: any
     try {
       data = JSON.parse(rawBody)
     } catch (parseError) {
-      console.error("[TotalPhone Webhook] Erro ao fazer parse do JSON:", parseError)
-      
       // Remove vírgulas extras antes de } ou ]
       const fixedBody = rawBody
-        .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas antes de } ou ]
-        .replace(/[\x00-\x1F\x7F]/g, '') // Remove caracteres de controle
+        .replace(/,(\s*[}\]])/g, '$1')
+        .replace(/[\x00-\x1F\x7F]/g, '')
         .trim()
-      
-      console.log("[TotalPhone Webhook] Tentando com JSON corrigido")
       
       try {
         data = JSON.parse(fixedBody)
-        console.log("[TotalPhone Webhook] JSON corrigido com sucesso!")
+        console.log("[TotalPhone] JSON corrigido com sucesso!")
       } catch (cleanError) {
-        console.error("[TotalPhone Webhook] Falha ao corrigir JSON:", cleanError)
+        console.error("[TotalPhone] Falha ao corrigir JSON:", cleanError)
         return NextResponse.json({ 
-          error: "JSON inválido recebido após tentativa de correção", 
+          error: "JSON inválido", 
           rawBody: rawBody.substring(0, 500) 
         }, { status: 400 })
       }
     }
     
-    console.log("[TotalPhone Webhook] Dados parseados:", JSON.stringify(data, null, 2))
+    console.log("[TotalPhone] Dados parseados:", JSON.stringify(data, null, 2))
     
     // Extrai dados do webhook
     const {
@@ -105,12 +348,9 @@ export async function POST(request: Request) {
       timestamp,
       gravacao,
       callid,
-      operador_id,
-      tipo_origem
     } = data
     
     if (!callid) {
-      console.error("[TotalPhone Webhook] callid não fornecido")
       return NextResponse.json({ error: "callid obrigatório" }, { status: 400 })
     }
     
@@ -127,7 +367,6 @@ export async function POST(request: Request) {
     if (typeof duracao === "number") {
       duracaoSegundos = duracao
     } else if (typeof duracao === "string") {
-      // Pode vir como "00:01:30" ou "90"
       if (duracao.includes(":")) {
         const partes = duracao.split(":").map(Number)
         if (partes.length === 3) {
@@ -145,16 +384,88 @@ export async function POST(request: Request) {
     if (timestamp) {
       dataLigacaoFormatada = new Date(parseInt(timestamp) * 1000).toISOString()
     } else if (dataLigacao) {
-      dataLigacaoFormatada = new Date(dataLigacao).toISOString()
+      // Tenta converter formato brasileiro dd/mm/yyyy HH:mm:ss
+      const match = dataLigacao.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/)
+      if (match) {
+        const [, dia, mes, ano, hora, min, seg] = match
+        dataLigacaoFormatada = new Date(`${ano}-${mes}-${dia}T${hora}:${min}:${seg}`).toISOString()
+      } else {
+        dataLigacaoFormatada = new Date(dataLigacao).toISOString()
+      }
     }
     
     // Monta URL completa do áudio se for relativa
-    let audioUrlCompleta = gravacao || null
-    if (audioUrlCompleta && !audioUrlCompleta.startsWith("http")) {
-      audioUrlCompleta = `https://45.170.138.80/suite/${audioUrlCompleta}`
+    let audioUrlOriginal = gravacao || null
+    if (audioUrlOriginal && !audioUrlOriginal.startsWith("http")) {
+      audioUrlOriginal = `https://45.170.138.80/suite/${audioUrlOriginal}`
     }
     
-    // Salva no banco
+    console.log("[TotalPhone] Processando ligação:", {
+      callid,
+      ramal,
+      vendedor: vendedorData?.vendedor,
+      telefone: telefoneCliente,
+      duracao: duracaoSegundos,
+      audioUrl: audioUrlOriginal
+    })
+    
+    // ========== PROCESSAMENTO AUTOMÁTICO ==========
+    
+    let audioBlobUrl: string | null = null
+    let transcricao: string | null = null
+    let analise: any = null
+    let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
+    
+    // 1. Baixa o áudio e salva no Blob (se tiver URL)
+    if (audioUrlOriginal) {
+      try {
+        console.log("[TotalPhone] Baixando áudio...")
+        const audioResponse = await fetch(audioUrlOriginal)
+        
+        if (audioResponse.ok) {
+          const audioBlob = await audioResponse.blob()
+          
+          const blobResult = await put(
+            `ligacoes/${callid}.mp3`,
+            audioBlob,
+            {
+              access: "public",
+              contentType: "audio/mpeg",
+              token: process.env.BLOB_READ_WRITE_TOKEN,
+            }
+          )
+          
+          audioBlobUrl = blobResult.url
+          console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl)
+          
+          // 2. Transcreve com Deepgram
+          if (DEEPGRAM_API_KEY) {
+            console.log("[TotalPhone] Transcrevendo...")
+            transcricao = await transcreverComDeepgram(audioBlobUrl)
+            
+            if (transcricao) {
+              console.log("[TotalPhone] Transcrição:", transcricao.substring(0, 200))
+              
+              // 3. Detecta status pela transcrição
+              statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
+              console.log("[TotalPhone] Status detectado:", statusFinal)
+              
+              // 4. Analisa com Claude (só se foi atendida e tem conversa)
+              if (statusFinal === "atendida" && transcricao.length > 50) {
+                console.log("[TotalPhone] Analisando com Claude...")
+                analise = await analisarComClaude(transcricao)
+              }
+            }
+          }
+        } else {
+          console.error("[TotalPhone] Erro ao baixar áudio:", audioResponse.status)
+        }
+      } catch (audioError) {
+        console.error("[TotalPhone] Erro no processamento de áudio:", audioError)
+      }
+    }
+    
+    // 5. Salva no banco
     const { data: ligacao, error } = await supabase
       .from("ligacoes")
       .upsert({
@@ -165,10 +476,15 @@ export async function POST(request: Request) {
         telefone_cliente: telefoneCliente,
         direcao: isEntrada ? "entrada" : "saida",
         duracao_segundos: duracaoSegundos,
-        status: determinarStatus(duracaoSegundos),
-        tipo_origem: tipo_origem || null,
-        audio_url_original: audioUrlCompleta,
+        status: statusFinal,
+        audio_url_original: audioUrlOriginal,
+        audio_url: audioBlobUrl,
+        transcricao,
+        analise_ia: analise,
+        score_geral: analise?.score_geral || null,
+        resumo: analise?.resumo || null,
         data_ligacao: dataLigacaoFormatada,
+        processado_em: transcricao ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }, { 
         onConflict: "callid",
@@ -178,21 +494,50 @@ export async function POST(request: Request) {
       .single()
     
     if (error) {
-      console.error("[TotalPhone Webhook] Erro ao salvar:", error)
+      console.error("[TotalPhone] Erro ao salvar:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    console.log("[TotalPhone Webhook] Ligação salva:", ligacao?.id)
+    console.log("[TotalPhone] Ligação salva:", ligacao?.id)
+    
+    // 6. Envia para Kommo
+    if (audioBlobUrl && telefoneCliente) {
+      const kommoCallId = await enviarChamadaKommo(
+        telefoneCliente,
+        duracaoSegundos,
+        statusFinal,
+        audioBlobUrl
+      )
+      
+      // Se tiver análise e lead, envia nota
+      if (analise && ligacao?.kommo_lead_id) {
+        await enviarNotaKommo(ligacao.kommo_lead_id, analise)
+      }
+      
+      // Atualiza com ID do Kommo
+      if (kommoCallId) {
+        await supabase
+          .from("ligacoes")
+          .update({ 
+            kommo_call_id: kommoCallId,
+            enviado_kommo: true 
+          })
+          .eq("id", ligacao?.id)
+      }
+    }
     
     return NextResponse.json({ 
       success: true, 
       id: ligacao?.id,
       vendedor: vendedorData?.vendedor,
-      duracao: duracaoSegundos
+      status: statusFinal,
+      duracao: duracaoSegundos,
+      transcricao: transcricao ? "Sim" : "Não",
+      analise: analise ? "Sim" : "Não"
     })
     
   } catch (error) {
-    console.error("[TotalPhone Webhook] Erro:", error)
+    console.error("[TotalPhone] Erro:", error)
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : "Erro interno" 
     }, { status: 500 })
@@ -203,7 +548,7 @@ export async function POST(request: Request) {
 export async function GET() {
   return NextResponse.json({ 
     status: "ok", 
-    message: "Webhook TotalPhone ativo",
+    message: "Webhook TotalPhone ativo - Processamento automático habilitado",
     timestamp: new Date().toISOString()
   })
 }
