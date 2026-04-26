@@ -129,78 +129,108 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
   return "atendida"
 }
 
-// Baixa audio seguindo redirects recursivamente (suporta HTTP e HTTPS)
-const baixarComRedirect = (urlStr: string, tentativas = 0): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    if (tentativas > 5) {
-      reject(new Error("Muitos redirects"))
-      return
-    }
-    
-    let url: URL
+// Baixa áudio do TotalPhone (requer 2 requisições: 1 para session, 2 para download)
+const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> => {
+  return new Promise((resolve) => {
     try {
-      url = new URL(urlStr)
-    } catch {
-      reject(new Error(`URL inválida: ${urlStr}`))
-      return
-    }
-    
-    const isHttps = url.protocol === "https:"
-    const lib = isHttps ? https : http
-    const port = url.port ? parseInt(url.port) : (isHttps ? 443 : 80)
-    
-    const options: any = {
-      hostname: url.hostname,
-      port,
-      path: url.pathname + url.search,
-      method: "GET",
-      rejectUnauthorized: false,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "audio/mpeg, audio/wav, audio/*, */*",
-      },
-    }
-    
-    const req = lib.request(options, (res: any) => {
-      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-        // Monta URL absoluta se vier relativa
-        let redirectUrl = res.headers.location
-        if (redirectUrl.startsWith("/")) {
-          redirectUrl = `${url.protocol}//${url.hostname}:${port}${redirectUrl}`
-        }
-        console.log("[TotalPhone] Redirect:", res.statusCode, "->", redirectUrl.substring(0, 80))
-        res.resume()
-        baixarComRedirect(redirectUrl, tentativas + 1).then(resolve).catch(reject)
-        return
-      }
+      const url = new URL(audioUrl.replace('https://', 'http://'))
       
-      const contentType = res.headers["content-type"] || ""
-      if (contentType.includes("text/html")) {
-        res.resume()
-        reject(new Error("Servidor retornou HTML em vez de áudio"))
-        return
+      const opcoes = {
+        hostname: url.hostname,
+        port: 80,
+        path: url.pathname + url.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
+          'Accept-Language': 'pt-BR,pt;q=0.9',
+          'Referer': 'http://45.170.138.80/suite/',
+        },
       }
-      
-      const chunks: Buffer[] = []
-      res.on("data", (chunk: Buffer) => chunks.push(chunk))
-      res.on("end", () => {
-        const buffer = Buffer.concat(chunks)
-        if (buffer.length < 1024) {
-          reject(new Error(`Áudio muito pequeno: ${buffer.length} bytes`))
+
+      // PASSO 1: primeira requisição para obter o PHPSESSID
+      const req1 = http.request(opcoes, (res1: any) => {
+        // Extrai o cookie PHPSESSID da resposta
+        const cookies = res1.headers['set-cookie'] || []
+        const phpSession = cookies
+          .find((c: string) => c.startsWith('PHPSESSID='))
+          ?.split(';')[0] || ''
+        const idioma = cookies
+          .find((c: string) => c.startsWith('idioma='))
+          ?.split(';')[0] || 'idioma=pt'
+
+        console.log('[TotalPhone] PHPSESSID obtido:', phpSession.substring(0, 30))
+
+        // Descarta o body da primeira resposta
+        res1.resume()
+
+        if (!phpSession) {
+          console.error('[TotalPhone] PHPSESSID não encontrado')
+          resolve(null)
           return
         }
-        console.log("[TotalPhone] Áudio baixado:", buffer.length, "bytes, tipo:", contentType)
-        resolve(buffer)
+
+        // PASSO 2: segunda requisição com o cookie para baixar o áudio
+        const opcoes2 = {
+          ...opcoes,
+          headers: {
+            ...opcoes.headers,
+            'Cookie': `${phpSession}; ${idioma}`,
+          },
+        }
+
+        const req2 = http.request(opcoes2, (res2: any) => {
+          const contentType = res2.headers['content-type'] || ''
+
+          if (contentType.includes('text/html')) {
+            res2.resume()
+            console.error('[TotalPhone] Ainda retornou HTML mesmo com cookie')
+            resolve(null)
+            return
+          }
+
+          const chunks: Buffer[] = []
+          res2.on('data', (chunk: Buffer) => chunks.push(chunk))
+          res2.on('end', () => {
+            const buffer = Buffer.concat(chunks)
+            if (buffer.length < 1024) {
+              console.error(`[TotalPhone] Áudio muito pequeno: ${buffer.length} bytes`)
+              resolve(null)
+              return
+            }
+            console.log('[TotalPhone] Áudio baixado com sucesso:', buffer.length, 'bytes')
+            resolve(buffer)
+          })
+          res2.on('error', (err: any) => {
+            console.error('[TotalPhone] Erro no download:', err.message)
+            resolve(null)
+          })
+        })
+
+        req2.on('error', (err: any) => {
+          console.error('[TotalPhone] Erro na req2:', err.message)
+          resolve(null)
+        })
+        req2.setTimeout(30000, () => {
+          req2.destroy()
+          resolve(null)
+        })
+        req2.end()
       })
-      res.on("error", reject)
-    })
-    
-    req.on("error", reject)
-    req.setTimeout(30000, () => {
-      req.destroy()
-      reject(new Error("Timeout no download"))
-    })
-    req.end()
+
+      req1.on('error', (err: any) => {
+        console.error('[TotalPhone] Erro na req1:', err.message)
+        resolve(null)
+      })
+      req1.setTimeout(15000, () => {
+        req1.destroy()
+        resolve(null)
+      })
+      req1.end()
+    } catch (err) {
+      console.error('[TotalPhone] Erro ao baixar áudio:', err)
+      resolve(null)
+    }
   })
 }
 
@@ -521,13 +551,13 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio (seguindo redirects recursivamente)
+    // 1. Baixa o áudio (com sessão PHP em 2 etapas)
     let audioBuffer: Buffer | null = null
     
     if (audioUrlOriginal) {
       try {
-        console.log("[TotalPhone] Baixando áudio com redirect recursivo:", audioUrlOriginal.substring(0, 80))
-        audioBuffer = await baixarComRedirect(audioUrlOriginal)
+        console.log('[TotalPhone] Baixando áudio em 2 etapas (sessão PHP)...')
+        audioBuffer = await baixarAudioTotalPhone(audioUrlOriginal)
       } catch (downloadError) {
         console.error("[TotalPhone] Erro ao baixar áudio:", downloadError)
         audioBuffer = null
