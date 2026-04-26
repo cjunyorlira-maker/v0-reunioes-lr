@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 import https from "https"
+import http from "http"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -457,32 +458,31 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio primeiro (usando HTTPS com SSL ignorado)
+    // 1. Baixa o áudio primeiro (usando HTTP - HTTPS retorna HTML)
     let audioBuffer: Buffer | null = null
     
     if (audioUrlOriginal) {
-      // Garante que usa HTTPS (servidor retorna HTML via HTTP)
-      const httpsUrl = audioUrlOriginal.replace('http://', 'https://')
+      // Força HTTP (HTTPS retorna HTML por causa do certificado inválido para IP)
+      const httpUrl = audioUrlOriginal.replace('https://', 'http://')
       
-      console.log("[TotalPhone] Baixando áudio via HTTPS (ignorando SSL):", httpsUrl)
+      console.log("[TotalPhone] Baixando áudio via HTTP:", httpUrl)
       
       try {
         audioBuffer = await new Promise<Buffer>((resolve, reject) => {
-          const url = new URL(httpsUrl)
+          const url = new URL(httpUrl)
           
           const options = {
             hostname: url.hostname,
-            port: 443,
+            port: 80,
             path: url.pathname + url.search,
             method: 'GET',
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
               'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
             },
-            rejectUnauthorized: false, // Ignora certificado SSL inválido
           }
           
-          const req = https.request(options, (res) => {
+          const req = http.request(options, (res) => {
             const chunks: Buffer[] = []
             
             // Verifica se é HTML
