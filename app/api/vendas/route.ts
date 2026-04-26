@@ -3,10 +3,13 @@ import { NextResponse } from "next/server"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 import { after } from "next/server"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Inicializa Supabase apenas se as variáveis estiverem disponíveis
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+  : null
 
 // Controle simples para nao sincronizar a cada request - apenas a cada 2 minutos
 let ultimaSinc: number = 0
@@ -14,6 +17,13 @@ const INTERVALO_SINC_MS = 2 * 60 * 1000 // 2 minutos
 
 export async function GET() {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase não configurado" },
+        { status: 500 }
+      )
+    }
+
     // Período de produção: dia 21 ao dia 20 do mês seguinte
     const periodo = getPeriodoProducaoAtual()
 
