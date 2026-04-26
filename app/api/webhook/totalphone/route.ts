@@ -149,7 +149,12 @@ const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> =
       }
 
       // PASSO 1: primeira requisição para obter o PHPSESSID
+      console.log('[TotalPhone] Headers enviados na REQ1:', JSON.stringify(opcoes.headers, null, 2))
+      
       const req1 = http.request(opcoes, (res1: any) => {
+        console.log('[TotalPhone] REQ1 Status:', res1.statusCode)
+        console.log('[TotalPhone] REQ1 Headers:', JSON.stringify(res1.headers, null, 2))
+        
         // Extrai o cookie PHPSESSID da resposta
         const cookies = res1.headers['set-cookie'] || []
         const phpSession = cookies
@@ -179,7 +184,12 @@ const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> =
           },
         }
 
+        console.log('[TotalPhone] Headers enviados na REQ2:', JSON.stringify(opcoes2.headers, null, 2))
+
         const req2 = http.request(opcoes2, (res2: any) => {
+          console.log('[TotalPhone] REQ2 Status:', res2.statusCode)
+          console.log('[TotalPhone] REQ2 Headers:', JSON.stringify(res2.headers, null, 2))
+          
           const contentType = res2.headers['content-type'] || ''
 
           if (contentType.includes('text/html')) {
