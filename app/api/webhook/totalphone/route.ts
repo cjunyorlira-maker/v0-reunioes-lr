@@ -501,18 +501,9 @@ export async function POST(request: Request) {
           })
           
           req.on('error', (err) => reject(err))
-          req.setTimeout(30000, () => {
-            req.destroy()
-            reject(new Error('Timeout ao baixar áudio'))
-          })
           req.end()
         })
         
-        // Verifica tamanho mínimo
-        if (audioBuffer.length < 1000) {
-          console.error('[TotalPhone] Áudio muito pequeno:', audioBuffer.length, 'bytes')
-          audioBuffer = null
-        }
       } catch (downloadError) {
         console.error("[TotalPhone] Erro ao baixar áudio:", downloadError)
         audioBuffer = null
