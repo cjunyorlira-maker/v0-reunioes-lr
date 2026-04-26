@@ -506,7 +506,7 @@ export async function POST(request: Request) {
           {
             access: "public",
             contentType: "audio/mpeg",
-            token: process.env.BLOB_READ_WRITE_TOKEN,
+            token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
           }
         )
         
