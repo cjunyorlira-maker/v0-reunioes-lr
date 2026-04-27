@@ -984,6 +984,7 @@ export async function POST(request: Request) {
     let transcricao: string | null = null
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
+    let sipCode: string | number | null = null
     
     // 1. Busca dados na API oficial (retorna transcrição se disponível)
     let audioBuffer: Buffer | null = null
@@ -991,11 +992,12 @@ export async function POST(request: Request) {
     if (callid && dataLigacao) {
       try {
         console.log('[TotalPhone] Buscando dados da API oficial...')
-        const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI, sipCode } = 
+        const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI, sipCode: apiSipCode } = 
           await buscarEBaixarAudioTotalPhone(callid, dataLigacao)
         
         audioBuffer = ab
         transcricao = transcricaoAPI
+        sipCode = apiSipCode
         
         // Se a duração da API é maior, usa ela
         if (duracaoAPI > duracaoSegundos) {
@@ -1021,8 +1023,8 @@ export async function POST(request: Request) {
         if (transcricao) {
           console.log("[TotalPhone] Transcrição Deepgram:", transcricao.substring(0, 200))
           
-          // Detecta status pela transcrição
-          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
+          // Detecta status pela transcrição (com sipCode se disponível)
+          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos, sipCode)
           console.log("[TotalPhone] Status detectado:", statusFinal)
         }
       } catch (transcricaoError) {
