@@ -530,18 +530,216 @@ BIBLIOTECA DE OBJEÇÕES — Significado Real e Resposta Ideal
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIPOS DE LIGAÇÃO DETALHADOS
-━━━━━━━━━━━━━━━━��━━━━━━━━━━━━━━━━━━━━
+━━━━━━���━━━━━━━━━��━━━━━━━━━━━━━━━━━━━━
 
-TIPO 1 — FACEBOOK/GRUPOS: 
+TIPO 1 — FACEBOOK/GRUPOS (DETALHADO)
 
-⚠️ CONTEXTO CRÍTICO — A LR Multimarcas é AGÊNCIA DE CRÉDITO IMOBILIÁRIO (consórcio, financiamento), NÃO imobiliária. ESTRATÉGIA: Anúncios com imóveis "como chamariz" para captar leads. A HABILIDADE-CHAVE DO VENDEDOR É REVERTER o interesse do imóvel ESPECÍFICO para o CRÉDITO IMOBILIÁRIO.
+⚠️ CONTEXTO CRÍTICO DO NEGÓCIO:
 
-SCRIPT IDEAL DE REVERSÃO: "Você está buscando imóveis com a ideia de comprar à vista ou te interessa o parcelamento? Porque minha função aqui é justamente a parte de liberação do crédito."
+A LR Multimarcas é AGÊNCIA DE CRÉDITO IMOBILIÁRIO 
+(consórcio, financiamento, parcelamento), NÃO é uma 
+imobiliária. NÃO vende imóveis. Vende crédito.
 
-✅ CORRETO: reverter rapidamente, mencionar parcerias imobiliárias, insistir em 4 pilares, posicionar-se como especialista em crédito.
-❌ ERRADO: prometer fotos/visita do imóvel anunciado, robotizar a reversão, pular a pergunta-chave, ser brusco sem rapport.
+ESTRATÉGIA DE CAPTAÇÃO:
+A empresa cria anúncios no Facebook/Grupos usando 
+imóveis "como se fossem reais" (alguns são imagens 
+reais de outros sites, outros são imagens ilustrativas) 
+como CHAMARIZ para captar pessoas interessadas em 
+adquirir imóveis. O imóvel anunciado NÃO está à venda 
+pela LR — é apenas uma porta de entrada.
 
-AVALIAÇÃO ESPECÍFICA: Aplicou a pergunta de reversão? Reversão foi natural ou robotizada? Não prometeu o indevido? Qualificou após reverter? Soube lidar com resistência?
+A HABILIDADE-CHAVE DO VENDEDOR É: REVERTER COM 
+NATURALIDADE o interesse do cliente no imóvel 
+ESPECÍFICO para o produto real: o CRÉDITO IMOBILIÁRIO.
+
+SCRIPT IDEAL DE REVERSÃO (PADRÃO LR):
+
+✅ PERGUNTA-CHAVE DE REVERSÃO:
+"Você está buscando imóveis com a ideia de comprar 
+À VISTA ou te interessa o PARCELAMENTO? Porque 
+minha função aqui é justamente a parte de liberação 
+do crédito imobiliário."
+
+➡️ SE CLIENTE DIZ "PARCELADO" / "FINANCIADO":
+Caminho natural — vendedor segue para qualificação 
+dos 4 pilares (crédito, parcela, entrada, momento).
+Tom: "Perfeito! Então deixa eu te ajudar a entender 
+qual a melhor opção pra você. Qual valor de imóvel 
+você tá pensando?"
+
+➡️ SE CLIENTE DIZ "À VISTA":
+NÃO desistir do lead! Reverter mostrando que muitos 
+clientes COM CAPITAL usam o crédito da empresa para:
+- Adquirir VÁRIOS bens (não só um)
+- Manter a liquidez do dinheiro próprio
+- Aproveitar oportunidades de investimento
+- Aproveitar parcerias com imobiliárias parceiras
+
+Tom: "Que ótimo que você tem o recurso! Olha, muitos 
+clientes nossos que têm capital optam pelo crédito 
+porque conseguem comprar VÁRIOS imóveis em vez de 
+um só. Inclusive temos parcerias com imobiliárias 
+que dão acesso a opções exclusivas. Posso te 
+explicar como funciona?"
+
+➡️ SE CLIENTE INSISTE EM VER FOTOS / SABER DO IMÓVEL:
+Reverter educadamente sem prometer o que não pode:
+"Trabalhamos com várias opções de imóveis através 
+das nossas parcerias com imobiliárias. Para te 
+apresentar as melhores opções dentro do seu perfil, 
+deixa eu primeiro entender o que você está buscando..."
+
+NUNCA prometer enviar fotos do imóvel anunciado 
+(elas não existem como imóvel à venda da LR).
+NUNCA marcar visita ao imóvel específico do anúncio.
+
+ORDEM IDEAL DA LIGAÇÃO FACEBOOK/GRUPOS (5 PASSOS):
+
+PASSO 1 — APRESENTAÇÃO RÁPIDA E PROFISSIONAL
+"Oi [Nome], aqui é o [Vendedor] da LR Multimarcas. 
+Você se interessou por um imóvel que anunciamos no 
+Facebook, certo?"
+[ESPERAR confirmação do cliente]
+
+PASSO 2 — APLICAR PERGUNTA-CHAVE DE REVERSÃO
+"Deixa eu te perguntar uma coisa antes: você está 
+buscando imóveis com a ideia de comprar À VISTA ou 
+te interessa o PARCELAMENTO? Porque minha função 
+aqui é justamente a parte de liberação do crédito."
+[ESCUTAR a resposta com atenção]
+
+PASSO 3 — TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
+- Parcelado → seguir para qualificação
+- À vista → reverter mostrando vantagens
+- Insistente no imóvel → mencionar parcerias
+
+PASSO 4 — QUALIFICAR (4 PILARES) COM NATURALIDADE
+Depois da reversão bem-feita, descobrir:
+- CRÉDITO: valor do imóvel que busca
+- PARCELA: quanto consegue pagar/mês
+- ENTRADA: quanto tem disponível
+- MOMENTO: pronto agora ou pesquisando
+Lembrar: ouvir mais que falar (proporção 70/30)
+
+PASSO 5 — APRESENTAR CONDIÇÕES E MARCAR REUNIÃO
+Com base nos pilares coletados, oferecer reunião 
+PRESENCIAL com contexto concreto:
+"Vou preparar uma simulação personalizada com base 
+no seu perfil. Amanhã 14h ou sexta 10h você consegue 
+vir aqui na agência?"
+
+PROTOCOLO QUANDO O CLIENTE FICA RESISTENTE:
+
+Cliente apegado ao chamariz pode ficar resistente 
+ou irritado. Vendedor deve seguir esta ESCALADA:
+
+1ª TENTATIVA — Reverter educadamente
+"Entendo seu interesse no imóvel. Posso te ajudar 
+a viabilizar a compra. Deixa eu primeiro entender 
+seu perfil..."
+
+2ª TENTATIVA — Reformular com outra linguagem
+"Olha, na verdade meu papel é diferente do que você 
+imaginou. Eu não vendo esse imóvel específico, eu 
+ajudo pessoas como você a CONSEGUIREM o crédito 
+para comprar imóveis. Posso te explicar como?"
+
+3ª TENTATIVA — Reconhecer o desejo e oferecer alternativa
+"Você quer ver esse imóvel específico, certo? Olha, 
+trabalhamos com várias opções similares através das 
+nossas parcerias. Posso te apresentar opções que 
+encaixam no seu perfil?"
+
+4ª TENTATIVA OU CLIENTE MUITO IRRITADO — ENCERRAR COM ELEGÂNCIA
+"Entendi sua expectativa, [Nome]. Não vou tomar 
+mais seu tempo. Se mudar de ideia e quiser conversar 
+sobre crédito imobiliário, estamos à disposição. 
+Tenha um ótimo dia!"
+
+NÃO insistir além disso. NÃO prometer fotos que 
+não existem. NÃO enganar o cliente. NÃO se desculpar 
+por focar em crédito (é a estratégia correta).
+
+COMO AVALIAR LIGAÇÕES TIPO FACEBOOK_GRUPOS:
+
+CRITÉRIO 1 — APLICOU A PERGUNTA DE REVERSÃO?
+✅ Sim, com naturalidade e no momento certo (após 
+   apresentação) → ponto positivo
+⚠️ Aplicou de forma brusca/decorada/robotizada → 
+   execução ruim, gera resistência
+❌ Não aplicou (passou direto pra crédito sem 
+   reverter) → pulou etapa fundamental
+❌ Aplicou tarde demais (depois do cliente já 
+   estar irritado) → fora de tempo
+
+CRITÉRIO 2 — REVERSÃO FOI BEM EXECUTADA?
+✅ Cliente entendeu o posicionamento e seguiu 
+   naturalmente
+⚠️ Cliente confuso mas aceitou a transição
+❌ Cliente ficou resistente/irritado pela forma 
+   como foi feito
+
+CRITÉRIO 3 — RESPEITOU O MODELO DE NEGÓCIO?
+✅ Sim, manteve foco no crédito sem prometer o 
+   indevido
+❌ Prometeu enviar fotos do imóvel anunciado
+❌ Marcou visita ao imóvel específico
+❌ Conduziu como se fosse corretor de imóveis
+❌ Pediu desculpas por focar em crédito (errado!)
+❌ Mentiu sobre o imóvel ("já vendeu", etc) — 
+   melhor reverter com transparência
+
+CRITÉRIO 4 — CONSEGUIU QUALIFICAR APÓS REVERTER?
+✅ Coletou pelo menos 3 dos 4 pilares
+⚠️ Coletou 1-2 pilares
+❌ Não conseguiu qualificar nada após a reversão
+
+CRITÉRIO 5 — SOUBE LIDAR COM RESISTÊNCIA?
+✅ Tentou reverter 2-3 vezes com habilidade e 
+   linguagens diferentes
+✅ Encerrou com elegância quando viu que não ia 
+   engatar
+❌ Insistiu de forma agressiva mesmo com cliente 
+   irritado
+❌ Desistiu na primeira resistência sem tentar 
+   outra abordagem
+❌ Ficou repetindo o mesmo discurso decorado
+
+⛔ ERROS GRAVES ESPECÍFICOS DESSE TIPO DE LIGAÇÃO:
+1. PULAR a pergunta-chave de reversão
+2. Fazer a reversão SEM criar mínimo rapport antes
+3. PROMETER enviar fotos que não existem
+4. Falar de poder de compra/aprovação ANTES de 
+   aplicar a reversão
+5. Ser robotizado/decorado ao reverter
+6. Marcar visita ao imóvel anunciado
+7. Pedir desculpas por focar em crédito
+8. Enganar o cliente sobre status do imóvel
+
+⭐ PONTOS POSITIVOS ESPECÍFICOS DESSE TIPO:
+1. Aplicou pergunta-chave com naturalidade
+2. Reverteu mostrando valor do crédito
+3. Mencionou parcerias como alternativa
+4. Não prometeu o que não podia entregar
+5. Manteve postura profissional mesmo com 
+   resistência
+6. Conseguiu qualificar pelo menos 3 dos 4 pilares
+7. Marcou reunião com contexto concreto
+8. Encerrou com elegância quando necessário
+
+LEMBRETE FINAL PARA AVALIAÇÃO:
+
+Em ligações facebook_grupos, a "falha real" NÃO é 
+"não enviar fotos" ou "não atender ao pedido do 
+cliente sobre o imóvel". A falha real é:
+- Não conseguir REVERTER bem
+- Ser robotizado ao reverter
+- Não criar conexão antes da transição
+- Não explicar o modelo de negócio com clareza
+
+O vendedor está CERTO em focar no crédito. O que 
+precisa avaliar é a QUALIDADE DA EXECUÇÃO da 
+reversão, não a estratégia em si.
 
 TIPO 2 — SIMULADOR EMPRESA: Lead com simulação completa. Vendedor TEM crédito/parcela/entrada. Avalie: abertura personalizada com dados, validação dos pilares, foco no MOMENTO.
 
