@@ -350,7 +350,7 @@ async function transcreverComDeepgram(audioInput: Buffer | string): Promise<stri
   }
 }
 
-// Analisa com Claude
+// Analisa com Claude - VERSÃO MESCLADA COMPLETA
 async function analisarComClaude(
   transcricao: string,
   tipoDetectado: string,
@@ -360,7 +360,7 @@ async function analisarComClaude(
   try {
     const anthropic = new Anthropic()
     
-    const prompt = `Você é um especialista em análise de ligações comerciais de uma agência de crédito imobiliário (LR Multimarcas).
+    const prompt = `Você é um especialista em análise de ligações comerciais de uma agência de crédito imobiliário (LR Multimarcas), formado no método Alan Caçula de vendas consultivas.
 
 CONTEXTO DESTA LIGAÇÃO:
 - Vendedor: ${vendedorNome}
@@ -369,9 +369,12 @@ CONTEXTO DESTA LIGAÇÃO:
 
 CONTEXTO DO NEGÓCIO:
 A empresa capta leads de três fontes principais:
-1. FACEBOOK/GRUPOS — leads vinculados a anúncios de imóveis. Não tem dados prévios do cliente.
-2. SIMULADOR EMPRESA — leads que já preencheram simulação no site com dados reais (valor, entrada, parcela). Vendedor JÁ TEM esses dados antes de ligar.
-3. SIMULADOR FACEBOOK — leads de anúncio que passaram por formulário simplificado. Têm algumas informações mas menos qualificados.
+
+1. FACEBOOK/GRUPOS — leads vinculados a anúncios de imóveis, às vezes com imagens ilustrativas. O cliente pode ter interesse no imóvel específico ou nas condições de financiamento. Não tem dados prévios do cliente.
+
+2. SIMULADOR EMPRESA — leads que já preencheram uma simulação no site com dados reais (valor do imóvel, entrada, parcela desejada). São leads pré-aquecidos com informações concretas que o vendedor JÁ TEM antes de ligar.
+
+3. SIMULADOR FACEBOOK — leads que vieram de anúncio mas passaram por um formulário/simulação simplificada. Têm algumas informações mas menos qualificados que o simulador empresa.
 
 O objetivo de TODA ligação é:
 - Fazer boa abordagem e criar conexão
@@ -379,68 +382,99 @@ O objetivo de TODA ligação é:
 - Apresentar simulações e condições concretas de crédito
 - Marcar reunião — preferencialmente PRESENCIAL, online apenas se não tiver outro jeito
 
-OS 4 PILARES DE QUALIFICAÇÃO (OBRIGATÓRIOS):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OS 3 SEGREDOS DO MÉTODO (FUNDAMENTAIS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Ser CONSULTOR, não vendedor — orientar, não empurrar
+2. Ajudar o cliente a DECIDIR — não forçar a venda
+3. OUVIR mais que falar — proporção ideal 70/30 (cliente fala 70%, vendedor 30%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROTEIRO IDEAL — 7 PASSOS (Método Alan Caçula)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 1 — APRESENTAÇÃO COM RAPPORT: Identificar o ritmo do cliente, criar conexão, pedir permissão para fazer perguntas.
+PASSO 2 — QUALIFICAÇÃO: Coletar os 4 pilares. Ouvir mais que falar.
+PASSO 3 — TRANSIÇÃO PARA OFERTA: "Deixa eu analisar e voltar com uma condição especial para você."
+PASSO 4 — APRESENTAR BENEFÍCIOS CONCRETOS: Números reais, comparativos, exemplos do perfil do cliente.
+PASSO 5 — ENTENDER ESTÁGIO DO CLIENTE: Onde está na jornada de decisão? Pesquisando, comparando, decidido?
+PASSO 6 — CONTORNAR OBJEÇÕES: Trabalhar confiança em 4 níveis: em você, na empresa, no produto, no perfil dele.
+PASSO 7 — FECHAMENTO / MARCAR REUNIÃO: Conduzir com duas opções de horário, contexto concreto.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OS 4 PILARES DE QUALIFICAÇÃO — OBRIGATÓRIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Em TODA ligação o vendedor deve descobrir:
 1. CRÉDITO — qual o valor do imóvel que busca?
 2. PARCELA — quanto consegue pagar por mês?
 3. ENTRADA — tem entrada disponível? Quanto?
-4. MOMENTO — está pronto para comprar agora ou ainda pesquisando?
+4. MOMENTO — está pronto para comprar agora ou ainda está pesquisando?
 
-⛔ CRÍTICO se terminou sem saber pelo menos 3 dos 4 pilares
-⛔ CRÍTICO se ficou mais de 3 minutos sem buscar nenhum pilar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRINCÍPIO FUNDAMENTAL DAS OBJEÇÕES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Toda objeção é SINAL DE INTERESSE. O cliente não está dizendo NÃO — está dizendo "ainda não confio em você o suficiente."
+REGRA DE OURO: Responda toda objeção com PERGUNTA, NUNCA com contra-ataque. Após perguntar, CALE-SE.
 
-ROTEIRO IDEAL (7 PASSOS — Método Alan Caçula):
-PASSO 1 — APRESENTAÇÃO COM RAPPORT (identificar ritmo do cliente, pedir permissão para perguntas)
-PASSO 2 — QUALIFICAÇÃO (os 4 pilares, ouvir mais que falar)
-PASSO 3 — TRANSIÇÃO PARA OFERTA (analisar e voltar com condição especial)
-PASSO 4 — APRESENTAR BENEFÍCIOS CONCRETOS (números reais, comparativos)
-PASSO 5 — ENTENDER ESTÁGIO DO CLIENTE (objeções com perguntas, nunca contra-ataque)
-PASSO 6 — CONTORNAR OBJEÇÕES (confiança em você, empresa, produto, perfil)
-PASSO 7 — FECHAMENTO/MARCAR REUNIÃO (conduzir com duas opções, contexto concreto)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BIBLIOTECA DE OBJEÇÕES — Significado Real e Resposta Ideal
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-TIPOS DE LIGAÇÃO (auto-identifique e confirme):
-- facebook_grupos: primeiro contato sem dados prévios
-- simulador_empresa: lead com dados completos da simulação
-- simulador_facebook: lead com formulário simplificado
-- ativacao_whatsapp: ligação para avisar que mandou mensagem
-- confirmacao_reuniao: confirmar reunião já marcada
-- retorno: follow-up de contato anterior
+"PRECISO PENSAR" → Significado: dúvidas não esclarecidas. Resposta ideal: "No que exatamente está em dúvida?"
 
-PRINCÍPIO FUNDAMENTAL DAS OBJEÇÕES:
-Toda objeção é sinal de interesse. Cliente não está dizendo não — está dizendo "ainda não confio em você o suficiente." Responda sempre com PERGUNTA, nunca contra-ataque. Após perguntar, CALE-SE.
+"NÃO TENHO DINHEIRO" → Significado: barreira percebida. Resposta ideal: "Além disso, tem algo mais que te impede? Se a parcela coubesse, faria sentido?"
 
-PRINCIPAIS OBJEÇÕES E SIGNIFICADO REAL:
-- "Preciso pensar" = dúvidas não esclarecidas. IDEAL: "No que exatamente está em dúvida?"
-- "Não tenho dinheiro" = barreira percebida. IDEAL: "Além disso, tem algo mais que te impede?"
-- "Tenho pressa" = não acredita em contemplação rápida. IDEAL: "Qual prazo seria bom? Tem entrada para lance?"
-- "Financiamento é mais rápido" = não conhece restrições. IDEAL: comparar custo total e contemplação por lance
-- "Concorrência tem preço menor" = não fez cálculos. IDEAL: "Procurando preço ou qualidade? Vamos fazer contas?"
-- "Vou falar com esposa/sócio" = qualificação incompleta. IDEAL: incluir decisor na próxima conversa
-- "Não é para mim agora" = falta urgência. IDEAL: reativar a dor, criar urgência
-- "Sua empresa tem reclamações" = insegurança. IDEAL: "Qual empresa não tem? Como tratam quem reclama?"
-- "Vou esperar" = medo. IDEAL: "Já passamos por crises piores. De qual lado você quer estar?"
+"TENHO PRESSA / FINANCIAMENTO MAIS RÁPIDO" → Significado: não acredita em contemplação rápida. Resposta ideal: "Qual prazo seria bom? Tem entrada para lance? Já comparou custo total do financiamento?"
 
-CRÍTICO se:
-⛔ Terminou sem saber 3 dos 4 pilares
-⛔ Marcou reunião sem contexto concreto
-⛔ Falou de crédito sem valores reais
-⛔ Aceitou objeção sem rebater
-⛔ Respondeu objeção com contra-ataque em vez de pergunta
+"CONCORRÊNCIA TEM TAXA/PREÇO MENOR" → Significado: não fez cálculos comparativos. Resposta ideal: "Você procura taxa menor ou melhor custo total? Vamos fazer contas?"
+
+"PRECISO FALAR COM ESPOSA/SÓCIO" → Significado: decisor não está na conversa. Resposta ideal: "Quando podemos conversar os 3? Hoje à noite ou amanhã?"
+
+"NÃO É PARA MIM AGORA / VOU ESPERAR" → Significado: falta urgência, medo. Resposta ideal: "Esperar o quê especificamente? De qual lado você quer estar?"
+
+"SUA EMPRESA TEM RECLAMAÇÕES" → Significado: insegurança, falta confiança. Resposta ideal: "Qual empresa não tem? O que importa é COMO tratamos quem reclama."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TIPOS DE LIGAÇÃO DETALHADOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TIPO 1 — FACEBOOK/GRUPOS: Lead de anúncio. Sem dados prévios. Avalie: abertura profissional, qualificação dos 4 pilares, abordagem com valores concretos, condução para reunião.
+
+TIPO 2 — SIMULADOR EMPRESA: Lead com simulação completa. Vendedor TEM crédito/parcela/entrada. Avalie: abertura personalizada com dados, validação dos pilares, foco no MOMENTO.
+
+TIPO 3 — SIMULADOR FACEBOOK: Lead com formulário simplificado. Critérios intermediários entre Tipo 1 e 2.
+
+TIPO 4 — ATIVAÇÃO WHATSAPP: Ligação para avisar envio de mensagem. Deve ser curta, objetiva, criando curiosidade.
+
+TIPO 5 — CONFIRMAÇÃO DE REUNIÃO: Confirmar reunião já marcada com entusiasmo, reforçando valor. Rebater objeções de desculpas.
+
+TIPO 6 — RETORNO / FOLLOW-UP: Lead que já teve contato anterior. Trazer contexto, algo novo e concreto.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRÍTICO SE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⛔ Terminou sem saber pelo menos 3 dos 4 pilares
+⛔ Mais de 3 minutos falando sem buscar os pilares
+⛔ Abriu ligação de simulador de forma genérica
+⛔ Marcou reunião sem dar contexto concreto
+⛔ Falou de crédito de forma vaga sem valores reais
+⛔ Respondeu objeção com CONTRA-ATAQUE em vez de PERGUNTA (erro grave)
+⛔ Não leu os sinais do cliente pelas respostas
 ⛔ Não identificou quem decide (cônjuge/sócio)
-⛔ Falou mais do que ouviu
+⛔ Falou mais do que ouviu (rompeu proporção 70/30)
 
-RETORNE APENAS JSON VÁLIDO:
+RETORNE OBRIGATORIAMENTE JSON:
 {
-  "tipo_ligacao": "facebook_grupos|simulador_empresa|simulador_facebook|ativacao_whatsapp|confirmacao_reuniao|retorno|abordagem_inicial",
+  "tipo_ligacao": "facebook_grupos|simulador_empresa|simulador_facebook|ativacao_whatsapp|confirmacao_reuniao|retorno",
   "score_geral": número 0-100,
   "score_abertura": número 0-100,
   "score_qualificacao": número 0-100,
   "score_abordagem_credito": número 0-100,
   "score_conducao_reuniao": número 0-100,
-  "resumo": "3-4 linhas resumindo a ligação",
+  "resumo_executivo": "3-4 linhas",
   "quatro_pilares": {
-    "credito": "valor mencionado ou null",
-    "parcela": "valor mencionado ou null",
-    "entrada": "valor mencionado ou null",
+    "credito": "valor ou null",
+    "parcela": "valor ou null",
+    "entrada": "valor ou null",
     "momento": "imediato|medio_prazo|longo_prazo|indefinido",
     "pilares_coletados": número 0-4,
     "tem_perfil": true/false/null
@@ -469,18 +503,56 @@ RETORNE APENAS JSON VÁLIDO:
   "qualificacao": {
     "qualificou_antes_de_falar_muito": true/false,
     "leu_sinais_do_cliente": true/false,
-    "identificou_lead_ruim_a_tempo": true/false/null
+    "identificou_lead_ruim_a_tempo": true/false/null,
+    "proporcao_falar_ouvir": "ouviu_mais|equilibrado|falou_mais"
   },
   "pontos_positivos": ["array"],
   "pontos_criticos": ["array"],
   "objecoes_cliente": [
     {
-      "objecao": "frase do cliente",
+      "objecao": "frase exata",
       "significado_real": "o que representa",
-      "resposta_vendedor": "o que vendedor disse",
-      "resposta_ideal": "como deveria ter respondido",
+      "resposta_vendedor": "o que disse",
+      "resposta_ideal": "como deveria ter respondido (com pergunta)",
+      "respondeu_com_pergunta": true/false,
       "eficaz": true/false
     }
+  ],
+  "alertas_criticos": ["array"],
+  "proximo_passo_sugerido": "string",
+  "feedback_vendedor": "Coaching em 5 partes: 1) o que fez bem 2) cada ponto crítico com exemplo 3) como contornar objeções 4) script para primeiros 2 minutos 5) o que dizer no próximo contato",
+  "cliente_interessado": true/false,
+  "agendou_retorno": true/false
+}
+
+IMPORTANTE:
+- Speaker 0 = Vendedor, Speaker 1 = Cliente
+- Identifique o tipo automaticamente pelo contexto
+- Os 4 pilares são o coração da análise
+- Toda objeção: pergunta = correto, contra-ataque = erro
+- Responda APENAS com JSON válido
+
+TRANSCRIÇÃO DA LIGAÇÃO:
+${transcricao}`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const content = response.content[0]
+    if (content.type !== 'text') return null
+
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
+
+    return JSON.parse(jsonMatch[0])
+  } catch (error) {
+    console.error('[Claude] Erro na análise:', error)
+    return null
+  }
+}
   ],
   "alertas_criticos": ["array"],
   "proximo_passo_sugerido": "string",
@@ -702,8 +774,8 @@ async function enviarNotaKommo(leadId: string | number, analise: any): Promise<v
     const objecoes = analise.objecoes_cliente || []
     const alertas = analise.alertas_criticos || []
     
+    // Emoji por tipo de ligação
     const emojiTipo: Record<string, string> = {
-      'abordagem_inicial': '🎯',
       'facebook_grupos': '📱',
       'simulador_empresa': '🧮',
       'simulador_facebook': '🧮',
@@ -712,13 +784,20 @@ async function enviarNotaKommo(leadId: string | number, analise: any): Promise<v
       'retorno': '🔄',
     }
     const emoji = emojiTipo[analise.tipo_ligacao] || '📞'
-    const tempEmoji = perfil.nivel_interesse === 'alto' ? '🔥' : 
-                      perfil.nivel_interesse === 'medio' ? '🌤️' : '❄️'
+    
+    // Emoji do nível de interesse
+    const interesseEmoji = perfil.nivel_interesse === 'alto' ? '🔥' : 
+                           perfil.nivel_interesse === 'medio' ? '🌤️' : 
+                           perfil.nivel_interesse === 'baixo' ? '❄️' : '❓'
+    
+    // Emoji da proporção falar/ouvir
+    const proporcaoEmoji = qualific.proporcao_falar_ouvir === 'ouviu_mais' ? '👂' :
+                           qualific.proporcao_falar_ouvir === 'equilibrado' ? '⚖️' : '🗣️'
     
     let nota = `${emoji} ANÁLISE IA — ${analise.tipo_ligacao?.toUpperCase().replace(/_/g, ' ') || 'LIGAÇÃO'}
 
 📝 RESUMO:
-${analise.resumo || 'Sem resumo'}
+${analise.resumo_executivo || 'Sem resumo'}
 
 📊 SCORES (0-100):
 • Geral: ${analise.score_geral || 0}
@@ -732,26 +811,33 @@ ${pilares.credito ? '✅' : '❌'} Crédito: ${pilares.credito || 'não coletado
 ${pilares.parcela ? '✅' : '❌'} Parcela: ${pilares.parcela || 'não coletado'}
 ${pilares.entrada ? '✅' : '❌'} Entrada: ${pilares.entrada || 'não coletado'}
 ${pilares.momento && pilares.momento !== 'indefinido' ? '✅' : '❌'} Momento: ${pilares.momento || 'indefinido'}
+${pilares.tem_perfil === true ? '✅ TEM PERFIL' : pilares.tem_perfil === false ? '❌ SEM PERFIL' : '❓ Perfil indefinido'}
 
 👤 PERFIL DO LEAD:
-${tempEmoji} Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
+${interesseEmoji} Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
 • Localização: ${perfil.localizacao || 'não informada'}
 • Reunião ideal: ${perfil.tipo_reuniao_ideal || 'indefinido'}`
 
     if (perfil.sinais_positivos?.length) {
-      nota += `\n• Sinais positivos: ${perfil.sinais_positivos.join(', ')}`
+      nota += `\n\n✨ Sinais positivos:`
+      perfil.sinais_positivos.forEach((s: string) => {
+        nota += `\n  • ${s}`
+      })
     }
     if (perfil.sinais_negativos?.length) {
-      nota += `\n• Sinais negativos: ${perfil.sinais_negativos.join(', ')}`
+      nota += `\n\n⚠️ Sinais negativos:`
+      perfil.sinais_negativos.forEach((s: string) => {
+        nota += `\n  • ${s}`
+      })
     }
 
     nota += `\n\n📅 REUNIÃO:
 ${reuniao.marcou ? `✅ MARCADA — ${reuniao.tipo || 'tipo?'}` : '❌ Não marcada'}`
     
     if (reuniao.marcou) {
-      nota += `\n• Tentou presencial primeiro: ${reuniao.tentou_presencial_primeiro ? 'sim' : 'não'}`
-      nota += `\n• Marcou com contexto concreto: ${reuniao.marcou_com_contexto_concreto ? 'sim' : 'não'}`
-      nota += `\n• Rebateu objeções: ${reuniao.rebateu_objecoes ? 'sim' : 'não'}`
+      nota += `\n• Tentou presencial primeiro: ${reuniao.tentou_presencial_primeiro ? '✅ sim' : '❌ não'}`
+      nota += `\n• Marcou com contexto concreto: ${reuniao.marcou_com_contexto_concreto ? '✅ sim' : '❌ não (genérica)'}`
+      nota += `\n• Rebateu objeções: ${reuniao.rebateu_objecoes ? '✅ sim' : '❌ não'}`
       nota += `\n• Tentativas: ${reuniao.quantidade_tentativas || 0}`
     }
 
@@ -759,14 +845,26 @@ ${reuniao.marcou ? `✅ MARCADA — ${reuniao.tipo || 'tipo?'}` : '❌ Não marc
 ${credito.apresentou_valores_concretos ? '✅' : '❌'} Apresentou valores concretos
 ${credito.usou_simulacao ? '✅' : '❌'} Usou simulação
 ${credito.houve_negociacao ? '✅' : '❌'} Houve negociação
-${credito.foi_generico ? '⚠️ FOI GENÉRICO (não bom)' : '✅ Foi específico'}`
+${credito.foi_generico ? '⚠️ FOI GENÉRICO (erro)' : '✅ Foi específico'}
+
+🎯 QUALIFICAÇÃO:
+${qualific.qualificou_antes_de_falar_muito ? '✅' : '❌'} Qualificou antes de falar muito
+${qualific.leu_sinais_do_cliente ? '✅' : '❌'} Leu sinais do cliente
+${qualific.identificou_lead_ruim_a_tempo === true ? '✅ Identificou lead ruim a tempo' : qualific.identificou_lead_ruim_a_tempo === false ? '❌ Não identificou lead ruim' : '— Não aplicável'}
+${proporcaoEmoji} Proporção falar/ouvir: ${qualific.proporcao_falar_ouvir || 'indefinido'}`
 
     if (analise.pontos_positivos?.length) {
-      nota += `\n\n💪 PONTOS POSITIVOS:\n${analise.pontos_positivos.map((p: string) => `• ${p}`).join('\n')}`
+      nota += `\n\n💪 PONTOS POSITIVOS:`
+      analise.pontos_positivos.forEach((p: string) => {
+        nota += `\n• ${p}`
+      })
     }
     
     if (analise.pontos_criticos?.length) {
-      nota += `\n\n🚨 PONTOS CRÍTICOS:\n${analise.pontos_criticos.map((p: string) => `• ${p}`).join('\n')}`
+      nota += `\n\n🚨 PONTOS CRÍTICOS:`
+      analise.pontos_criticos.forEach((p: string) => {
+        nota += `\n• ${p}`
+      })
     }
 
     if (objecoes.length > 0) {
@@ -774,14 +872,18 @@ ${credito.foi_generico ? '⚠️ FOI GENÉRICO (não bom)' : '✅ Foi específic
       objecoes.forEach((obj: any, i: number) => {
         nota += `\n\n${i + 1}. "${obj.objecao}"`
         nota += `\n   ${obj.eficaz ? '✅ Bem tratada' : '❌ Mal tratada'}`
-        nota += `\n   → Significado real: ${obj.significado_real}`
-        nota += `\n   → Vendedor disse: "${obj.resposta_vendedor}"`
-        nota += `\n   → Resposta ideal: "${obj.resposta_ideal}"`
+        nota += ` | ${obj.respondeu_com_pergunta ? '✅ Respondeu com pergunta' : '❌ Contra-atacou (erro)'}`
+        nota += `\n   → Significado real: ${obj.significado_real || '—'}`
+        nota += `\n   → Vendedor disse: "${obj.resposta_vendedor || '—'}"`
+        nota += `\n   → Resposta ideal: "${obj.resposta_ideal || '—'}"`
       })
     }
     
     if (alertas.length > 0) {
-      nota += `\n\n🚨 ALERTAS CRÍTICOS:\n${alertas.map((a: string) => `⛔ ${a}`).join('\n')}`
+      nota += `\n\n🚨 ALERTAS CRÍTICOS:`
+      alertas.forEach((a: string) => {
+        nota += `\n⛔ ${a}`
+      })
     }
 
     nota += `\n\n🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}`
@@ -789,6 +891,8 @@ ${credito.foi_generico ? '⚠️ FOI GENÉRICO (não bom)' : '✅ Foi específic
     if (analise.feedback_vendedor) {
       nota += `\n\n🎓 FEEDBACK PARA O VENDEDOR:\n${analise.feedback_vendedor}`
     }
+    
+    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno`
     
     await fetch(
       `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadId}/notes`,
@@ -1036,7 +1140,7 @@ export async function POST(request: Request) {
         reuniao_tipo: analise?.reuniao?.tipo || null,
         nivel_interesse: analise?.perfil_lead?.nivel_interesse || null,
         pilares_coletados: analise?.quatro_pilares?.pilares_coletados || 0,
-        resumo: analise?.resumo || null,
+        resumo: analise?.resumo_executivo || null,
         data_ligacao: dataLigacaoFormatada,
         processado_em: transcricao ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
@@ -1082,7 +1186,7 @@ export async function POST(request: Request) {
           statusFinal,
           responsibleUserId,
           lead_id,
-          analise?.resumo || null
+          analise?.resumo_executivo || null
         )
         
         // Se tiver análise da IA, envia nota no lead
