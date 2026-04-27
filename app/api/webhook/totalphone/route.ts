@@ -11,34 +11,38 @@ const supabase = createClient(
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 
-// Mapeamento de ramais para vendedores e equipes (ATUALIZADO)
-const RAMAIS: Record<string, { vendedor: string; equipe: string }> = {
-  "1000": { vendedor: "Leonardo Freitas", equipe: "Admin" },
-  "1001": { vendedor: "Amanda Souza", equipe: "Elite" },
-  "1002": { vendedor: "Ana Beatriz", equipe: "Elite" },
-  "1003": { vendedor: "Bianca Isabela", equipe: "TDM" },
-  "1004": { vendedor: "Alexia Cunha", equipe: "Guerreiros" },
-  "1005": { vendedor: "Lidiane Fonseca", equipe: "Guerreiros" },
-  "1006": { vendedor: "Rafaella Antunes", equipe: "Gladiadores" },
-  "1007": { vendedor: "Nicolas Moraes", equipe: "Gladiadores" },
-  "1008": { vendedor: "Gabrielly Pereira", equipe: "Samurais" },
-  "1009": { vendedor: "Lucas Dionisio", equipe: "Samurais" },
-  "1010": { vendedor: "João Victor", equipe: "Legado" },
-  "1011": { vendedor: "Gisely Leal", equipe: "Legado" },
-  "1012": { vendedor: "Emily Machado", equipe: "Lobos" },
-  "1013": { vendedor: "Isabelly", equipe: "Lobos" },
-  "1014": { vendedor: "Ana Gabrielly", equipe: "Elite" },
-  "1015": { vendedor: "João Lucas", equipe: "Guerreiros" },
-  "1016": { vendedor: "Willy Santana", equipe: "Gladiadores" },
-  "1017": { vendedor: "Nathan Caue", equipe: "Samurais" },
-  "1018": { vendedor: "Yuri Ryan Pereira", equipe: "Legado" },
-  "1019": { vendedor: "Evelyn Rodrigues", equipe: "Lobos" },
-  "1020": { vendedor: "Anaina Dantas", equipe: "TDM" },
-  "1021": { vendedor: "Alex Negreiros", equipe: "Lobos" },
-  "1022": { vendedor: "Kleinver Seabra", equipe: "Elite" },
-  "1023": { vendedor: "Brayan", equipe: "Guerreiros" },
-  "1024": { vendedor: "Rogério Martins", equipe: "Gladiadores" },
-  "9999": { vendedor: "Suporte TotalPhone", equipe: "Admin" },
+// Mapeamento completo: ramal -> vendedor + equipe + kommo_user_id
+const RAMAIS: Record<string, { 
+  vendedor: string
+  equipe: string
+  kommo_user_id: number | null
+}> = {
+  "1000": { vendedor: "Leonardo Freitas",   equipe: "Samurais",    kommo_user_id: 9780139 },
+  "1001": { vendedor: "Amanda Souza",       equipe: "TDM",         kommo_user_id: 12760048 },
+  "1002": { vendedor: "Ana Beatriz",        equipe: "TDM",         kommo_user_id: 14964227 },
+  "1003": { vendedor: "Bianca Isabela",     equipe: "TDM",         kommo_user_id: 13461616 },
+  "1004": { vendedor: "Alexia Cunha",       equipe: "Gladiadores", kommo_user_id: 9776739 },
+  "1005": { vendedor: "Lidiane Fonseca",    equipe: "Guerreiros",  kommo_user_id: 13583192 },
+  "1006": { vendedor: "Rafaella Antunes",   equipe: "Guerreiros",  kommo_user_id: 13583188 },
+  "1007": { vendedor: "Nicolas Moraes",     equipe: "Legado",      kommo_user_id: 12651456 },
+  "1008": { vendedor: "Gabrielly Pereira",  equipe: "Legado",      kommo_user_id: 14964491 },
+  "1009": { vendedor: "Lucas Dionisio",     equipe: "Lobos",       kommo_user_id: 10962508 },
+  "1010": { vendedor: "João Victor",        equipe: "Samurais",    kommo_user_id: 14964623 },
+  "1011": { vendedor: "Gisely Leal",        equipe: "Guerreiros",  kommo_user_id: 9776731 },
+  "1012": { vendedor: "Emily Machado",      equipe: "TDM",         kommo_user_id: 10783760 },
+  "1013": { vendedor: "Isabelly",           equipe: "Lobos",       kommo_user_id: 15059511 },
+  "1014": { vendedor: "Ana Gabrielly",      equipe: "Lobos",       kommo_user_id: 14967571 },
+  "1015": { vendedor: "João Lucas",         equipe: "TDM",         kommo_user_id: 14964211 },
+  "1016": { vendedor: "Willy Santana",      equipe: "TDM",         kommo_user_id: 15024963 },
+  "1017": { vendedor: "Nathan Caue",        equipe: "Gladiadores", kommo_user_id: 9780891 },
+  "1018": { vendedor: "Yuri Ryan",          equipe: "Elite",       kommo_user_id: 9776499 },
+  "1019": { vendedor: "Evelyn Rodrigues",   equipe: "Lobos",       kommo_user_id: null },
+  "1020": { vendedor: "Janaina Dantas",     equipe: "Legado",      kommo_user_id: 9780703 },
+  "1021": { vendedor: "Alex Negreiros",     equipe: "Lobos",       kommo_user_id: 9780871 },
+  "1022": { vendedor: "Kleinver Seabra",    equipe: "TDM",         kommo_user_id: 9780887 },
+  "1023": { vendedor: "Brayan",             equipe: "Legado",      kommo_user_id: 10780300 },
+  "1024": { vendedor: "Rogério Martins",    equipe: "Gladiadores", kommo_user_id: null },
+  "9999": { vendedor: "Suporte TotalPhone", equipe: "Admin",       kommo_user_id: null },
 }
 
 // Normaliza telefone removendo DDI e zeros extras
@@ -358,13 +362,98 @@ ${transcricao}`
   }
 }
 
+// Busca lead no Kommo pelo telefone (testa várias variações do número)
+async function buscarLeadKommoPorTelefone(telefone: string): Promise<{
+  lead_id: number | null
+  contact_id: number | null
+  responsible_user_id: number | null
+}> {
+  if (!KOMMO_ACCESS_TOKEN) return { lead_id: null, contact_id: null, responsible_user_id: null }
+  
+  // Limpa o telefone
+  const cleaned = telefone.replace(/\D/g, '')
+  
+  // Gera variações para busca (Kommo é exigente com formato)
+  const variacoes = new Set<string>()
+  variacoes.add(cleaned)
+  
+  // Sem DDI
+  if (cleaned.startsWith('55') && cleaned.length > 11) {
+    variacoes.add(cleaned.slice(2))
+  }
+  
+  // Com DDI
+  if (!cleaned.startsWith('55') && cleaned.length >= 10) {
+    variacoes.add('55' + cleaned)
+  }
+  
+  // Sem 9 (celular antigo)
+  if (cleaned.length === 11) {
+    variacoes.add(cleaned.slice(0, 2) + cleaned.slice(3))
+  }
+  
+  // Com 9 (celular novo)
+  if (cleaned.length === 10) {
+    variacoes.add(cleaned.slice(0, 2) + '9' + cleaned.slice(2))
+  }
+  
+  // Últimos 8 dígitos (busca mais ampla)
+  if (cleaned.length >= 8) {
+    variacoes.add(cleaned.slice(-8))
+  }
+  
+  console.log('[Kommo] Buscando lead com variações:', Array.from(variacoes))
+  
+  for (const numero of variacoes) {
+    try {
+      const url = `https://crm2lrmultimarcascom.kommo.com/api/v4/contacts?query=${numero}&with=leads`
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${KOMMO_ACCESS_TOKEN}`,
+        },
+      })
+      
+      if (!response.ok) continue
+      
+      const data = await response.json()
+      const contacts = data?._embedded?.contacts || []
+      
+      if (contacts.length > 0) {
+        const contact = contacts[0]
+        const leads = contact?._embedded?.leads || []
+        
+        // Pega o primeiro lead (mais recente)
+        const lead = leads[0]
+        
+        console.log('[Kommo] ✅ Lead encontrado:', {
+          contact_id: contact.id,
+          lead_id: lead?.id || null,
+          responsible_user_id: contact.responsible_user_id,
+        })
+        
+        return {
+          contact_id: contact.id,
+          lead_id: lead?.id || null,
+          responsible_user_id: contact.responsible_user_id || null,
+        }
+      }
+    } catch (err) {
+      console.error('[Kommo] Erro buscando lead:', err)
+    }
+  }
+  
+  console.log('[Kommo] ❌ Nenhum lead encontrado para o telefone')
+  return { lead_id: null, contact_id: null, responsible_user_id: null }
+}
+
 // Envia chamada para o Kommo
 async function enviarChamadaKommo(
   telefone: string,
   duracao: number,
   status: string,
   audioUrl: string,
-  vendedorKommoId?: string
+  responsibleUserId: number | null,
+  leadId: number | null
 ): Promise<string | null> {
   if (!KOMMO_ACCESS_TOKEN) {
     console.log("[TotalPhone] KOMMO_ACCESS_TOKEN não configurado")
@@ -372,47 +461,71 @@ async function enviarChamadaKommo(
   }
 
   try {
-    // Mapeia status para call_status do Kommo
-    // 1 = deixou voicemail, 2 = retornar, 3 = não atendeu, 4 = conversou, 5 = errado, 6 = ocupado
-    let callStatus = 4 // conversou (default)
-    if (status === "nao_atendida") callStatus = 3
-    else if (status === "caixa_postal") callStatus = 1
-    else if (status === "cancelada") callStatus = 3
-    else if (status === "ocupado") callStatus = 6
-
-    const callData = {
-      direction: "outbound",
+    // Mapeamento de status do nosso sistema -> call_status do Kommo
+    // 1 = deixou voicemail
+    // 2 = retornar ligação
+    // 3 = não atendeu (chamou mas ninguém atendeu)
+    // 4 = conversou (atendida)
+    // 5 = número errado
+    // 6 = ocupado
+    let callStatus = 4 // default: conversou
+    
+    if (status === 'atendida') callStatus = 4
+    else if (status === 'caixa_postal') callStatus = 1
+    else if (status === 'nao_atendida') callStatus = 3
+    else if (status === 'cancelada') callStatus = 3
+    else if (status === 'ocupado') callStatus = 6
+    else if (status === 'numero_errado') callStatus = 5
+    
+    const callData: any = {
+      direction: 'outbound',
       duration: duracao,
-      source: "TotalPhone",
+      source: 'TotalPhone',
       phone: telefone,
       link: audioUrl,
       call_status: callStatus,
       created_at: Math.floor(Date.now() / 1000),
     }
-
+    
+    // Adiciona responsável (vendedor) se tiver
+    if (responsibleUserId) {
+      callData.responsible_user_id = responsibleUserId
+    }
+    
+    // Vincula ao lead se encontrou
+    if (leadId) {
+      callData._embedded = {
+        leads: [{ id: leadId }]
+      }
+    }
+    
+    console.log('[Kommo] Enviando chamada:', { phone: telefone, status: callStatus, leadId, responsibleUserId })
+    
     const response = await fetch(
-      "https://crm2lrmultimarcascom.kommo.com/api/v4/calls",
+      'https://crm2lrmultimarcascom.kommo.com/api/v4/calls',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${KOMMO_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${KOMMO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify([callData]),
       }
     )
-
+    
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("[TotalPhone] Erro ao enviar chamada Kommo:", response.status, errorText)
+      console.error('[Kommo] Erro ao enviar chamada:', response.status, errorText)
       return null
     }
-
+    
     const result = await response.json()
-    console.log("[TotalPhone] Chamada enviada para Kommo:", result)
-    return result?._embedded?.calls?.[0]?.id || null
+    const callId = result?._embedded?.calls?.[0]?.id || null
+    console.log('[Kommo] ✅ Chamada criada com ID:', callId)
+    
+    return callId
   } catch (error) {
-    console.error("[TotalPhone] Erro ao enviar chamada Kommo:", error)
+    console.error('[Kommo] Erro ao enviar chamada:', error)
     return null
   }
 }
@@ -677,43 +790,64 @@ export async function POST(request: Request) {
     
     console.log("[TotalPhone] Ligação salva:", ligacao?.id)
     
-    // 6. Envia para Kommo
-    if (audioBlobUrl && telefoneCliente) {
+    // 6. Envia para Kommo (sempre, independente de ter sido atendida ou não)
+    let kommoLeadId: number | null = null
+
+    if (telefoneCliente) {
       const telefoneNormalizado = normalizarTelefone(telefoneCliente)
-      console.log("[TotalPhone] Telefone normalizado:", telefoneCliente, "->", telefoneNormalizado)
+      console.log('[TotalPhone] Telefone normalizado:', telefoneCliente, '->', telefoneNormalizado)
       
-      const kommoCallId = await enviarChamadaKommo(
-        telefoneNormalizado,
-        duracaoSegundos,
-        statusFinal,
-        audioBlobUrl
-      )
+      // Busca lead no Kommo pelo telefone
+      const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
+        await buscarLeadKommoPorTelefone(telefoneNormalizado)
       
-      // Se tiver análise e lead, envia nota
-      if (analise && ligacao?.kommo_lead_id) {
-        await enviarNotaKommo(ligacao.kommo_lead_id, analise)
-      }
+      kommoLeadId = lead_id
       
-      // Atualiza com ID do Kommo
-      if (kommoCallId) {
+      // Se não encontrou lead, IGNORA (não cria chamada nem lead novo)
+      if (!lead_id) {
+        console.log('[TotalPhone] ⚠️ Lead não encontrado no Kommo, pulando envio da chamada')
+      } else {
+        // Define o responsável: prioriza ramal mapeado, depois o do contato no Kommo
+        const responsibleUserId = vendedorData?.kommo_user_id || respUserKommo || null
+        
+        // Envia chamada com link do áudio (player + download)
+        const kommoCallId = await enviarChamadaKommo(
+          telefoneNormalizado,
+          duracaoSegundos,
+          statusFinal,
+          audioBlobUrl || audioUrlOriginal || '',
+          responsibleUserId,
+          lead_id
+        )
+        
+        // Se tiver análise da IA, envia nota no lead
+        if (analise) {
+          await enviarNotaKommo(String(lead_id), analise)
+        }
+        
+        // Atualiza Supabase com IDs do Kommo
         await supabase
-          .from("ligacoes")
+          .from('ligacoes')
           .update({ 
             kommo_call_id: kommoCallId,
-            enviado_kommo: true 
+            kommo_lead_id: lead_id,
+            kommo_contact_id: contact_id,
+            kommo_user_id: responsibleUserId,
+            enviado_kommo: !!kommoCallId,
           })
-          .eq("id", ligacao?.id)
+          .eq('id', ligacao?.id)
       }
     }
-    
+
     return NextResponse.json({ 
       success: true, 
       id: ligacao?.id,
       vendedor: vendedorData?.vendedor,
       status: statusFinal,
       duracao: duracaoSegundos,
-      transcricao: transcricao ? "Sim" : "Não",
-      analise: analise ? "Sim" : "Não"
+      transcricao: transcricao ? 'Sim' : 'Não',
+      analise: analise ? 'Sim' : 'Não',
+      kommo_lead_id: kommoLeadId,
     })
     
   } catch (error) {
