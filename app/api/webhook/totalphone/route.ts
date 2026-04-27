@@ -1207,152 +1207,90 @@ async function enviarChamadaKommo(
 }
 
 // Envia nota de analise para o Kommo
-async function enviarNotaKommo(leadId: string | number, analise: any): Promise<void> {
+async function enviarNotaKommo(
+  leadId: string | number, 
+  analise: any,
+  pdfUrl: string | null = null
+): Promise<void> {
   if (!KOMMO_ACCESS_TOKEN || !leadId) return
 
   try {
     const pilares = analise.quatro_pilares || {}
-    const perfil = analise.perfil_lead || {}
     const reuniao = analise.reuniao || {}
     const credito = analise.abordagem_credito || {}
-    const qualific = analise.qualificacao || {}
-    const objecoes = analise.objecoes_cliente || []
-    const alertas = analise.alertas_criticos || []
+    const qualificacao = analise.qualificacao || {}
+    const perfil = analise.perfil_lead || {}
+    const reversao = qualificacao.reversao_facebook_grupos || null
     
-    // Emoji por tipo de ligação
-    const emojiTipo: Record<string, string> = {
+    const tipoEmoji: Record<string, string> = {
       'facebook_grupos': '📱',
       'simulador_empresa': '🧮',
-      'simulador_facebook': '🧮',
+      'simulador_facebook': '📊',
       'ativacao_whatsapp': '💬',
       'confirmacao_reuniao': '📅',
-      'retorno': '🔄',
+      'retorno': '🔁',
+      'abordagem_inicial': '☎️',
     }
-    const emoji = emojiTipo[analise.tipo_ligacao] || '📞'
+    const emoji = tipoEmoji[analise.tipo_ligacao] || '📞'
+    const interesseEmoji = perfil.nivel_interesse === 'alto' ? '🔥' :
+                           perfil.nivel_interesse === 'medio' ? '🌤️' : '❄️'
+    const ouvirFalarEmoji = qualificacao.proporcao_falar_ouvir === 'ouviu_mais' ? '👂' :
+                            qualificacao.proporcao_falar_ouvir === 'equilibrado' ? '⚖️' : '🗣️'
     
-    // Emoji do nível de interesse
-    const interesseEmoji = perfil.nivel_interesse === 'alto' ? '🔥' : 
-                           perfil.nivel_interesse === 'medio' ? '🌤️' : 
-                           perfil.nivel_interesse === 'baixo' ? '❄️' : '❓'
+    let nota = `${emoji} ANÁLISE — ${(analise.tipo_ligacao || 'LIGAÇÃO').toUpperCase().replace(/_/g, ' ')} (Score: ${analise.score_geral || 0}/100)`
+    nota += `\n\n📝 RESUMO: ${analise.resumo_executivo || 'N/A'}`
+    nota += `\n\n📊 SCORES: Geral ${analise.score_geral || 0} | Abertura ${analise.score_abertura || 0} | Qualif. ${analise.score_qualificacao || 0} | Crédito ${analise.score_abordagem_credito || 0} | Reunião ${analise.score_conducao_reuniao || 0}`
+    nota += `\n\n🎯 4 PILARES (${pilares.pilares_coletados || 0}/4) ${interesseEmoji}`
+    nota += `\n• Crédito: ${pilares.credito || '—'} | Parcela: ${pilares.parcela || '—'} | Entrada: ${pilares.entrada || '—'} | Momento: ${pilares.momento || '—'}`
+    nota += `\n\n📅 REUNIÃO: ${reuniao.marcou ? `✅ Marcada (${reuniao.tipo || 'tipo indefinido'})` : '❌ Não marcada'}`
+    nota += `\n💰 ABORDAGEM CRÉDITO: ${credito.apresentou_valores_concretos ? '✅ Valores concretos' : '❌ Sem valores concretos'} | ${credito.usou_simulacao ? '✅ Simulação' : '❌ Sem simulação'}`
+    nota += `\n🎯 QUALIFICAÇÃO: ${qualificacao.qualificou_antes_de_falar_muito ? '✅ Qualificou bem' : '❌ Falhou em qualificar'} | ${ouvirFalarEmoji} ${qualificacao.proporcao_falar_ouvir || 'N/A'}`
     
-    // Emoji da proporção falar/ouvir
-    const proporcaoEmoji = qualific.proporcao_falar_ouvir === 'ouviu_mais' ? '👂' :
-                           qualific.proporcao_falar_ouvir === 'equilibrado' ? '⚖️' : '🗣️'
-    
-    let nota = `${emoji} ANÁLISE IA — ${analise.tipo_ligacao?.toUpperCase().replace(/_/g, ' ') || 'LIGAÇÃO'}
-
-📝 RESUMO:
-${analise.resumo_executivo || 'Sem resumo'}
-
-📊 SCORES (0-100):
-• Geral: ${analise.score_geral || 0}
-• Abertura: ${analise.score_abertura || 0}
-• Qualificação: ${analise.score_qualificacao || 0}
-• Abordagem Crédito: ${analise.score_abordagem_credito || 0}
-• Condução Reunião: ${analise.score_conducao_reuniao || 0}
-
-🎯 4 PILARES (${pilares.pilares_coletados || 0}/4):
-${pilares.credito ? '✅' : '❌'} Crédito: ${pilares.credito || 'não coletado'}
-${pilares.parcela ? '✅' : '❌'} Parcela: ${pilares.parcela || 'não coletado'}
-${pilares.entrada ? '✅' : '❌'} Entrada: ${pilares.entrada || 'não coletado'}
-${pilares.momento && pilares.momento !== 'indefinido' ? '✅' : '❌'} Momento: ${pilares.momento || 'indefinido'}
-${pilares.tem_perfil === true ? '✅ TEM PERFIL' : pilares.tem_perfil === false ? '❌ SEM PERFIL' : '❓ Perfil indefinido'}
-
-👤 PERFIL DO LEAD:
-${interesseEmoji} Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
-• Localização: ${perfil.localizacao || 'não informada'}
-• Reunião ideal: ${perfil.tipo_reuniao_ideal || 'indefinido'}`
-
-    if (perfil.sinais_positivos?.length) {
-      nota += `\n\n✨ Sinais positivos:`
-      perfil.sinais_positivos.forEach((s: string) => {
-        nota += `\n  • ${s}`
-      })
+    if (analise.tipo_ligacao === 'facebook_grupos' && reversao) {
+      nota += `\n\n🔄 REVERSÃO PARA CRÉDITO:`
+      nota += `\n${reversao.aplicou_pergunta_reversao ? '✅' : '❌'} Aplicou pergunta-chave | Qualidade: ${reversao.qualidade_reversao || 'N/A'}`
+      if (reversao.comentario_reversao) nota += `\n💬 ${reversao.comentario_reversao}`
     }
-    if (perfil.sinais_negativos?.length) {
-      nota += `\n\n⚠️ Sinais negativos:`
-      perfil.sinais_negativos.forEach((s: string) => {
-        nota += `\n  • ${s}`
-      })
-    }
-
-    nota += `\n\n📅 REUNIÃO:
-${reuniao.marcou ? `✅ MARCADA — ${reuniao.tipo || 'tipo?'}` : '❌ Não marcada'}`
     
-    if (reuniao.marcou) {
-      nota += `\n• Tentou presencial primeiro: ${reuniao.tentou_presencial_primeiro ? '✅ sim' : '❌ não'}`
-      nota += `\n• Marcou com contexto concreto: ${reuniao.marcou_com_contexto_concreto ? '✅ sim' : '❌ não (genérica)'}`
-      nota += `\n• Rebateu objeções: ${reuniao.rebateu_objecoes ? '✅ sim' : '❌ não'}`
-      nota += `\n• Tentativas: ${reuniao.quantidade_tentativas || 0}`
-    }
-
-    nota += `\n\n💰 ABORDAGEM DE CRÉDITO:
-${credito.apresentou_valores_concretos ? '✅' : '❌'} Apresentou valores concretos
-${credito.usou_simulacao ? '✅' : '❌'} Usou simulação
-${credito.houve_negociacao ? '✅' : '❌'} Houve negociação
-${credito.foi_generico ? '⚠️ FOI GENÉRICO (erro)' : '✅ Foi específico'}
-
-🎯 QUALIFICAÇÃO:
-${qualific.qualificou_antes_de_falar_muito ? '✅' : '❌'} Qualificou antes de falar muito
-${qualific.leu_sinais_do_cliente ? '✅' : '❌'} Leu sinais do cliente
-${qualific.identificou_lead_ruim_a_tempo === true ? '✅ Identificou lead ruim a tempo' : qualific.identificou_lead_ruim_a_tempo === false ? '❌ Não identificou lead ruim' : '— Não aplicável'}
-${proporcaoEmoji} Proporção falar/ouvir: ${qualific.proporcao_falar_ouvir || 'indefinido'}`
-
-    if (analise.pontos_positivos?.length) {
-      nota += `\n\n💪 PONTOS POSITIVOS:`
-      analise.pontos_positivos.forEach((p: string) => {
-        nota += `\n• ${p}`
+    nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+    nota += `\n\n🎯 PRÓXIMO PASSO:\n${analise.proximo_passo_sugerido || 'Definir próxima ação'}`
+    nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+    nota += `\n\n🎓 FEEDBACK PARA O VENDEDOR`
+    
+    if (analise.pontos_positivos?.length > 0) {
+      nota += `\n\n✅ TOP O QUE FEZ BEM:`
+      analise.pontos_positivos.slice(0, 5).forEach((p: string, i: number) => {
+        nota += `\n${i + 1}. ${p}`
       })
     }
     
-    if (analise.pontos_criticos?.length) {
-      nota += `\n\n🚨 PONTOS CRÍTICOS:`
-      analise.pontos_criticos.forEach((p: string) => {
-        nota += `\n• ${p}`
-      })
-    }
-
-    if (objecoes.length > 0) {
-      nota += `\n\n⚠️ OBJEÇÕES IDENTIFICADAS:`
-      objecoes.forEach((obj: any, i: number) => {
-        nota += `\n\n${i + 1}. "${obj.objecao}"`
-        nota += `\n   ${obj.eficaz ? '✅ Bem tratada' : '❌ Mal tratada'}`
-        nota += ` | ${obj.respondeu_com_pergunta ? '✅ Respondeu com pergunta' : '❌ Contra-atacou (erro)'}`
-        nota += `\n   → Significado real: ${obj.significado_real || '—'}`
-        nota += `\n   → Vendedor disse: "${obj.resposta_vendedor || '—'}"`
-        nota += `\n   → Resposta ideal: "${obj.resposta_ideal || '—'}"`
+    if (analise.pontos_criticos?.length > 0) {
+      nota += `\n\n⚠️ TOP PONTOS CRÍTICOS:`
+      analise.pontos_criticos.slice(0, 4).forEach((p: string, i: number) => {
+        nota += `\n${i + 1}. ${p}`
       })
     }
     
-    if (alertas.length > 0) {
-      nota += `\n\n🚨 ALERTAS CRÍTICOS:`
-      alertas.forEach((a: string) => {
-        nota += `\n⛔ ${a}`
+    if (analise.objecoes_cliente?.length > 0) {
+      nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+      nota += `\n\n📚 COMO CONTORNAR ESSAS OBJEÇÕES:`
+      analise.objecoes_cliente.slice(0, 5).forEach((obj: any) => {
+        nota += `\n\n🗣️ "${obj.objecao || 'N/A'}"`
+        nota += `\n→ ${obj.resposta_ideal || 'Resposta não disponível'}`
       })
     }
-
-    // Adiciona análise específica da reversão se for facebook_grupos
-    if (analise.tipo_ligacao === 'facebook_grupos' && analise.qualificacao?.reversao_facebook_grupos) {
-      const rev = analise.qualificacao.reversao_facebook_grupos
-      nota += `\n\n🔄 REVERSÃO PARA CRÉDITO (Facebook/Grupos):`
-      nota += `\n${rev.aplicou_pergunta_reversao ? '✅' : '❌'} Aplicou a pergunta-chave de reversão`
-      nota += `\n📊 Qualidade da reversão: ${rev.qualidade_reversao}`
-      nota += `\n${rev.respeitou_modelo_negocio ? '✅' : '⛔'} Respeitou modelo de negócio (não prometeu fotos/visita)`
-      if (rev.prometeu_algo_indevido) {
-        nota += `\n⛔ ALERTA: Prometeu algo indevido (fotos do imóvel, visita, etc)`
-      }
-      nota += `\n💬 ${rev.comentario_reversao || 'Sem comentário adicional'}`
-    }
-
-    nota += `\n\n🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}`
     
-    if (analise.feedback_vendedor) {
-      nota += `\n\n🎓 FEEDBACK PARA O VENDEDOR:\n${analise.feedback_vendedor}`
+    // Link do PDF completo
+    if (pdfUrl) {
+      nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+      nota += `\n\n📎 ANÁLISE COMPLETA + TRANSCRIÇÃO:`
+      nota += `\n👉 ${pdfUrl}`
     }
     
     nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno`
     
-    await fetch(
+    // ENVIO COM VALIDAÇÃO REAL
+    const response = await fetch(
       `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadId}/notes`,
       {
         method: 'POST',
@@ -1366,9 +1304,23 @@ ${proporcaoEmoji} Proporção falar/ouvir: ${qualific.proporcao_falar_ouvir || '
         }]),
       }
     )
-    console.log('[Kommo] ✅ Nota completa enviada')
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Kommo] ❌ ERRO ao enviar nota ao LEAD:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText.substring(0, 500),
+        leadId,
+        notaSize: nota.length,
+        notaPreview: nota.substring(0, 200),
+      })
+      return
+    }
+
+    console.log('[Kommo] ✅ Nota enviada ao LEAD com sucesso. Tamanho:', nota.length, 'chars')
   } catch (error) {
-    console.error('[Kommo] Erro ao enviar nota:', error)
+    console.error('[Kommo] Erro ao enviar nota ao LEAD:', error)
   }
 }
 
