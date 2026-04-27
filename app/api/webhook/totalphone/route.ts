@@ -1059,43 +1059,29 @@ ${transcricao}`
 }
 
 // Busca lead no Kommo pelo telefone (testa várias variações do número)
-async function buscarLeadKommoPorTelefone(telefone: string): Promise<{
+async function buscarLeadKommoPorTelefone(
+  telefone: string,
+  kommoUserId: number | null = null
+): Promise<{
   lead_id: number | null
   contact_id: number | null
   responsible_user_id: number | null
 }> {
   if (!KOMMO_ACCESS_TOKEN) return { lead_id: null, contact_id: null, responsible_user_id: null }
   
-  // Limpa o telefone
-  const cleaned = telefone.replace(/\D/g, '')
-  
-  // Gera variações para busca (Kommo é exigente com formato)
   const variacoes = new Set<string>()
-  variacoes.add(cleaned)
+  variacoes.add(telefone)
   
-  // Sem DDI
-  if (cleaned.startsWith('55') && cleaned.length > 11) {
-    variacoes.add(cleaned.slice(2))
+  // Adiciona variações comuns (DDD com/sem zero, com/sem 9)
+  if (telefone.length === 11) {
+    variacoes.add(telefone.substring(2))
+    variacoes.add('55' + telefone)
   }
-  
-  // Com DDI
-  if (!cleaned.startsWith('55') && cleaned.length >= 10) {
-    variacoes.add('55' + cleaned)
+  if (telefone.length === 9) {
+    variacoes.add(telefone.substring(1))
   }
-  
-  // Sem 9 (celular antigo)
-  if (cleaned.length === 11) {
-    variacoes.add(cleaned.slice(0, 2) + cleaned.slice(3))
-  }
-  
-  // Com 9 (celular novo)
-  if (cleaned.length === 10) {
-    variacoes.add(cleaned.slice(0, 2) + '9' + cleaned.slice(2))
-  }
-  
-  // Últimos 8 dígitos (busca mais ampla)
-  if (cleaned.length >= 8) {
-    variacoes.add(cleaned.slice(-8))
+  if (telefone.startsWith('0')) {
+    variacoes.add(telefone.substring(1))
   }
   
   console.log('[Kommo] Buscando lead com variações:', Array.from(variacoes))
@@ -1114,25 +1100,101 @@ async function buscarLeadKommoPorTelefone(telefone: string): Promise<{
       const data = await response.json()
       const contacts = data?._embedded?.contacts || []
       
-      if (contacts.length > 0) {
-        const contact = contacts[0]
+      if (contacts.length === 0) continue
+      
+      // ============================================================
+      // NOVA LÓGICA: priorizar lead do vendedor que ligou
+      // ============================================================
+      
+      // Coleta TODOS os leads de TODOS os contatos encontrados
+      const todosLeads: Array<{
+        contact_id: number
+        contact_responsible: number | null
+        lead_id: number
+        lead_responsible: number | null
+      }> = []
+      
+      for (const contact of contacts) {
         const leads = contact?._embedded?.leads || []
         
-        // Pega o primeiro lead (mais recente)
-        const lead = leads[0]
-        
-        console.log('[Kommo] ✅ Lead encontrado:', {
-          contact_id: contact.id,
-          lead_id: lead?.id || null,
-          responsible_user_id: contact.responsible_user_id,
-        })
-        
-        return {
-          contact_id: contact.id,
-          lead_id: lead?.id || null,
-          responsible_user_id: contact.responsible_user_id || null,
+        // Para cada lead, busca os detalhes completos (precisa do responsible_user_id)
+        for (const leadResumo of leads) {
+          try {
+            const leadDetailUrl = `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadResumo.id}`
+            const leadResp = await fetch(leadDetailUrl, {
+              headers: { 'Authorization': `Bearer ${KOMMO_ACCESS_TOKEN}` },
+            })
+            
+            if (leadResp.ok) {
+              const leadData = await leadResp.json()
+              todosLeads.push({
+                contact_id: contact.id,
+                contact_responsible: contact.responsible_user_id || null,
+                lead_id: leadData.id,
+                lead_responsible: leadData.responsible_user_id || null,
+              })
+            }
+          } catch (err) {
+            console.error('[Kommo] Erro buscando detalhes do lead:', leadResumo.id, err)
+          }
         }
       }
+      
+      console.log('[Kommo] Leads encontrados (' + todosLeads.length + '):', 
+        todosLeads.map(l => `lead#${l.lead_id} (resp: ${l.lead_responsible})`).join(', '))
+      
+      // ============================================================
+      // PRIORIDADE 1: Lead do vendedor que ligou (kommoUserId)
+      // ============================================================
+      if (kommoUserId !== null) {
+        const leadDoVendedor = todosLeads.find(l => l.lead_responsible === kommoUserId)
+        if (leadDoVendedor) {
+          console.log('[Kommo] ✅ Lead do vendedor que ligou encontrado:', {
+            lead_id: leadDoVendedor.lead_id,
+            contact_id: leadDoVendedor.contact_id,
+            responsible_user_id: leadDoVendedor.lead_responsible,
+            kommoUserIdEsperado: kommoUserId,
+          })
+          return {
+            lead_id: leadDoVendedor.lead_id,
+            contact_id: leadDoVendedor.contact_id,
+            responsible_user_id: leadDoVendedor.lead_responsible,
+          }
+        } else {
+          console.log('[Kommo] ⚠️ NENHUM lead pertence ao vendedor que ligou (kommo_user_id:', kommoUserId, ')')
+          console.log('[Kommo] ⚠️ Leads encontrados pertencem a:', 
+            todosLeads.map(l => l.lead_responsible).filter(r => r).join(', '))
+        }
+      }
+      
+      // ============================================================
+      // PRIORIDADE 2 (FALLBACK): Primeiro lead disponível (comportamento antigo)
+      // Só ocorre se kommoUserId for null OU se nenhum lead pertencer ao vendedor
+      // ============================================================
+      if (todosLeads.length > 0) {
+        const fallback = todosLeads[0]
+        console.log('[Kommo] ⚠️ Usando fallback (primeiro lead encontrado):', {
+          contact_id: fallback.contact_id,
+          lead_id: fallback.lead_id,
+          responsible_user_id: fallback.lead_responsible,
+          motivo: kommoUserId === null ? 'kommoUserId não fornecido' : 'nenhum lead do vendedor',
+        })
+        return {
+          contact_id: fallback.contact_id,
+          lead_id: fallback.lead_id,
+          responsible_user_id: fallback.lead_responsible,
+        }
+      }
+      
+      // Se chegou aqui, contato existe mas não tem leads — retorna só contato
+      const contact = contacts[0]
+      console.log('[Kommo] Contato encontrado SEM leads:', { contact_id: contact.id })
+      return {
+        contact_id: contact.id,
+        lead_id: null,
+        responsible_user_id: contact.responsible_user_id || null,
+      }
+      
     } catch (err) {
       console.error('[Kommo] Erro buscando lead:', err)
     }
@@ -1879,7 +1941,7 @@ export async function POST(request: Request) {
       
       // Busca lead/contato no Kommo pelo telefone
       const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
-        await buscarLeadKommoPorTelefone(telefoneNormalizado)
+        await buscarLeadKommoPorTelefone(telefoneNormalizado, vendedorData?.kommo_user_id || null)
       
       kommoLeadId = lead_id
       kommoContactId = contact_id
