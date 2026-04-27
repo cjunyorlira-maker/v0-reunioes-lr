@@ -553,42 +553,6 @@ ${transcricao}`
     return null
   }
 }
-  ],
-  "alertas_criticos": ["array"],
-  "proximo_passo_sugerido": "string",
-  "cliente_interessado": true/false,
-  "agendou_retorno": true/false,
-  "feedback_vendedor": "Coaching com: 1) o que fez bem 2) cada ponto crítico com exemplo concreto de como deveria ter sido feito 3) como contornar cada objeção 4) script ideal para os primeiros 2 minutos 5) o que dizer no próximo contato"
-}
-
-IMPORTANTE:
-- Speaker 0 = Vendedor, Speaker 1 = Cliente
-- Identifique o tipo automaticamente pelo contexto
-- Os 4 pilares são o coração da análise
-- Toda objeção: pergunta = correto, contra-ataque = erro
-- Responda APENAS com JSON válido
-
-TRANSCRIÇÃO DA LIGAÇÃO:
-${transcricao}`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 8000,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const content = response.content[0]
-    if (content.type !== 'text') return null
-
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-
-    return JSON.parse(jsonMatch[0])
-  } catch (error) {
-    console.error('[Claude] Erro na análise:', error)
-    return null
-  }
-}
 
 // Busca lead no Kommo pelo telefone (testa várias variações do número)
 async function buscarLeadKommoPorTelefone(telefone: string): Promise<{
