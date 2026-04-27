@@ -96,11 +96,12 @@ async function converterWAVParaMP3CloudConvert(audioBuffer: Buffer): Promise<Buf
         'convert-file': {
           operation: 'convert',
           input: 'import-file',
+          input_format: 'wav',
           output_format: 'mp3',
-          audio_codec: 'libmp3lame',
           audio_bitrate: 128,
           audio_channels: 1,
           audio_frequency: 16000,
+          engine: 'ffmpeg',
         },
         'export-file': {
           operation: 'export/url',
@@ -529,7 +530,7 @@ BIBLIOTECA DE OBJEÇÕES — Significado Real e Resposta Ideal
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIPOS DE LIGAÇÃO DETALHADOS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━��━━━━━━━━━━━━━━━━━━━━
 
 TIPO 1 — FACEBOOK/GRUPOS: Lead de anúncio. Sem dados prévios. Avalie: abertura profissional, qualificação dos 4 pilares, abordagem com valores concretos, condução para reunião.
 
