@@ -51,6 +51,7 @@ const vendedorEquipe: Record<string, string> = {
   "Amanda": "TDM",
   "Bianca Isabela": "TDM",
   "Bianca": "TDM",
+  "Bianca da Silva": "TDM",
   "João Lucas": "TDM",
   "Joao Lucas": "TDM",
   "Ana Beatriz": "TDM",
