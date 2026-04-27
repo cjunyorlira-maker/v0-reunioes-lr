@@ -694,13 +694,14 @@ async function enviarChamadaKommo(
       callData.created_by = responsibleUserId
     }
     
-    // Vincula ao lead OU ao contato (lead tem prioridade)
+    // Kommo vincula automaticamente pelo phone:
+    // - Se tem 1 lead ativo → adiciona no lead
+    // - Se tem só contato → adiciona no contato
+    // - Se tem múltiplos leads → adiciona no contato
     if (leadId) {
-      callData._embedded = { leads: [{ id: leadId }] }
-      console.log('[Kommo] Vinculando ao LEAD:', leadId)
+      console.log('[Kommo] Telefone tem lead ativo, Kommo vai vincular ao lead automaticamente:', leadId)
     } else if (contactId) {
-      callData._embedded = { contacts: [{ id: contactId }] }
-      console.log('[Kommo] Vinculando ao CONTATO (sem lead):', contactId)
+      console.log('[Kommo] Sem lead ativo, Kommo vai vincular ao contato automaticamente:', contactId)
     }
     
     console.log('[Kommo] Enviando chamada:', { callid, phone: telefone, callStatus, leadId, contactId, responsibleUserId })
