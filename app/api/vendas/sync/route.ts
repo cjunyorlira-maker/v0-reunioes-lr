@@ -152,6 +152,7 @@ export async function POST() {
         kommo_id: lead.id.toString(),
         nome_lead: lead.name || "Sem nome",
         responsavel: responsavelNome,
+        atendente: responsavelNome, // Campo obrigatório na tabela
         equipe: equipe,
         valor_venda: valorVenda,
         data_venda: new Date().toISOString().split("T")[0], // Data de hoje quando sincroniza a venda
@@ -182,6 +183,7 @@ export async function POST() {
           .update({
             nome_lead: venda.nome_lead,
             responsavel: venda.responsavel,
+            atendente: venda.atendente,
             valor_venda: venda.valor_venda,
             data_venda: venda.data_venda,
             updated_at: new Date().toISOString(),
@@ -199,6 +201,7 @@ export async function POST() {
           kommo_id: venda.kommo_id,
           nome_lead: venda.nome_lead,
           responsavel: venda.responsavel,
+          atendente: venda.atendente,
           valor_venda: venda.valor_venda,
           data_venda: venda.data_venda,
           created_at: new Date().toISOString(),
