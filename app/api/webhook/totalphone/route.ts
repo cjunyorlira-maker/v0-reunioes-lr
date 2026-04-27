@@ -1291,7 +1291,7 @@ async function enviarNotaKommo(
     
     // ENVIO COM VALIDAÇÃO REAL
     const response = await fetch(
-      `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadId}/notes`,
+      `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${String(leadId)}/notes`,
       {
         method: 'POST',
         headers: {
