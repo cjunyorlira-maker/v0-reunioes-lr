@@ -75,60 +75,94 @@ function extrairRamal(numero: string): string | null {
 }
 
 // Detecta status da ligacao pela transcricao
-function detectarStatusPorTranscricao(transcricao: string, duracao: number): string {
+function detectarStatusPorTranscricao(
+  transcricao: string | null,
+  duracao: number,
+  sipCode: string | number | null = null
+): string {
+  // Se não tem transcrição, decide pela duração e sip_code
   if (!transcricao || transcricao.trim().length === 0) {
-    return duracao > 0 ? "atendida" : "nao_atendida"
+    if (sipCode) {
+      const sip = typeof sipCode === 'string' ? parseInt(sipCode) : sipCode
+      if (sip === 200) return duracao > 0 ? 'atendida' : 'cancelada'
+      if (sip === 486) return 'ocupado'
+      if (sip === 487) return 'cancelada'
+      if (sip === 480) return 'fora_area'
+      if (sip === 404) return 'numero_errado'
+      if (sip === 408) return 'nao_atendida'
+      if (sip === 503) return 'fora_area'
+    }
+    return duracao > 0 ? 'atendida' : 'nao_atendida'
   }
   
-  const textoLower = transcricao.toLowerCase()
+  const texto = transcricao.toLowerCase()
   
-  // Padroes de caixa postal
   const padroesCaixaPostal = [
-    "caixa postal",
-    "deixe uma mensagem",
-    "deixe sua mensagem",
-    "após o sinal",
-    "apos o sinal",
-    "voicemail",
-    "não está disponível no momento",
-    "nao esta disponivel no momento",
-    "grave sua mensagem",
-    "caixa de mensagens"
+    'caixa postal', 'deixe sua mensagem', 'deixe uma mensagem',
+    'após o sinal', 'apos o sinal', 'após o bipe', 'apos o bipe',
+    'voicemail', 'grave sua mensagem', 'caixa de mensagens',
+    'gravar sua mensagem', 'deixe seu recado',
   ]
+  if (padroesCaixaPostal.some(p => texto.includes(p))) return 'caixa_postal'
   
-  for (const padrao of padroesCaixaPostal) {
-    if (textoLower.includes(padrao)) {
-      return "caixa_postal"
-    }
-  }
-  
-  // Padroes de nao atendida
-  const padroesNaoAtendida = [
-    "fora de área",
-    "fora de area",
-    "número inexistente",
-    "numero inexistente",
-    "não foi possível",
-    "nao foi possivel",
-    "número inválido",
-    "numero invalido",
-    "chamada cancelada",
-    "ocupado"
+  const padroesForaArea = [
+    'fora da área de cobertura', 'fora da area de cobertura',
+    'fora de área', 'fora de area', 'desligado ou fora', 'desligado, fora',
+    'momentaneamente fora', 'não pode ser completada', 'nao pode ser completada',
+    'não está disponível', 'nao esta disponivel', 'temporariamente fora',
   ]
+  if (padroesForaArea.some(p => texto.includes(p))) return 'fora_area'
   
-  for (const padrao of padroesNaoAtendida) {
-    if (textoLower.includes(padrao)) {
-      return "nao_atendida"
-    }
+  const padroesOcupado = [
+    'linha está ocupada', 'linha esta ocupada', 'número ocupado',
+    'numero ocupado', 'está ocupado', 'esta ocupado', 'tente novamente',
+  ]
+  if (padroesOcupado.some(p => texto.includes(p))) return 'ocupado'
+  
+  const padroesNumeroErrado = [
+    'número não existe', 'numero nao existe', 'número inexistente',
+    'numero inexistente', 'número inválido', 'numero invalido',
+    'não confere com nenhum', 'nao confere com nenhum',
+    'não foi reconhecido', 'nao foi reconhecido',
+  ]
+  if (padroesNumeroErrado.some(p => texto.includes(p))) return 'numero_errado'
+  
+  if (duracao < 5 && transcricao.length < 30) return 'cancelada'
+  
+  return 'atendida'
+}
+
+// Detecta tipo de ligação pela transcrição
+function detectarTipoLigacao(transcricao: string): string {
+  if (!transcricao) return 'desconhecido'
+  const texto = transcricao.toLowerCase()
+  
+  if (['confirmar a reunião', 'confirmar a reuniao', 'confirmar nossa reunião', 
+       'só pra confirmar', 'so pra confirmar', 'amanhã às', 'amanha as',
+       'hoje às', 'hoje as', 'horário marcado', 'horario marcado'
+      ].some(p => texto.includes(p))) return 'confirmacao_reuniao'
+  
+  if (['tentei falar com você', 'tentei falar com voce', 'não consegui falar',
+       'nao consegui falar', 'mandei mensagem', 'enviei whatsapp',
+       'falamos antes', 'conversamos antes', 'sumiu', 'não respondeu',
+       'voltando aqui'
+      ].some(p => texto.includes(p))) return 'retorno'
+  
+  if (['recebeu meu whats', 'recebeu meu whatsapp', 'enviei pelo whats',
+       'mandei pelo whats', 'mandei pelo whatsapp', 'meu whatsapp', 'pelo zap'
+      ].some(p => texto.includes(p))) return 'ativacao_whatsapp'
+  
+  if (texto.includes('simulador') && (texto.includes('facebook') || texto.includes('face'))) {
+    return 'simulador_facebook'
   }
-  
-  // Se a conversa foi muito curta (< 5 segundos) e não tem conteúdo, pode ser cancelada
-  if (duracao < 5 && transcricao.length < 30) {
-    return "cancelada"
+  if (texto.includes('simulador') || texto.includes('simulação no site') || 
+      texto.includes('simulou no site')) {
+    return 'simulador_empresa'
   }
+  if (['grupo do facebook', 'grupo do face', 'no grupo', 'vi no grupo', 'do grupo'
+      ].some(p => texto.includes(p))) return 'facebook_grupos'
   
-  // Default: foi atendida
-  return "atendida"
+  return 'abordagem_inicial'
 }
 
 // Baixa áudio do TotalPhone via proxy Railway (evita bloqueio de IP)
@@ -142,6 +176,7 @@ async function buscarEBaixarAudioTotalPhone(
   transcricao: string | null
   resumo: string | null
   duracao: number
+  sipCode: string | number | null
 }> {
   // Intervalos crescentes: 15s, 30s, 45s, 60s, 90s
   const intervalos = [15000, 30000, 45000, 60000, 90000]
@@ -210,7 +245,7 @@ async function buscarEBaixarAudioTotalPhone(
       // Se tem transcrição da API, usa direto
       if (transcricaoAPI) {
         console.log('[TotalPhone] Usando transcrição da API TotalPhone')
-        return { audioBuffer: null, transcricao: transcricaoAPI, resumo: resumoAPI, duracao }
+        return { audioBuffer: null, transcricao: transcricaoAPI, resumo: resumoAPI, duracao, sipCode: chamada.sip_code }
       }
       
       // Se a chamada foi atendida (duracao > 0) mas não tem áudio ainda, continua tentando
@@ -222,7 +257,7 @@ async function buscarEBaixarAudioTotalPhone(
       // Se não tem link de gravação (chamada não atendida), retorna sem áudio
       if (!linkGravacao) {
         console.log('[TotalPhone] Chamada sem áudio (não atendida)')
-        return { audioBuffer: null, transcricao: null, resumo: null, duracao }
+        return { audioBuffer: null, transcricao: null, resumo: null, duracao, sipCode: chamada.sip_code }
       }
       
       // Baixa o áudio
@@ -231,7 +266,7 @@ async function buscarEBaixarAudioTotalPhone(
       
       if (!audioResponse.ok) {
         console.error('[TotalPhone] Erro ao baixar áudio:', audioResponse.status)
-        return { audioBuffer: null, transcricao: null, resumo: null, duracao }
+        return { audioBuffer: null, transcricao: null, resumo: null, duracao, sipCode: chamada.sip_code }
       }
       
       const arrayBuffer = await audioResponse.arrayBuffer()
@@ -244,7 +279,7 @@ async function buscarEBaixarAudioTotalPhone(
       }
       
       console.log('[TotalPhone] ✅ Áudio baixado:', audioBuffer.length, 'bytes')
-      return { audioBuffer, transcricao: null, resumo: null, duracao }
+      return { audioBuffer, transcricao: null, resumo: null, duracao, sipCode: chamada.sip_code }
       
     } catch (error: any) {
       console.error(`[TotalPhone] Erro tentativa ${tentativa + 1}:`, error.message)
@@ -252,7 +287,7 @@ async function buscarEBaixarAudioTotalPhone(
   }
   
   console.error('[TotalPhone] ❌ Todas as tentativas falharam')
-  return { audioBuffer: null, transcricao: null, resumo: null, duracao: 0 }
+  return { audioBuffer: null, transcricao: null, resumo: null, duracao: 0, sipCode: null }
 }
 
 // Transcreve audio com Deepgram (aceita Buffer ou URL)
@@ -316,48 +351,169 @@ async function transcreverComDeepgram(audioInput: Buffer | string): Promise<stri
 }
 
 // Analisa com Claude
-async function analisarComClaude(transcricao: string): Promise<any> {
+async function analisarComClaude(
+  transcricao: string,
+  tipoDetectado: string,
+  duracao: number,
+  vendedorNome: string
+): Promise<any> {
   try {
     const anthropic = new Anthropic()
     
-    const prompt = `Você é um especialista em análise de vendas por telefone de consórcios.
-Analise esta ligação e forneça:
+    const prompt = `Você é um especialista em análise de ligações comerciais de uma agência de crédito imobiliário (LR Multimarcas).
 
-1. **Resumo** (2-3 frases): O que aconteceu na ligação
-2. **Score Geral** (0-10): Qualidade geral da ligação
-3. **Pontos Positivos**: O que o vendedor fez bem
-4. **Pontos a Melhorar**: O que pode melhorar
-5. **Próximo Passo**: Sugestão de ação
+CONTEXTO DESTA LIGAÇÃO:
+- Vendedor: ${vendedorNome}
+- Tipo identificado pela detecção automática: ${tipoDetectado}
+- Duração: ${duracao} segundos
 
-Retorne APENAS um JSON válido no formato:
+CONTEXTO DO NEGÓCIO:
+A empresa capta leads de três fontes principais:
+1. FACEBOOK/GRUPOS — leads vinculados a anúncios de imóveis. Não tem dados prévios do cliente.
+2. SIMULADOR EMPRESA — leads que já preencheram simulação no site com dados reais (valor, entrada, parcela). Vendedor JÁ TEM esses dados antes de ligar.
+3. SIMULADOR FACEBOOK — leads de anúncio que passaram por formulário simplificado. Têm algumas informações mas menos qualificados.
+
+O objetivo de TODA ligação é:
+- Fazer boa abordagem e criar conexão
+- Descobrir os 4 pilares de qualificação
+- Apresentar simulações e condições concretas de crédito
+- Marcar reunião — preferencialmente PRESENCIAL, online apenas se não tiver outro jeito
+
+OS 4 PILARES DE QUALIFICAÇÃO (OBRIGATÓRIOS):
+1. CRÉDITO — qual o valor do imóvel que busca?
+2. PARCELA — quanto consegue pagar por mês?
+3. ENTRADA — tem entrada disponível? Quanto?
+4. MOMENTO — está pronto para comprar agora ou ainda pesquisando?
+
+⛔ CRÍTICO se terminou sem saber pelo menos 3 dos 4 pilares
+⛔ CRÍTICO se ficou mais de 3 minutos sem buscar nenhum pilar
+
+ROTEIRO IDEAL (7 PASSOS — Método Alan Caçula):
+PASSO 1 — APRESENTAÇÃO COM RAPPORT (identificar ritmo do cliente, pedir permissão para perguntas)
+PASSO 2 — QUALIFICAÇÃO (os 4 pilares, ouvir mais que falar)
+PASSO 3 — TRANSIÇÃO PARA OFERTA (analisar e voltar com condição especial)
+PASSO 4 — APRESENTAR BENEFÍCIOS CONCRETOS (números reais, comparativos)
+PASSO 5 — ENTENDER ESTÁGIO DO CLIENTE (objeções com perguntas, nunca contra-ataque)
+PASSO 6 — CONTORNAR OBJEÇÕES (confiança em você, empresa, produto, perfil)
+PASSO 7 — FECHAMENTO/MARCAR REUNIÃO (conduzir com duas opções, contexto concreto)
+
+TIPOS DE LIGAÇÃO (auto-identifique e confirme):
+- facebook_grupos: primeiro contato sem dados prévios
+- simulador_empresa: lead com dados completos da simulação
+- simulador_facebook: lead com formulário simplificado
+- ativacao_whatsapp: ligação para avisar que mandou mensagem
+- confirmacao_reuniao: confirmar reunião já marcada
+- retorno: follow-up de contato anterior
+
+PRINCÍPIO FUNDAMENTAL DAS OBJEÇÕES:
+Toda objeção é sinal de interesse. Cliente não está dizendo não — está dizendo "ainda não confio em você o suficiente." Responda sempre com PERGUNTA, nunca contra-ataque. Após perguntar, CALE-SE.
+
+PRINCIPAIS OBJEÇÕES E SIGNIFICADO REAL:
+- "Preciso pensar" = dúvidas não esclarecidas. IDEAL: "No que exatamente está em dúvida?"
+- "Não tenho dinheiro" = barreira percebida. IDEAL: "Além disso, tem algo mais que te impede?"
+- "Tenho pressa" = não acredita em contemplação rápida. IDEAL: "Qual prazo seria bom? Tem entrada para lance?"
+- "Financiamento é mais rápido" = não conhece restrições. IDEAL: comparar custo total e contemplação por lance
+- "Concorrência tem preço menor" = não fez cálculos. IDEAL: "Procurando preço ou qualidade? Vamos fazer contas?"
+- "Vou falar com esposa/sócio" = qualificação incompleta. IDEAL: incluir decisor na próxima conversa
+- "Não é para mim agora" = falta urgência. IDEAL: reativar a dor, criar urgência
+- "Sua empresa tem reclamações" = insegurança. IDEAL: "Qual empresa não tem? Como tratam quem reclama?"
+- "Vou esperar" = medo. IDEAL: "Já passamos por crises piores. De qual lado você quer estar?"
+
+CRÍTICO se:
+⛔ Terminou sem saber 3 dos 4 pilares
+⛔ Marcou reunião sem contexto concreto
+⛔ Falou de crédito sem valores reais
+⛔ Aceitou objeção sem rebater
+⛔ Respondeu objeção com contra-ataque em vez de pergunta
+⛔ Não identificou quem decide (cônjuge/sócio)
+⛔ Falou mais do que ouviu
+
+RETORNE APENAS JSON VÁLIDO:
 {
-  "resumo": "string",
-  "score_geral": number,
-  "pontos_positivos": ["string"],
-  "pontos_criticos": ["string"],
+  "tipo_ligacao": "facebook_grupos|simulador_empresa|simulador_facebook|ativacao_whatsapp|confirmacao_reuniao|retorno|abordagem_inicial",
+  "score_geral": número 0-100,
+  "score_abertura": número 0-100,
+  "score_qualificacao": número 0-100,
+  "score_abordagem_credito": número 0-100,
+  "score_conducao_reuniao": número 0-100,
+  "resumo": "3-4 linhas resumindo a ligação",
+  "quatro_pilares": {
+    "credito": "valor mencionado ou null",
+    "parcela": "valor mencionado ou null",
+    "entrada": "valor mencionado ou null",
+    "momento": "imediato|medio_prazo|longo_prazo|indefinido",
+    "pilares_coletados": número 0-4,
+    "tem_perfil": true/false/null
+  },
+  "perfil_lead": {
+    "localizacao": "string ou null",
+    "nivel_interesse": "alto|medio|baixo|indefinido",
+    "tipo_reuniao_ideal": "presencial|online|indefinido",
+    "sinais_positivos": ["array"],
+    "sinais_negativos": ["array"]
+  },
+  "reuniao": {
+    "marcou": true/false,
+    "tipo": "presencial|online|null",
+    "tentou_presencial_primeiro": true/false,
+    "marcou_com_contexto_concreto": true/false,
+    "rebateu_objecoes": true/false,
+    "quantidade_tentativas": número
+  },
+  "abordagem_credito": {
+    "apresentou_valores_concretos": true/false,
+    "usou_simulacao": true/false,
+    "houve_negociacao": true/false,
+    "foi_generico": true/false
+  },
+  "qualificacao": {
+    "qualificou_antes_de_falar_muito": true/false,
+    "leu_sinais_do_cliente": true/false,
+    "identificou_lead_ruim_a_tempo": true/false/null
+  },
+  "pontos_positivos": ["array"],
+  "pontos_criticos": ["array"],
+  "objecoes_cliente": [
+    {
+      "objecao": "frase do cliente",
+      "significado_real": "o que representa",
+      "resposta_vendedor": "o que vendedor disse",
+      "resposta_ideal": "como deveria ter respondido",
+      "eficaz": true/false
+    }
+  ],
+  "alertas_criticos": ["array"],
   "proximo_passo_sugerido": "string",
-  "cliente_interessado": boolean,
-  "agendou_retorno": boolean
+  "cliente_interessado": true/false,
+  "agendou_retorno": true/false,
+  "feedback_vendedor": "Coaching com: 1) o que fez bem 2) cada ponto crítico com exemplo concreto de como deveria ter sido feito 3) como contornar cada objeção 4) script ideal para os primeiros 2 minutos 5) o que dizer no próximo contato"
 }
+
+IMPORTANTE:
+- Speaker 0 = Vendedor, Speaker 1 = Cliente
+- Identifique o tipo automaticamente pelo contexto
+- Os 4 pilares são o coração da análise
+- Toda objeção: pergunta = correto, contra-ataque = erro
+- Responda APENAS com JSON válido
 
 TRANSCRIÇÃO DA LIGAÇÃO:
 ${transcricao}`
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: prompt }],
     })
 
     const content = response.content[0]
-    if (content.type !== "text") return null
+    if (content.type !== 'text') return null
 
     const jsonMatch = content.text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return null
 
     return JSON.parse(jsonMatch[0])
   } catch (error) {
-    console.error("[TotalPhone] Erro na análise Claude:", error)
+    console.error('[Claude] Erro na análise:', error)
     return null
   }
 }
@@ -534,43 +690,123 @@ async function enviarChamadaKommo(
 }
 
 // Envia nota de analise para o Kommo
-async function enviarNotaKommo(leadId: string, analise: any): Promise<void> {
+async function enviarNotaKommo(leadId: string | number, analise: any): Promise<void> {
   if (!KOMMO_ACCESS_TOKEN || !leadId) return
 
   try {
-    const notaKommo = `[IA - Análise de Ligação]
+    const pilares = analise.quatro_pilares || {}
+    const perfil = analise.perfil_lead || {}
+    const reuniao = analise.reuniao || {}
+    const credito = analise.abordagem_credito || {}
+    const qualific = analise.qualificacao || {}
+    const objecoes = analise.objecoes_cliente || []
+    const alertas = analise.alertas_criticos || []
+    
+    const emojiTipo: Record<string, string> = {
+      'abordagem_inicial': '🎯',
+      'facebook_grupos': '📱',
+      'simulador_empresa': '🧮',
+      'simulador_facebook': '🧮',
+      'ativacao_whatsapp': '💬',
+      'confirmacao_reuniao': '📅',
+      'retorno': '🔄',
+    }
+    const emoji = emojiTipo[analise.tipo_ligacao] || '📞'
+    const tempEmoji = perfil.nivel_interesse === 'alto' ? '🔥' : 
+                      perfil.nivel_interesse === 'medio' ? '🌤️' : '❄️'
+    
+    let nota = `${emoji} ANÁLISE IA — ${analise.tipo_ligacao?.toUpperCase().replace(/_/g, ' ') || 'LIGAÇÃO'}
 
-Resumo: ${analise.resumo}
+📝 RESUMO:
+${analise.resumo || 'Sem resumo'}
 
-Score: ${analise.score_geral}/10
+📊 SCORES (0-100):
+• Geral: ${analise.score_geral || 0}
+• Abertura: ${analise.score_abertura || 0}
+• Qualificação: ${analise.score_qualificacao || 0}
+• Abordagem Crédito: ${analise.score_abordagem_credito || 0}
+• Condução Reunião: ${analise.score_conducao_reuniao || 0}
 
-Pontos Positivos:
-${analise.pontos_positivos?.map((p: string) => `- ${p}`).join('\n') || 'N/A'}
+🎯 4 PILARES (${pilares.pilares_coletados || 0}/4):
+${pilares.credito ? '✅' : '❌'} Crédito: ${pilares.credito || 'não coletado'}
+${pilares.parcela ? '✅' : '❌'} Parcela: ${pilares.parcela || 'não coletado'}
+${pilares.entrada ? '✅' : '❌'} Entrada: ${pilares.entrada || 'não coletado'}
+${pilares.momento && pilares.momento !== 'indefinido' ? '✅' : '❌'} Momento: ${pilares.momento || 'indefinido'}
 
-Pontos a Melhorar:
-${analise.pontos_criticos?.map((p: string) => `- ${p}`).join('\n') || 'N/A'}
+👤 PERFIL DO LEAD:
+${tempEmoji} Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
+• Localização: ${perfil.localizacao || 'não informada'}
+• Reunião ideal: ${perfil.tipo_reuniao_ideal || 'indefinido'}`
 
-Próximo Passo: ${analise.proximo_passo_sugerido || 'N/A'}
-Cliente Interessado: ${analise.cliente_interessado ? 'Sim' : 'Não'}
-`
+    if (perfil.sinais_positivos?.length) {
+      nota += `\n• Sinais positivos: ${perfil.sinais_positivos.join(', ')}`
+    }
+    if (perfil.sinais_negativos?.length) {
+      nota += `\n• Sinais negativos: ${perfil.sinais_negativos.join(', ')}`
+    }
+
+    nota += `\n\n📅 REUNIÃO:
+${reuniao.marcou ? `✅ MARCADA — ${reuniao.tipo || 'tipo?'}` : '❌ Não marcada'}`
+    
+    if (reuniao.marcou) {
+      nota += `\n• Tentou presencial primeiro: ${reuniao.tentou_presencial_primeiro ? 'sim' : 'não'}`
+      nota += `\n• Marcou com contexto concreto: ${reuniao.marcou_com_contexto_concreto ? 'sim' : 'não'}`
+      nota += `\n• Rebateu objeções: ${reuniao.rebateu_objecoes ? 'sim' : 'não'}`
+      nota += `\n• Tentativas: ${reuniao.quantidade_tentativas || 0}`
+    }
+
+    nota += `\n\n💰 ABORDAGEM DE CRÉDITO:
+${credito.apresentou_valores_concretos ? '✅' : '❌'} Apresentou valores concretos
+${credito.usou_simulacao ? '✅' : '❌'} Usou simulação
+${credito.houve_negociacao ? '✅' : '❌'} Houve negociação
+${credito.foi_generico ? '⚠️ FOI GENÉRICO (não bom)' : '✅ Foi específico'}`
+
+    if (analise.pontos_positivos?.length) {
+      nota += `\n\n💪 PONTOS POSITIVOS:\n${analise.pontos_positivos.map((p: string) => `• ${p}`).join('\n')}`
+    }
+    
+    if (analise.pontos_criticos?.length) {
+      nota += `\n\n🚨 PONTOS CRÍTICOS:\n${analise.pontos_criticos.map((p: string) => `• ${p}`).join('\n')}`
+    }
+
+    if (objecoes.length > 0) {
+      nota += `\n\n⚠️ OBJEÇÕES IDENTIFICADAS:`
+      objecoes.forEach((obj: any, i: number) => {
+        nota += `\n\n${i + 1}. "${obj.objecao}"`
+        nota += `\n   ${obj.eficaz ? '✅ Bem tratada' : '❌ Mal tratada'}`
+        nota += `\n   → Significado real: ${obj.significado_real}`
+        nota += `\n   → Vendedor disse: "${obj.resposta_vendedor}"`
+        nota += `\n   → Resposta ideal: "${obj.resposta_ideal}"`
+      })
+    }
+    
+    if (alertas.length > 0) {
+      nota += `\n\n🚨 ALERTAS CRÍTICOS:\n${alertas.map((a: string) => `⛔ ${a}`).join('\n')}`
+    }
+
+    nota += `\n\n🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}`
+    
+    if (analise.feedback_vendedor) {
+      nota += `\n\n🎓 FEEDBACK PARA O VENDEDOR:\n${analise.feedback_vendedor}`
+    }
     
     await fetch(
       `https://crm2lrmultimarcascom.kommo.com/api/v4/leads/${leadId}/notes`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${KOMMO_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${KOMMO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify([{
-          note_type: "common",
-          params: { text: notaKommo }
+          note_type: 'common',
+          params: { text: nota }
         }]),
       }
     )
-    console.log("[TotalPhone] Nota enviada para Kommo")
+    console.log('[Kommo] ✅ Nota completa enviada')
   } catch (error) {
-    console.error("[TotalPhone] Erro ao enviar nota Kommo:", error)
+    console.error('[Kommo] Erro ao enviar nota:', error)
   }
 }
 
@@ -687,7 +923,7 @@ export async function POST(request: Request) {
     if (callid && dataLigacao) {
       try {
         console.log('[TotalPhone] Buscando dados da API oficial...')
-        const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI } = 
+        const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI, sipCode } = 
           await buscarEBaixarAudioTotalPhone(callid, dataLigacao)
         
         audioBuffer = ab
@@ -698,9 +934,9 @@ export async function POST(request: Request) {
           duracaoSegundos = duracaoAPI
         }
         
-        // Se conseguiu transcrição da API, detecta status direto
+        // Se conseguiu transcrição da API, detecta status direto COM sipCode
         if (transcricao) {
-          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
+          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos, sipCode)
           console.log("[TotalPhone] Status detectado pela transcrição da API:", statusFinal)
         }
       } catch (apiError) {
@@ -726,13 +962,28 @@ export async function POST(request: Request) {
       }
     }
     
-    // 3. Analisa com Claude (só se foi atendida e tem conversa)
-    if (transcricao && statusFinal === "atendida" && transcricao.length > 50) {
+    // Detecta tipo de ligação SEMPRE que tem transcrição
+    let tipoLigacao = 'desconhecido'
+    if (transcricao && transcricao.length > 20) {
+      tipoLigacao = detectarTipoLigacao(transcricao)
+      console.log('[TotalPhone] Tipo de ligação detectado:', tipoLigacao)
+    }
+
+    // Analisa com Claude SOMENTE se foi atendida com conversa real
+    if (transcricao && statusFinal === 'atendida' && transcricao.length > 50 && duracaoSegundos > 15) {
       try {
-        console.log("[TotalPhone] Analisando com Claude...")
-        analise = await analisarComClaude(transcricao)
+        console.log('[TotalPhone] Analisando com Claude...')
+        analise = await analisarComClaude(
+          transcricao,
+          tipoLigacao,
+          duracaoSegundos,
+          vendedorData?.vendedor || 'Vendedor'
+        )
+        if (analise) {
+          console.log('[TotalPhone] ✅ Análise concluída. Score geral:', analise.score_geral)
+        }
       } catch (analiseError) {
-        console.error("[TotalPhone] Erro na análise:", analiseError)
+        console.error('[TotalPhone] Erro na análise:', analiseError)
       }
     }
     
@@ -770,11 +1021,21 @@ export async function POST(request: Request) {
         direcao: isEntrada ? "entrada" : "saida",
         duracao_segundos: duracaoSegundos,
         status: statusFinal,
+        sip_code: String(sipCode || ''),
+        tipo_ligacao: tipoLigacao,
         audio_url_original: audioUrlOriginal,
         audio_url: audioBlobUrl,
         transcricao,
         analise_ia: analise,
         score_geral: analise?.score_geral || null,
+        score_abertura: analise?.score_abertura || null,
+        score_qualificacao: analise?.score_qualificacao || null,
+        score_abordagem_credito: analise?.score_abordagem_credito || null,
+        score_conducao_reuniao: analise?.score_conducao_reuniao || null,
+        reuniao_marcou: analise?.reuniao?.marcou || false,
+        reuniao_tipo: analise?.reuniao?.tipo || null,
+        nivel_interesse: analise?.perfil_lead?.nivel_interesse || null,
+        pilares_coletados: analise?.quatro_pilares?.pilares_coletados || 0,
         resumo: analise?.resumo || null,
         data_ligacao: dataLigacaoFormatada,
         processado_em: transcricao ? new Date().toISOString() : null,
