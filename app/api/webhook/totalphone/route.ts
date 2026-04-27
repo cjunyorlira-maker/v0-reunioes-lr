@@ -646,6 +646,7 @@ async function enviarChamadaKommo(
   status: string,
   responsibleUserId: number | null,
   leadId: number | null,
+  contactId: number | null = null,
   resumoIA: string | null = null
 ): Promise<string | null> {
   if (!KOMMO_ACCESS_TOKEN) {
@@ -661,40 +662,48 @@ async function enviarChamadaKommo(
     else if (status === 'cancelada') callStatus = 3
     else if (status === 'ocupado') callStatus = 6
     else if (status === 'numero_errado') callStatus = 5
+    else if (status === 'fora_area') callStatus = 3
     
-    // URL pública que serve o áudio com headers corretos para o player
     const audioPublicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/audio/${callid}`
     
     const callData: any = {
-      uniq: callid,                                    // CRÍTICO: evita duplicação
+      uniq: callid,
       phone: telefone,
       source: 'TotalPhone',
       created_at: Math.floor(Date.now() / 1000),
       duration: duracao,
       call_status: callStatus,
       direction: 'outbound',
-      link: audioPublicUrl,                            // proxy com Accept-Ranges
+      link: audioPublicUrl,
     }
     
-    // call_result é o resumo curto (max ~250 chars)
     if (resumoIA) {
       callData.call_result = resumoIA.substring(0, 250)
     } else if (status === 'caixa_postal') {
       callData.call_result = 'Caixa postal'
     } else if (status === 'nao_atendida') {
       callData.call_result = 'Cliente não atendeu'
+    } else if (status === 'fora_area') {
+      callData.call_result = 'Fora de área / desligado'
+    } else if (status === 'ocupado') {
+      callData.call_result = 'Ocupado'
     }
     
     if (responsibleUserId) {
       callData.responsible_user_id = responsibleUserId
-      callData.created_by = responsibleUserId  // mesmo usuário criou
+      callData.created_by = responsibleUserId
     }
     
+    // Vincula ao lead OU ao contato (lead tem prioridade)
     if (leadId) {
       callData._embedded = { leads: [{ id: leadId }] }
+      console.log('[Kommo] Vinculando ao LEAD:', leadId)
+    } else if (contactId) {
+      callData._embedded = { contacts: [{ id: contactId }] }
+      console.log('[Kommo] Vinculando ao CONTATO (sem lead):', contactId)
     }
     
-    console.log('[Kommo] Enviando chamada:', { callid, phone: telefone, callStatus, leadId, responsibleUserId })
+    console.log('[Kommo] Enviando chamada:', { callid, phone: telefone, callStatus, leadId, contactId, responsibleUserId })
     
     const response = await fetch(
       'https://crm2lrmultimarcascom.kommo.com/api/v4/calls',
@@ -875,6 +884,67 @@ ${proporcaoEmoji} Proporção falar/ouvir: ${qualific.proporcao_falar_ouvir || '
     console.log('[Kommo] ✅ Nota completa enviada')
   } catch (error) {
     console.error('[Kommo] Erro ao enviar nota:', error)
+  }
+}
+
+// Envia nota de análise para o CONTATO no Kommo (quando não tem lead ativo)
+async function enviarNotaKommoContato(contactId: string | number, analise: any): Promise<void> {
+  if (!KOMMO_ACCESS_TOKEN || !contactId) return
+
+  try {
+    const pilares = analise.quatro_pilares || {}
+    const perfil = analise.perfil_lead || {}
+    const reuniao = analise.reuniao || {}
+    
+    const emojiTipo: Record<string, string> = {
+      'facebook_grupos': '📱',
+      'simulador_empresa': '🧮',
+      'simulador_facebook': '🧮',
+      'ativacao_whatsapp': '💬',
+      'confirmacao_reuniao': '📅',
+      'retorno': '🔄',
+    }
+    const emoji = emojiTipo[analise.tipo_ligacao] || '📞'
+    
+    let nota = `${emoji} ANÁLISE IA — ${analise.tipo_ligacao?.toUpperCase().replace(/_/g, ' ') || 'LIGAÇÃO'}
+
+⚠️ NOTA: Cliente sem lead ativo. Análise vinculada ao contato.
+
+📝 RESUMO:
+${analise.resumo_executivo || 'Sem resumo'}
+
+📊 SCORE GERAL: ${analise.score_geral || 0}/100
+
+🎯 4 PILARES (${pilares.pilares_coletados || 0}/4):
+${pilares.credito ? '✅' : '❌'} Crédito: ${pilares.credito || 'não coletado'}
+${pilares.parcela ? '✅' : '❌'} Parcela: ${pilares.parcela || 'não coletado'}
+${pilares.entrada ? '✅' : '❌'} Entrada: ${pilares.entrada || 'não coletado'}
+${pilares.momento && pilares.momento !== 'indefinido' ? '✅' : '❌'} Momento: ${pilares.momento || 'indefinido'}
+
+👤 Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
+${reuniao.marcou ? `📅 Reunião marcada (${reuniao.tipo})` : '📅 Reunião não marcada'}
+
+🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}
+
+💡 SUGESTÃO: Considere abrir um novo lead para esse cliente para acompanhamento adequado.`
+
+    await fetch(
+      `https://crm2lrmultimarcascom.kommo.com/api/v4/contacts/${contactId}/notes`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${KOMMO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{
+          note_type: 'common',
+          params: { text: nota }
+        }]),
+      }
+    )
+    console.log('[Kommo] ✅ Nota enviada para CONTATO (sem lead)')
+  } catch (error) {
+    console.error('[Kommo] Erro ao enviar nota para contato:', error)
   }
 }
 
@@ -1126,25 +1196,33 @@ export async function POST(request: Request) {
     
     // 6. Envia para Kommo (sempre, independente de ter sido atendida ou não)
     let kommoLeadId: number | null = null
+    let kommoContactId: number | null = null
 
     if (telefoneCliente) {
       const telefoneNormalizado = normalizarTelefone(telefoneCliente)
       console.log('[TotalPhone] Telefone normalizado:', telefoneCliente, '->', telefoneNormalizado)
       
-      // Busca lead no Kommo pelo telefone
+      // Busca lead/contato no Kommo pelo telefone
       const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
         await buscarLeadKommoPorTelefone(telefoneNormalizado)
       
       kommoLeadId = lead_id
+      kommoContactId = contact_id
       
-      // Se não encontrou lead, IGNORA (não cria chamada nem lead novo)
-      if (!lead_id) {
-        console.log('[TotalPhone] ⚠️ Lead não encontrado no Kommo, pulando envio da chamada')
+      // Se não encontrou nem lead NEM contato, IGNORA
+      if (!lead_id && !contact_id) {
+        console.log('[TotalPhone] ⚠️ Lead/Contato não encontrado no Kommo, pulando envio da chamada')
       } else {
         // Define o responsável: prioriza ramal mapeado, depois o do contato no Kommo
         const responsibleUserId = vendedorData?.kommo_user_id || respUserKommo || null
         
-        // Envia chamada com link do áudio (player + download)
+        if (lead_id) {
+          console.log('[TotalPhone] ✅ Lead encontrado, vinculando ligação ao lead:', lead_id)
+        } else {
+          console.log('[TotalPhone] ⚠️ Sem lead ativo, vinculando ligação ao contato:', contact_id)
+        }
+        
+        // Envia chamada (vincula ao lead se tiver, senão ao contato)
         const kommoCallId = await enviarChamadaKommo(
           callid,
           telefoneNormalizado,
@@ -1152,12 +1230,17 @@ export async function POST(request: Request) {
           statusFinal,
           responsibleUserId,
           lead_id,
+          contact_id,
           analise?.resumo_executivo || null
         )
         
-        // Se tiver análise da IA, envia nota no lead
-        if (analise) {
+        // Nota com análise SÓ vai para o lead (não para contato em notas complexas)
+        // Se tem lead, manda análise completa no lead
+        if (analise && lead_id) {
           await enviarNotaKommo(String(lead_id), analise)
+        } else if (analise && !lead_id && contact_id) {
+          // Se não tem lead, manda nota simplificada no contato
+          await enviarNotaKommoContato(String(contact_id), analise)
         }
         
         // Atualiza Supabase com IDs do Kommo
