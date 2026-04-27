@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 import CloudConvert from "cloudconvert"
+import { gerarPDFAnalise } from "@/lib/gerarPDFAnalise"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -2002,9 +2003,45 @@ export async function POST(request: Request) {
         
         // ============================================================
         // GERAÇÃO DO PDF DE ANÁLISE COMPLETA
-        // TODO: Implementar em versão futura com jsPDF ou puppeteer
         // ============================================================
-        const pdfAnaliseUrl: string | null = null
+        let pdfAnaliseUrl: string | null = null
+
+        if (analise && transcricao) {
+          try {
+            console.log('[PDF] Gerando PDF de análise...')
+            
+            const pdfBuffer = await gerarPDFAnalise({
+              callid,
+              vendedor: vendedorData?.vendedor || 'Vendedor',
+              cliente: 'Cliente',
+              telefone: telefoneCliente,
+              duracaoSegundos,
+              dataLigacao: dataLigacaoFormatada || new Date().toISOString(),
+              tipoLigacao,
+              audioUrl: audioBlobUrl || '',
+              transcricao,
+              analise,
+            })
+            
+            console.log('[PDF] ✅ PDF gerado:', pdfBuffer.length, 'bytes')
+            
+            const pdfBlob = await put(
+              `analises/${callid}.pdf`,
+              pdfBuffer,
+              {
+                access: 'public',
+                contentType: 'application/pdf',
+                token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
+              }
+            )
+            
+            pdfAnaliseUrl = pdfBlob.url
+            console.log('[PDF] ✅ PDF salvo no Blob:', pdfAnaliseUrl)
+            
+          } catch (pdfError) {
+            console.error('[PDF] ❌ Erro ao gerar/salvar PDF:', pdfError)
+          }
+        }
         
         // Nota com análise SÓ vai para o lead (não para contato em notas complexas)
         // Se tem lead, manda análise completa no lead
