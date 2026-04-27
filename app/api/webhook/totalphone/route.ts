@@ -253,7 +253,7 @@ async function transcreverComDeepgram(audioInput: Buffer | string): Promise<stri
         method: "POST",
         headers: {
           ...headers,
-          "Content-Type": "audio/mpeg",
+          "Content-Type": "audio/wav",
         },
         body: audioInput,
       })
@@ -547,11 +547,11 @@ export async function POST(request: Request) {
     // 1. Busca dados na API oficial (retorna transcrição se disponível)
     let audioBuffer: Buffer | null = null
     
-    if (callid && dataLigacaoFormatada) {
+    if (callid && dataLigacao) {
       try {
         console.log('[TotalPhone] Buscando dados da API oficial...')
         const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI } = 
-          await buscarEBaixarAudioTotalPhone(callid, dataLigacao || dataLigacaoFormatada)
+          await buscarEBaixarAudioTotalPhone(callid, dataLigacao)
         
         audioBuffer = ab
         transcricao = transcricaoAPI
