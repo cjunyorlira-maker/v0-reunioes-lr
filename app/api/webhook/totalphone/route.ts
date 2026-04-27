@@ -2,8 +2,6 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
-import https from "https"
-import http from "http"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -130,108 +128,108 @@ function detectarStatusPorTranscricao(transcricao: string, duracao: number): str
 }
 
 // Baixa áudio do TotalPhone via proxy Railway (evita bloqueio de IP)
-const baixarAudioTotalPhone = async (audioUrl: string): Promise<Buffer | null> => {
-  const PROXY_URL = process.env.PROXY_URL
-  const PROXY_SECRET = process.env.PROXY_SECRET
-  
-  // Se não tiver proxy configurado, tenta direto (fallback)
-  if (!PROXY_URL || !PROXY_SECRET) {
-    console.log('[TotalPhone] Proxy não configurado, tentando download direto...')
-    return baixarAudioDireto(audioUrl)
-  }
-  
+// Nova função: busca dados da API oficial e baixa áudio se necessário
+async function buscarEBaixarAudioTotalPhone(
+  callid: string, 
+  dataLigacao: string
+): Promise<{
+  audioBuffer: Buffer | null
+  transcricao: string | null
+  resumo: string | null
+  duracao: number
+}> {
   try {
-    const proxyEndpoint = `${PROXY_URL}/download?url=${encodeURIComponent(audioUrl)}`
-    console.log('[TotalPhone] Baixando via proxy:', PROXY_URL)
+    // Converte data "26/04/2026 21:27:11" para "26/04/2026"
+    const dataApenas = dataLigacao.split(' ')[0]
     
-    const response = await fetch(proxyEndpoint, {
+    // Monta URL da API oficial
+    const apiUrl = new URL('https://45.170.138.80/suite/api/listar_historico_chamada')
+    apiUrl.searchParams.append('chamada_id', callid)
+    apiUrl.searchParams.append('data_inicial', dataApenas)
+    apiUrl.searchParams.append('hora_inicial', '00:00')
+    apiUrl.searchParams.append('data_final', dataApenas)
+    apiUrl.searchParams.append('hora_final', '23:59')
+    apiUrl.searchParams.append('retorna_transcricao', 'sim')
+    apiUrl.searchParams.append('retorna_resumo', 'sim')
+    
+    console.log('[TotalPhone] Buscando chamada na API oficial:', callid)
+    
+    const apiResponse = await fetch(apiUrl.toString(), {
       headers: {
-        'Authorization': `Bearer ${PROXY_SECRET}`,
+        'usuario': process.env.TOTALPHONE_USUARIO!,
+        'token': process.env.TOTALPHONE_TOKEN!,
       },
     })
     
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('[TotalPhone] Erro do proxy:', response.status, error)
-      return null
+    if (!apiResponse.ok) {
+      console.error('[TotalPhone] API retornou erro:', apiResponse.status)
+      return { audioBuffer: null, transcricao: null, resumo: null, duracao: 0 }
     }
     
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const data = await apiResponse.json()
+    const chamada = data?.dados?.[0]
     
-    console.log('[TotalPhone] Áudio baixado via proxy:', buffer.length, 'bytes')
-    return buffer
-  } catch (error) {
-    console.error('[TotalPhone] Erro ao chamar proxy:', error)
-    return null
-  }
-}
-
-// Fallback: tenta baixar direto (pode falhar por bloqueio de IP)
-const baixarAudioDireto = async (audioUrl: string): Promise<Buffer | null> => {
-  return new Promise((resolve) => {
-    try {
-      const url = new URL(audioUrl.replace('https://', 'http://'))
-      
-      const opcoes = {
-        hostname: url.hostname,
-        port: 80,
-        path: url.pathname + url.search,
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'audio/mpeg, audio/wav, audio/*, */*',
-        },
+    if (!chamada) {
+      console.error('[TotalPhone] Chamada não encontrada na API')
+      return { audioBuffer: null, transcricao: null, resumo: null, duracao: 0 }
+    }
+    
+    console.log('[TotalPhone] Chamada encontrada, sip_code:', chamada.sip_code)
+    
+    // Calcula duração do formato "HH:MM:SS,mmm" para segundos
+    const duracaoStr = chamada.duracao_real || '00:00:00'
+    const tempoLimpo = duracaoStr.split(',')[0] // remove milissegundos
+    const [h, m, s] = tempoLimpo.split(':').map(Number)
+    const duracao = (h * 3600) + (m * 60) + s
+    
+    // Pega o link de gravação NOVO
+    const linkGravacao = Array.isArray(chamada.link_gravacao) 
+      ? chamada.link_gravacao[0] 
+      : chamada.link_gravacao
+    
+    // Se a TotalPhone já transcreveu, usa direto
+    const transcricaoAPI = chamada.transcricao?.trim() || null
+    const resumoAPI = chamada.resumo?.trim() || null
+    
+    if (transcricaoAPI) {
+      console.log('[TotalPhone] Usando transcrição da API TotalPhone')
+      return {
+        audioBuffer: null,
+        transcricao: transcricaoAPI,
+        resumo: resumoAPI,
+        duracao,
       }
-
-      const req1 = http.request(opcoes, (res1: any) => {
-        const cookies = res1.headers['set-cookie'] || []
-        const phpSession = cookies.find((c: string) => c.startsWith('PHPSESSID='))?.split(';')[0] || ''
-        res1.resume()
-
-        if (!phpSession) {
-          console.error('[TotalPhone] PHPSESSID não encontrado')
-          resolve(null)
-          return
-        }
-
-        const opcoes2 = { ...opcoes, headers: { ...opcoes.headers, 'Cookie': phpSession } }
-
-        const req2 = http.request(opcoes2, (res2: any) => {
-          if ((res2.headers['content-type'] || '').includes('text/html')) {
-            res2.resume()
-            resolve(null)
-            return
-          }
-
-          const chunks: Buffer[] = []
-          res2.on('data', (chunk: Buffer) => chunks.push(chunk))
-          res2.on('end', () => resolve(Buffer.concat(chunks)))
-          res2.on('error', () => resolve(null))
-        })
-        req2.on('error', () => resolve(null))
-        
-        req2.setTimeout(30000, () => {
-          req2.destroy()
-          resolve(null)
-        })
-        req2.end()
-      })
-
-      req1.on('error', (err: any) => {
-        console.error('[TotalPhone] Erro na req1:', err.message)
-        resolve(null)
-      })
-      req1.setTimeout(15000, () => {
-        req1.destroy()
-        resolve(null)
-      })
-      req1.end()
-    } catch (err) {
-      console.error('[TotalPhone] Erro ao baixar áudio:', err)
-      resolve(null)
     }
-  })
+    
+    // Se não tem transcrição, baixa o áudio pelo link novo
+    if (!linkGravacao) {
+      console.log('[TotalPhone] Sem link de gravação disponível')
+      return { audioBuffer: null, transcricao: null, resumo: null, duracao }
+    }
+    
+    console.log('[TotalPhone] Baixando áudio pelo link da API...')
+    const audioResponse = await fetch(linkGravacao)
+    
+    if (!audioResponse.ok) {
+      console.error('[TotalPhone] Erro ao baixar áudio:', audioResponse.status)
+      return { audioBuffer: null, transcricao: null, resumo: null, duracao }
+    }
+    
+    const arrayBuffer = await audioResponse.arrayBuffer()
+    const audioBuffer = Buffer.from(arrayBuffer)
+    
+    if (audioBuffer.length < 1024) {
+      console.error('[TotalPhone] Áudio muito pequeno:', audioBuffer.length, 'bytes')
+      return { audioBuffer: null, transcricao: null, resumo: null, duracao }
+    }
+    
+    console.log('[TotalPhone] Áudio baixado com sucesso:', audioBuffer.length, 'bytes')
+    return { audioBuffer, transcricao: null, resumo: null, duracao }
+    
+  } catch (error: any) {
+    console.error('[TotalPhone] Erro na função buscarEBaixarAudio:', error.message)
+    return { audioBuffer: null, transcricao: null, resumo: null, duracao: 0 }
+  }
 }
 
 // Transcreve audio com Deepgram (aceita Buffer ou URL)
@@ -528,12 +526,8 @@ export async function POST(request: Request) {
       }
     }
     
-    // Monta URL completa do áudio se for relativa
-    // Usa HTTP (sem S) porque o certificado SSL do servidor é inválido para o IP
+    // Monta URL completa do áudio (não será mais usada, mas mantida para compatibilidade)
     let audioUrlOriginal = gravacao || null
-    if (audioUrlOriginal && !audioUrlOriginal.startsWith("http")) {
-      audioUrlOriginal = `http://45.170.138.80/suite/${audioUrlOriginal}`
-    }
     
     console.log("[TotalPhone] Processando ligação:", {
       callid,
@@ -541,7 +535,6 @@ export async function POST(request: Request) {
       vendedor: vendedorData?.vendedor,
       telefone: telefoneCliente,
       duracao: duracaoSegundos,
-      audioUrl: audioUrlOriginal
     })
     
     // ========== PROCESSAMENTO AUTOMÁTICO ==========
@@ -551,44 +544,62 @@ export async function POST(request: Request) {
     let analise: any = null
     let statusFinal = duracaoSegundos > 0 ? "atendida" : "nao_atendida"
     
-    // 1. Baixa o áudio (com sessão PHP em 2 etapas)
+    // 1. Busca dados na API oficial (retorna transcrição se disponível)
     let audioBuffer: Buffer | null = null
     
-    if (audioUrlOriginal) {
+    if (callid && dataLigacaoFormatada) {
       try {
-        console.log('[TotalPhone] Baixando áudio em 2 etapas (sessão PHP)...')
-        audioBuffer = await baixarAudioTotalPhone(audioUrlOriginal)
-      } catch (downloadError) {
-        console.error("[TotalPhone] Erro ao baixar áudio:", downloadError)
-        audioBuffer = null
+        console.log('[TotalPhone] Buscando dados da API oficial...')
+        const { audioBuffer: ab, transcricao: transcricaoAPI, resumo: resumoAPI, duracao: duracaoAPI } = 
+          await buscarEBaixarAudioTotalPhone(callid, dataLigacao || dataLigacaoFormatada)
+        
+        audioBuffer = ab
+        transcricao = transcricaoAPI
+        
+        // Se a duração da API é maior, usa ela
+        if (duracaoAPI > duracaoSegundos) {
+          duracaoSegundos = duracaoAPI
+        }
+        
+        // Se conseguiu transcrição da API, detecta status direto
+        if (transcricao) {
+          statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
+          console.log("[TotalPhone] Status detectado pela transcrição da API:", statusFinal)
+        }
+      } catch (apiError) {
+        console.error("[TotalPhone] Erro ao buscar da API:", apiError)
       }
     }
     
-    // 2. Transcreve o áudio (agora com buffer em vez de URL)
-    if (audioBuffer && DEEPGRAM_API_KEY) {
+    // 2. Se não tem transcrição, transcreve o áudio com Deepgram (fallback)
+    if (audioBuffer && !transcricao && DEEPGRAM_API_KEY) {
       try {
-        console.log("[TotalPhone] Transcrevendo áudio com Deepgram...")
+        console.log("[TotalPhone] Transcrevendo áudio com Deepgram (fallback)...")
         transcricao = await transcreverComDeepgram(audioBuffer)
         
         if (transcricao) {
-          console.log("[TotalPhone] Transcrição:", transcricao.substring(0, 200))
+          console.log("[TotalPhone] Transcrição Deepgram:", transcricao.substring(0, 200))
           
-          // 3. Detecta status pela transcrição
+          // Detecta status pela transcrição
           statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos)
           console.log("[TotalPhone] Status detectado:", statusFinal)
-          
-          // 4. Analisa com Claude (só se foi atendida e tem conversa)
-          if (statusFinal === "atendida" && transcricao.length > 50) {
-            console.log("[TotalPhone] Analisando com Claude...")
-            analise = await analisarComClaude(transcricao)
-          }
         }
       } catch (transcricaoError) {
         console.error("[TotalPhone] Erro na transcrição:", transcricaoError)
       }
     }
     
-    // 5. Salva áudio no Blob (para o Kommo player funcionar)
+    // 3. Analisa com Claude (só se foi atendida e tem conversa)
+    if (transcricao && statusFinal === "atendida" && transcricao.length > 50) {
+      try {
+        console.log("[TotalPhone] Analisando com Claude...")
+        analise = await analisarComClaude(transcricao)
+      } catch (analiseError) {
+        console.error("[TotalPhone] Erro na análise:", analiseError)
+      }
+    }
+    
+    // 4. Salva áudio no Blob (para o Kommo player funcionar)
     if (audioBuffer) {
       try {
         console.log("[TotalPhone] Salvando áudio no Blob...")
