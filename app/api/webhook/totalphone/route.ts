@@ -448,12 +448,13 @@ async function buscarLeadKommoPorTelefone(telefone: string): Promise<{
 
 // Envia chamada para o Kommo
 async function enviarChamadaKommo(
+  callid: string,
   telefone: string,
   duracao: number,
   status: string,
-  audioUrl: string,
   responsibleUserId: number | null,
-  leadId: number | null
+  leadId: number | null,
+  resumoIA: string | null = null
 ): Promise<string | null> {
   if (!KOMMO_ACCESS_TOKEN) {
     console.log("[TotalPhone] KOMMO_ACCESS_TOKEN não configurado")
@@ -461,15 +462,7 @@ async function enviarChamadaKommo(
   }
 
   try {
-    // Mapeamento de status do nosso sistema -> call_status do Kommo
-    // 1 = deixou voicemail
-    // 2 = retornar ligação
-    // 3 = não atendeu (chamou mas ninguém atendeu)
-    // 4 = conversou (atendida)
-    // 5 = número errado
-    // 6 = ocupado
     let callStatus = 4 // default: conversou
-    
     if (status === 'atendida') callStatus = 4
     else if (status === 'caixa_postal') callStatus = 1
     else if (status === 'nao_atendida') callStatus = 3
@@ -477,29 +470,39 @@ async function enviarChamadaKommo(
     else if (status === 'ocupado') callStatus = 6
     else if (status === 'numero_errado') callStatus = 5
     
+    // URL pública que serve o áudio com headers corretos para o player
+    const audioPublicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/audio/${callid}`
+    
     const callData: any = {
-      direction: 'outbound',
-      duration: duracao,
-      source: 'TotalPhone',
+      uniq: callid,                                    // CRÍTICO: evita duplicação
       phone: telefone,
-      link: audioUrl,
-      call_status: callStatus,
+      source: 'TotalPhone',
       created_at: Math.floor(Date.now() / 1000),
+      duration: duracao,
+      call_status: callStatus,
+      direction: 'outbound',
+      link: audioPublicUrl,                            // proxy com Accept-Ranges
     }
     
-    // Adiciona responsável (vendedor) se tiver
+    // call_result é o resumo curto (max ~250 chars)
+    if (resumoIA) {
+      callData.call_result = resumoIA.substring(0, 250)
+    } else if (status === 'caixa_postal') {
+      callData.call_result = 'Caixa postal'
+    } else if (status === 'nao_atendida') {
+      callData.call_result = 'Cliente não atendeu'
+    }
+    
     if (responsibleUserId) {
       callData.responsible_user_id = responsibleUserId
+      callData.created_by = responsibleUserId  // mesmo usuário criou
     }
     
-    // Vincula ao lead se encontrou
     if (leadId) {
-      callData._embedded = {
-        leads: [{ id: leadId }]
-      }
+      callData._embedded = { leads: [{ id: leadId }] }
     }
     
-    console.log('[Kommo] Enviando chamada:', { phone: telefone, status: callStatus, leadId, responsibleUserId })
+    console.log('[Kommo] Enviando chamada:', { callid, phone: telefone, callStatus, leadId, responsibleUserId })
     
     const response = await fetch(
       'https://crm2lrmultimarcascom.kommo.com/api/v4/calls',
@@ -520,10 +523,10 @@ async function enviarChamadaKommo(
     }
     
     const result = await response.json()
-    const callId = result?._embedded?.calls?.[0]?.id || null
-    console.log('[Kommo] ✅ Chamada criada com ID:', callId)
+    const kommoCallId = result?._embedded?.calls?.[0]?.id || null
+    console.log('[Kommo] ✅ Chamada criada:', kommoCallId)
     
-    return callId
+    return kommoCallId
   } catch (error) {
     console.error('[Kommo] Erro ao enviar chamada:', error)
     return null
@@ -812,12 +815,13 @@ export async function POST(request: Request) {
         
         // Envia chamada com link do áudio (player + download)
         const kommoCallId = await enviarChamadaKommo(
+          callid,
           telefoneNormalizado,
           duracaoSegundos,
           statusFinal,
-          audioBlobUrl || audioUrlOriginal || '',
           responsibleUserId,
-          lead_id
+          lead_id,
+          analise?.resumo || null
         )
         
         // Se tiver análise da IA, envia nota no lead
