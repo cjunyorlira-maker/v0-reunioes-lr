@@ -532,7 +532,16 @@ BIBLIOTECA DE OBJEÇÕES — Significado Real e Resposta Ideal
 TIPOS DE LIGAÇÃO DETALHADOS
 ━━━━━━━━━━━━━━━━��━━━━━━━━━━━━━━━━━━━━
 
-TIPO 1 — FACEBOOK/GRUPOS: Lead de anúncio. Sem dados prévios. Avalie: abertura profissional, qualificação dos 4 pilares, abordagem com valores concretos, condução para reunião.
+TIPO 1 — FACEBOOK/GRUPOS: 
+
+⚠️ CONTEXTO CRÍTICO — A LR Multimarcas é AGÊNCIA DE CRÉDITO IMOBILIÁRIO (consórcio, financiamento), NÃO imobiliária. ESTRATÉGIA: Anúncios com imóveis "como chamariz" para captar leads. A HABILIDADE-CHAVE DO VENDEDOR É REVERTER o interesse do imóvel ESPECÍFICO para o CRÉDITO IMOBILIÁRIO.
+
+SCRIPT IDEAL DE REVERSÃO: "Você está buscando imóveis com a ideia de comprar à vista ou te interessa o parcelamento? Porque minha função aqui é justamente a parte de liberação do crédito."
+
+✅ CORRETO: reverter rapidamente, mencionar parcerias imobiliárias, insistir em 4 pilares, posicionar-se como especialista em crédito.
+❌ ERRADO: prometer fotos/visita do imóvel anunciado, robotizar a reversão, pular a pergunta-chave, ser brusco sem rapport.
+
+AVALIAÇÃO ESPECÍFICA: Aplicou a pergunta de reversão? Reversão foi natural ou robotizada? Não prometeu o indevido? Qualificou após reverter? Soube lidar com resistência?
 
 TIPO 2 — SIMULADOR EMPRESA: Lead com simulação completa. Vendedor TEM crédito/parcela/entrada. Avalie: abertura personalizada com dados, validação dos pilares, foco no MOMENTO.
 
@@ -599,7 +608,14 @@ RETORNE OBRIGATORIAMENTE JSON:
     "qualificou_antes_de_falar_muito": true/false,
     "leu_sinais_do_cliente": true/false,
     "identificou_lead_ruim_a_tempo": true/false/null,
-    "proporcao_falar_ouvir": "ouviu_mais|equilibrado|falou_mais"
+    "proporcao_falar_ouvir": "ouviu_mais|equilibrado|falou_mais",
+    "reversao_facebook_grupos": {
+      "aplicou_pergunta_reversao": true/false,
+      "qualidade_reversao": "natural|adequada|brusca|robotizada|nao_aplicou",
+      "respeitou_modelo_negocio": true/false,
+      "prometeu_algo_indevido": true/false,
+      "comentario_reversao": "string explicando como foi"
+    }
   },
   "pontos_positivos": ["array"],
   "pontos_criticos": ["array"],
@@ -953,6 +969,19 @@ ${proporcaoEmoji} Proporção falar/ouvir: ${qualific.proporcao_falar_ouvir || '
       alertas.forEach((a: string) => {
         nota += `\n⛔ ${a}`
       })
+    }
+
+    // Adiciona análise específica da reversão se for facebook_grupos
+    if (analise.tipo_ligacao === 'facebook_grupos' && analise.qualificacao?.reversao_facebook_grupos) {
+      const rev = analise.qualificacao.reversao_facebook_grupos
+      nota += `\n\n🔄 REVERSÃO PARA CRÉDITO (Facebook/Grupos):`
+      nota += `\n${rev.aplicou_pergunta_reversao ? '✅' : '❌'} Aplicou a pergunta-chave de reversão`
+      nota += `\n📊 Qualidade da reversão: ${rev.qualidade_reversao}`
+      nota += `\n${rev.respeitou_modelo_negocio ? '✅' : '⛔'} Respeitou modelo de negócio (não prometeu fotos/visita)`
+      if (rev.prometeu_algo_indevido) {
+        nota += `\n⛔ ALERTA: Prometeu algo indevido (fotos do imóvel, visita, etc)`
+      }
+      nota += `\n💬 ${rev.comentario_reversao || 'Sem comentário adicional'}`
     }
 
     nota += `\n\n🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}`
