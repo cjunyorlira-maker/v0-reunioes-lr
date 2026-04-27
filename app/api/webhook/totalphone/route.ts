@@ -1134,11 +1134,11 @@ export async function POST(request: Request) {
         console.log("[TotalPhone] Salvando áudio no Blob...")
         
         const blobResult = await put(
-          `ligacoes/${callid}.mp3`,
+          `ligacoes/${callid}.wav`,
           audioBuffer,
           {
             access: "public",
-            contentType: "audio/mpeg",
+            contentType: "audio/wav",
             token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
           }
         )
