@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 import CloudConvert from "cloudconvert"
+import { gerarPDFAnalise } from "@/lib/gerarPDFAnalise"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -894,6 +895,37 @@ VEND_BOM: Vendedor profissional, ouviu o cliente, coletou 4 pilares, contornou o
 VEND_RUIM: Vendedor agressivo, decorado, robotizado, não ouviu, pulou etapas, não contornou objeções, prometeu o indevido.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⛔ REGRAS ABSOLUTAS NO COACHING / FEEDBACK:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A LR Multimarcas vende CRÉDITO IMOBILIÁRIO, não vende imóveis.
+PORTANTO, no feedback do vendedor e no próximo_passo_sugerido:
+
+❌ NUNCA recomende:
+- "Separar opções de imóveis"
+- "Buscar imóveis na região"
+- "Apresentar imóveis específicos"
+- "Mostrar portfólio de imóveis"
+- "Visitar imóveis"
+- "Ver fotos de imóveis"
+
+✅ EM VEZ DISSO, recomende:
+- "Marcar reunião para apresentar simulação de crédito"
+- "Mostrar capacidade de compra (poder de crédito aprovado)"
+- "Apresentar parcerias com imobiliárias parceiras"
+- "Fazer simulação personalizada do crédito"
+- "Levantar restrições e analisar perfil de crédito"
+
+EXEMPLO CORRETO:
+"Follow-up via WhatsApp: recapitular poder de compra de 280k 
+e propor 2 opções de horário (sexta 14h ou sábado 10h) para 
+reunião com decisor presente, onde você apresentará a 
+simulação completa do crédito."
+
+EXEMPLO ERRADO (NUNCA FAÇA):
+"Separe imóveis de 220-240k na região e ofereça visita..."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
@@ -952,6 +984,7 @@ SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
   ],
   "alertas_criticos": ["array"],
   "proximo_passo_sugerido": "string",
+  "script_proxima_ligacao": "Para tipo facebook_grupos: forneça SCRIPT PRONTO para o vendedor usar em próxima ligação SIMILAR. Inclua: apresentação, pergunta-chave de reversão, perguntas dos 4 pilares, e fechamento com 2 opções de horário. Use linguagem natural pronta pra falar. Para outros tipos: deixe null.",
   "feedback_vendedor": "Coaching com: 1) o que fez bem 2) cada ponto crítico com exemplo concreto de como deveria ter sido feito 3) como contornar cada objeção 4) script ideal para os primeiros 2 minutos 5) o que dizer no próximo contato"
 }
 
@@ -1325,48 +1358,59 @@ async function enviarNotaKommo(
 }
 
 // Envia nota de análise para o CONTATO no Kommo (quando não tem lead ativo)
-async function enviarNotaKommoContato(contactId: string | number, analise: any): Promise<void> {
+async function enviarNotaKommoContato(
+  contactId: string | number, 
+  analise: any,
+  pdfUrl: string | null = null
+): Promise<void> {
   if (!KOMMO_ACCESS_TOKEN || !contactId) return
 
   try {
     const pilares = analise.quatro_pilares || {}
-    const perfil = analise.perfil_lead || {}
     const reuniao = analise.reuniao || {}
+    const credito = analise.abordagem_credito || {}
+    const qualificacao = analise.qualificacao || {}
+    const perfil = analise.perfil_lead || {}
+    const reversao = qualificacao.reversao_facebook_grupos || null
     
-    const emojiTipo: Record<string, string> = {
-      'facebook_grupos': '📱',
-      'simulador_empresa': '🧮',
-      'simulador_facebook': '🧮',
-      'ativacao_whatsapp': '💬',
-      'confirmacao_reuniao': '📅',
-      'retorno': '🔄',
+    const tipoEmoji: Record<string, string> = {
+      'facebook_grupos': '📱', 'simulador_empresa': '🧮', 'simulador_facebook': '📊',
+      'ativacao_whatsapp': '💬', 'confirmacao_reuniao': '📅', 'retorno': '🔁', 'abordagem_inicial': '☎️',
     }
-    const emoji = emojiTipo[analise.tipo_ligacao] || '📞'
+    const emoji = tipoEmoji[analise.tipo_ligacao] || '📞'
+    const interesseEmoji = perfil.nivel_interesse === 'alto' ? '🔥' : perfil.nivel_interesse === 'medio' ? '🌤️' : '❄️'
+    const ouvirFalarEmoji = qualificacao.proporcao_falar_ouvir === 'ouviu_mais' ? '👂' : qualificacao.proporcao_falar_ouvir === 'equilibrado' ? '⚖️' : '🗣️'
     
-    let nota = `${emoji} ANÁLISE IA — ${analise.tipo_ligacao?.toUpperCase().replace(/_/g, ' ') || 'LIGAÇÃO'}
-
-⚠️ NOTA: Cliente sem lead ativo. Análise vinculada ao contato.
-
-📝 RESUMO:
-${analise.resumo_executivo || 'Sem resumo'}
-
-📊 SCORE GERAL: ${analise.score_geral || 0}/100
-
-🎯 4 PILARES (${pilares.pilares_coletados || 0}/4):
-${pilares.credito ? '✅' : '❌'} Crédito: ${pilares.credito || 'não coletado'}
-${pilares.parcela ? '✅' : '❌'} Parcela: ${pilares.parcela || 'não coletado'}
-${pilares.entrada ? '✅' : '❌'} Entrada: ${pilares.entrada || 'não coletado'}
-${pilares.momento && pilares.momento !== 'indefinido' ? '✅' : '❌'} Momento: ${pilares.momento || 'indefinido'}
-
-👤 Nível de interesse: ${perfil.nivel_interesse || 'indefinido'}
-${reuniao.marcou ? `📅 Reunião marcada (${reuniao.tipo})` : '📅 Reunião não marcada'}
-
-🎯 PRÓXIMO PASSO: ${analise.proximo_passo_sugerido || 'N/A'}
-
-💡 SUGESTÃO: Considere abrir um novo lead para esse cliente para acompanhamento adequado.`
-
-    await fetch(
-      `https://crm2lrmultimarcascom.kommo.com/api/v4/contacts/${contactId}/notes`,
+    let nota = `⚠️ CONTATO SEM LEAD ATIVO — Análise da Ligação\n\n`
+    nota += `${emoji} ANÁLISE — ${(analise.tipo_ligacao || 'LIGAÇÃO').toUpperCase().replace(/_/g, ' ')} (Score: ${analise.score_geral || 0}/100)`
+    nota += `\n\n📝 RESUMO: ${analise.resumo_executivo || 'N/A'}`
+    nota += `\n\n📊 SCORES: Geral ${analise.score_geral || 0} | Abertura ${analise.score_abertura || 0} | Qualif. ${analise.score_qualificacao || 0} | Crédito ${analise.score_abordagem_credito || 0} | Reunião ${analise.score_conducao_reuniao || 0}`
+    nota += `\n\n🎯 4 PILARES (${pilares.pilares_coletados || 0}/4) ${interesseEmoji}`
+    nota += `\n• Crédito: ${pilares.credito || '—'} | Parcela: ${pilares.parcela || '—'} | Entrada: ${pilares.entrada || '—'} | Momento: ${pilares.momento || '—'}`
+    nota += `\n\n📅 REUNIÃO: ${reuniao.marcou ? `✅ Marcada (${reuniao.tipo || 'tipo indefinido'})` : '❌ Não marcada'}`
+    nota += `\n💰 ABORDAGEM CRÉDITO: ${credito.apresentou_valores_concretos ? '✅ Valores concretos' : '❌ Sem valores concretos'}`
+    nota += `\n🎯 QUALIFICAÇÃO: ${qualificacao.qualificou_antes_de_falar_muito ? '✅ Qualificou bem' : '❌ Falhou'} | ${ouvirFalarEmoji} ${qualificacao.proporcao_falar_ouvir || 'N/A'}`
+    
+    if (analise.tipo_ligacao === 'facebook_grupos' && reversao) {
+      nota += `\n\n🔄 REVERSÃO PARA CRÉDITO:`
+      nota += `\n${reversao.aplicou_pergunta_reversao ? '✅' : '❌'} Aplicou pergunta-chave | Qualidade: ${reversao.qualidade_reversao || 'N/A'}`
+      if (reversao.comentario_reversao) nota += `\n💬 ${reversao.comentario_reversao}`
+    }
+    
+    nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+    nota += `\n\n🎯 PRÓXIMO PASSO:\n${analise.proximo_passo_sugerido || 'Definir próxima ação'}`
+    nota += `\n\n💡 SUGESTÃO: Como esse contato não tem lead ativo, considere abrir um novo lead vinculado a este contato.`
+    
+    if (pdfUrl) {
+      nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
+      nota += `\n\n📎 ANÁLISE COMPLETA + TRANSCRIÇÃO:`
+      nota += `\n👉 ${pdfUrl}`
+    }
+    
+    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno`
+    
+    const response = await fetch(
+      `https://crm2lrmultimarcascom.kommo.com/api/v4/contacts/${String(contactId)}/notes`,
       {
         method: 'POST',
         headers: {
@@ -1379,9 +1423,23 @@ ${reuniao.marcou ? `📅 Reunião marcada (${reuniao.tipo})` : '📅 Reunião n�
         }]),
       }
     )
-    console.log('[Kommo] ✅ Nota enviada para CONTATO (sem lead)')
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Kommo] ❌ ERRO ao enviar nota ao CONTATO:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText.substring(0, 500),
+        contactId,
+        notaSize: nota.length,
+        notaPreview: nota.substring(0, 200),
+      })
+      return
+    }
+
+    console.log('[Kommo] ✅ Nota enviada ao CONTATO com sucesso. Tamanho:', nota.length, 'chars')
   } catch (error) {
-    console.error('[Kommo] Erro ao enviar nota para contato:', error)
+    console.error('[Kommo] Erro ao enviar nota ao CONTATO:', error)
   }
 }
 
@@ -1727,13 +1785,55 @@ export async function POST(request: Request) {
           analise?.resumo_executivo || null
         )
         
+        // ============================================================
+        // GERAÇÃO DO PDF DE ANÁLISE COMPLETA
+        // ============================================================
+        let pdfAnaliseUrl: string | null = null
+
+        if (analise && transcricao) {
+          try {
+            console.log('[PDF] Gerando PDF de análise...')
+            
+            const pdfBuffer = await gerarPDFAnalise({
+              callid,
+              vendedor: vendedorData?.vendedor || 'Vendedor',
+              cliente: 'Cliente',
+              telefone: telefoneCliente,
+              duracaoSegundos,
+              dataLigacao: dataLigacaoFormatada || new Date().toISOString(),
+              tipoLigacao,
+              audioUrl: audioBlobUrl || '',
+              transcricao,
+              analise,
+            })
+            
+            console.log('[PDF] ✅ PDF gerado:', pdfBuffer.length, 'bytes')
+            
+            const pdfBlob = await put(
+              `analises/${callid}.pdf`,
+              pdfBuffer,
+              {
+                access: 'public',
+                contentType: 'application/pdf',
+                token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
+              }
+            )
+            
+            pdfAnaliseUrl = pdfBlob.url
+            console.log('[PDF] ✅ PDF salvo no Blob:', pdfAnaliseUrl)
+            
+          } catch (pdfError) {
+            console.error('[PDF] ❌ Erro ao gerar/salvar PDF:', pdfError)
+          }
+        }
+        
         // Nota com análise SÓ vai para o lead (não para contato em notas complexas)
         // Se tem lead, manda análise completa no lead
         if (analise && lead_id) {
-          await enviarNotaKommo(String(lead_id), analise)
+          await enviarNotaKommo(String(lead_id), analise, pdfAnaliseUrl)
         } else if (analise && !lead_id && contact_id) {
           // Se não tem lead, manda nota simplificada no contato
-          await enviarNotaKommoContato(String(contact_id), analise)
+          await enviarNotaKommoContato(String(contact_id), analise, pdfAnaliseUrl)
         }
         
         // Atualiza Supabase com IDs do Kommo
