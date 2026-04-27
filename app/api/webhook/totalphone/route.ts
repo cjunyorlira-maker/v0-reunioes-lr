@@ -175,18 +175,95 @@ function detectarStatusPorTranscricao(
   duracao: number,
   sipCode: string | number | null = null
 ): string {
-  // Se não tem transcrição, decide pela duração e sip_code
-  if (!transcricao || transcricao.trim().length === 0) {
-    if (sipCode) {
-      const sip = typeof sipCode === 'string' ? parseInt(sipCode) : sipCode
-      if (sip === 200) return duracao > 0 ? 'atendida' : 'cancelada'
-      if (sip === 486) return 'ocupado'
-      if (sip === 487) return 'cancelada'
-      if (sip === 480) return 'fora_area'
-      if (sip === 404) return 'numero_errado'
-      if (sip === 408) return 'nao_atendida'
-      if (sip === 503) return 'fora_area'
+  // ============================================================
+  // PRIORIDADE 1: SIP_CODE da Total Phone (FONTE DA VERDADE)
+  // ============================================================
+  // O sip_code vem direto do PABX e é a fonte mais confiável.
+  // Se temos sip_code, ele DEFINE o status — transcrição é ignorada
+  // (exceto para sip 200 onde validamos com a transcrição também)
+  
+  if (sipCode) {
+    const sip = typeof sipCode === 'string' ? parseInt(sipCode) : sipCode
+    
+    // Códigos de NÃO atendimento — independem da transcrição
+    if (sip === 486) {
+      console.log('[Status] sip 486 = OCUPADO (definido pelo PABX)')
+      return 'ocupado'
     }
+    if (sip === 487) {
+      console.log('[Status] sip 487 = RECUSADA/CANCELADA (definido pelo PABX)')
+      return 'cancelada'
+    }
+    if (sip === 480 || sip === 503) {
+      console.log('[Status] sip', sip, '= FORA DE ÁREA (definido pelo PABX)')
+      return 'fora_area'
+    }
+    if (sip === 404) {
+      console.log('[Status] sip 404 = NÚMERO INEXISTENTE (definido pelo PABX)')
+      return 'numero_errado'
+    }
+    if (sip === 408) {
+      console.log('[Status] sip 408 = NÃO ATENDIDA (definido pelo PABX)')
+      return 'nao_atendida'
+    }
+    if (sip === 600 || sip === 603) {
+      console.log('[Status] sip', sip, '= RECUSADA pelo cliente (definido pelo PABX)')
+      return 'cancelada'
+    }
+    
+    // Sip 200 = chamada estabelecida tecnicamente
+    // Mas precisa validar se foi atendida de verdade
+    if (sip === 200) {
+      // Duração muito curta = atendeu e desligou rápido (ou caiu)
+      if (duracao < 5) {
+        console.log('[Status] sip 200 com duração <5s = CANCELADA')
+        return 'cancelada'
+      }
+      
+      // Sem transcrição = chamada atendida mas sem áudio captado
+      if (!transcricao || transcricao.trim().length === 0) {
+        return 'atendida'
+      }
+      
+      // Tem transcrição: verifica se é caixa postal antes de marcar atendida
+      const texto = transcricao.toLowerCase()
+      
+      const padroesCaixaPostal = [
+        'caixa postal', 'deixe sua mensagem', 'deixe uma mensagem',
+        'após o sinal', 'apos o sinal', 'após o bipe', 'apos o bipe',
+        'voicemail', 'grave sua mensagem', 'caixa de mensagens',
+        'gravar sua mensagem', 'deixe seu recado',
+      ]
+      if (padroesCaixaPostal.some(p => texto.includes(p))) {
+        console.log('[Status] sip 200 + transcrição de caixa postal = CAIXA_POSTAL')
+        return 'caixa_postal'
+      }
+      
+      // Transcrições de mensagens automáticas que aparecem mesmo com sip 200
+      const padroesNaoAtendimento = [
+        'fora da área de cobertura', 'fora da area de cobertura',
+        'desligado ou fora', 'momentaneamente fora',
+        'não pode ser completada', 'nao pode ser completada',
+        'não está disponível', 'nao esta disponivel',
+      ]
+      if (padroesNaoAtendimento.some(p => texto.includes(p))) {
+        console.log('[Status] sip 200 + mensagem de não atendimento na transcrição = FORA_AREA')
+        return 'fora_area'
+      }
+      
+      return 'atendida'
+    }
+    
+    // Outros sip codes não mapeados — log para análise
+    console.log('[Status] sip code não mapeado:', sip, '— usando fallback de transcrição')
+  }
+  
+  // ============================================================
+  // PRIORIDADE 2: Fallback para transcrição (quando NÃO tem sip_code)
+  // ============================================================
+  // Só chega aqui se a Total Phone não retornou sip_code (caso raro)
+  
+  if (!transcricao || transcricao.trim().length === 0) {
     return duracao > 0 ? 'atendida' : 'nao_atendida'
   }
   
@@ -225,6 +302,60 @@ function detectarStatusPorTranscricao(
   if (duracao < 5 && transcricao.length < 30) return 'cancelada'
   
   return 'atendida'
+}
+
+/**
+ * Valida se a transcrição parece ser de uma ligação real atendida,
+ * ou se é provavelmente áudio ambiente captado pelo microfone do vendedor
+ * enquanto a chamada não foi atendida.
+ * 
+ * Critérios:
+ * - Precisa ter sinais de atendimento (alô, oi, boa tarde, etc.) nos primeiros 200 chars
+ * - Densidade de palavras por segundo razoável (conversa real é mais densa)
+ */
+function transcricaoEhDeLigacaoReal(transcricao: string, duracao: number): {
+  valida: boolean
+  motivo: string
+} {
+  if (!transcricao || transcricao.length < 50) {
+    return { valida: false, motivo: 'transcricao_muito_curta' }
+  }
+  
+  const texto = transcricao.toLowerCase()
+  const primeiros300chars = texto.substring(0, 300)
+  
+  // Sinais clássicos de início de ligação atendida
+  const sinaisAtendimento = [
+    'alô', 'alo', 'oi', 'olá', 'ola', 'pronto',
+    'boa tarde', 'bom dia', 'boa noite',
+    'quem fala', 'quem é', 'tudo bem',
+    'sim?', 'pois não', 'pois nao',
+    'fala', 'falando',
+  ]
+  
+  const temSinalAtendimento = sinaisAtendimento.some(s => 
+    primeiros300chars.includes(s)
+  )
+  
+  if (!temSinalAtendimento) {
+    return { 
+      valida: false, 
+      motivo: 'sem_sinal_de_atendimento_no_inicio' 
+    }
+  }
+  
+  // Densidade de palavras (conversa ambiente é mais esparsa)
+  const palavras = transcricao.split(/\s+/).filter(p => p.length > 0).length
+  const palavrasPorSegundo = palavras / Math.max(duracao, 1)
+  
+  if (palavrasPorSegundo < 0.5) {
+    return { 
+      valida: false, 
+      motivo: `densidade_palavras_baixa_${palavrasPorSegundo.toFixed(2)}_pps` 
+    }
+  }
+  
+  return { valida: true, motivo: 'ok' }
 }
 
 // Detecta tipo de ligação pela transcrição
@@ -909,7 +1040,7 @@ O objetivo de TODA ligação é:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OS 3 SEGREDOS DO MÉTODO (FUNDAMENTAIS)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━���━━━━━━━━━━━━━
 1. Ser CONSULTOR, não vendedor — orientar, não empurrar
 2. Ajudar o cliente a DECIDIR — não forçar a venda
 3. OUVIR mais que falar — proporção ideal 70/30 (cliente fala 70%, vendedor 30%)
@@ -1769,9 +1900,46 @@ export async function POST(request: Request) {
     }
 
     // Analisa com Claude SOMENTE se foi atendida com conversa real
-    if (transcricao && statusFinal === 'atendida' && transcricao.length > 50 && duracaoSegundos > 15) {
+    // Só dispara análise IA se TODAS as condições forem verdadeiras
+    const podeAnalisarComIA = (() => {
+      // 1. Status deve ser "atendida"
+      if (statusFinal !== 'atendida') {
+        console.log('[Análise IA] ❌ Bloqueada: status não é atendida (status:', statusFinal, ')')
+        return false
+      }
+      
+      // 2. Sip code deve ser 200 (chamada efetivamente atendida)
+      const sip = typeof sipCode === 'string' ? parseInt(sipCode) : sipCode
+      if (sipCode && sip !== 200) {
+        console.log('[Análise IA] ❌ Bloqueada: sip code não é 200 (sip:', sip, ')')
+        return false
+      }
+      
+      // 3. Duração mínima de 30 segundos (conversa real)
+      if (duracaoSegundos < 30) {
+        console.log('[Análise IA] ❌ Bloqueada: duração curta (', duracaoSegundos, 's)')
+        return false
+      }
+      
+      // 4. Transcrição deve existir e ter tamanho mínimo
+      if (!transcricao || transcricao.length < 100) {
+        console.log('[Análise IA] ❌ Bloqueada: transcrição muito curta')
+        return false
+      }
+      
+      // 5. Transcrição deve parecer ligação real (não áudio ambiente)
+      const validacao = transcricaoEhDeLigacaoReal(transcricao, duracaoSegundos)
+      if (!validacao.valida) {
+        console.log('[Análise IA] ❌ Bloqueada: transcrição não parece ligação real (motivo:', validacao.motivo, ')')
+        return false
+      }
+      
+      return true
+    })()
+
+    if (podeAnalisarComIA) {
       try {
-        console.log('[TotalPhone] Analisando com Claude...')
+        console.log('[Análise IA] ✅ Disparando análise com Claude...')
         analise = await analisarComClaude(
           transcricao,
           tipoLigacao,
@@ -1779,10 +1947,10 @@ export async function POST(request: Request) {
           vendedorData?.vendedor || 'Vendedor'
         )
         if (analise) {
-          console.log('[TotalPhone] ✅ Análise concluída. Score geral:', analise.score_geral)
+          console.log('[Análise IA] ✅ Análise concluída. Score geral:', analise.score_geral)
         }
       } catch (analiseError) {
-        console.error('[TotalPhone] Erro na análise:', analiseError)
+        console.error('[Análise IA] Erro:', analiseError)
       }
     }
     
