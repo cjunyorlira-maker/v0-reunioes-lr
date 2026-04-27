@@ -2,6 +2,16 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
+import ffmpeg from "fluent-ffmpeg"
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg"
+import fs from "fs"
+import path from "path"
+import os from "os"
+
+// Configura FFmpeg
+if (ffmpegInstaller.path) {
+  ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,6 +82,49 @@ function extrairRamal(numero: string): string | null {
   if (match) return match[0]
   
   return null
+}
+
+// Converte áudio WAV/GSM para MP3 usando FFmpeg
+async function converterAudioParaMP3(audioBuffer: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const tempDir = os.tmpdir()
+    const inputFile = path.join(tempDir, `audio-${Date.now()}-input.wav`)
+    const outputFile = path.join(tempDir, `audio-${Date.now()}-output.mp3`)
+    
+    try {
+      // Escreve buffer no arquivo temporário
+      fs.writeFileSync(inputFile, audioBuffer)
+      
+      // Converte com FFmpeg
+      ffmpeg(inputFile)
+        .audioCodec('libmp3lame')
+        .audioBitrate('128k')
+        .audioChannels(1)
+        .audioFrequency(16000)
+        .on('error', (err) => {
+          console.error('[FFmpeg] Erro na conversão:', err)
+          // Limpa arquivos temporários
+          try { fs.unlinkSync(inputFile) } catch (e) {}
+          try { fs.unlinkSync(outputFile) } catch (e) {}
+          reject(err)
+        })
+        .on('end', () => {
+          console.log('[FFmpeg] ✅ Conversão concluída')
+          const mp3Buffer = fs.readFileSync(outputFile)
+          // Limpa arquivos temporários
+          try { fs.unlinkSync(inputFile) } catch (e) {}
+          try { fs.unlinkSync(outputFile) } catch (e) {}
+          resolve(mp3Buffer)
+        })
+        .save(outputFile)
+    } catch (error) {
+      console.error('[FFmpeg] Erro ao processar:', error)
+      // Limpa arquivos temporários
+      try { fs.unlinkSync(inputFile) } catch (e) {}
+      try { fs.unlinkSync(outputFile) } catch (e) {}
+      reject(error)
+    }
+  })
 }
 
 // Detecta status da ligacao pela transcricao
@@ -1133,12 +1186,23 @@ export async function POST(request: Request) {
       try {
         console.log("[TotalPhone] Salvando áudio no Blob...")
         
+        // Converte áudio WAV/GSM para MP3
+        let audioParaSalvar = audioBuffer
+        try {
+          console.log('[TotalPhone] Convertendo áudio WAV para MP3...')
+          audioParaSalvar = await converterAudioParaMP3(audioBuffer)
+          console.log('[TotalPhone] ✅ Áudio convertido para MP3')
+        } catch (ffmpegError) {
+          console.warn('[TotalPhone] ⚠️ Erro na conversão FFmpeg, salvando como WAV:', ffmpegError)
+          // Continua com WAV se FFmpeg falhar
+        }
+        
         const blobResult = await put(
-          `ligacoes/${callid}.wav`,
-          audioBuffer,
+          `ligacoes/${callid}.mp3`,
+          audioParaSalvar,
           {
             access: "public",
-            contentType: "audio/wav",
+            contentType: "audio/mpeg",
             token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
           }
         )
