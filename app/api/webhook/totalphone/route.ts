@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
+import CloudConvert from "cloudconvert"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,6 +73,91 @@ function extrairRamal(numero: string): string | null {
   if (match) return match[0]
   
   return null
+}
+
+// Converte áudio WAV para MP3 usando CloudConvert (serverless-friendly)
+async function converterWAVParaMP3CloudConvert(audioBuffer: Buffer): Promise<Buffer | null> {
+  if (!process.env.CLOUDCONVERT_API_KEY) {
+    console.warn('[CloudConvert] API key não configurada, retornando áudio original')
+    return null
+  }
+
+  try {
+    const cloudconvert = new CloudConvert({
+      sandbox: false,
+      apiKey: process.env.CLOUDCONVERT_API_KEY,
+    })
+
+    console.log('[CloudConvert] Iniciando conversão WAV → MP3...')
+
+    // Cria um job de conversão
+    const job = await cloudconvert.jobs.create({
+      tasks: {
+        'import-file': {
+          operation: 'import/upload',
+        },
+        'convert-file': {
+          operation: 'convert',
+          input: 'import-file',
+          output_format: 'mp3',
+          audio_codec: 'libmp3lame',
+          audio_bitrate: 128,
+          audio_channels: 1,
+          audio_frequency: 16000,
+        },
+        'export-file': {
+          operation: 'export/url',
+          input: 'convert-file',
+        },
+      },
+    })
+
+    console.log('[CloudConvert] Job criado:', job.id)
+
+    // Faz upload do arquivo
+    await cloudconvert.jobs.upload(job.id, audioBuffer, 'audio.wav')
+
+    // Aguarda conclusão com polling
+    let completedJob = job
+    let tentativas = 0
+    const maxTentativas = 120 // 10 minutos
+
+    while (!['finished', 'failed'].includes(completedJob.status) && tentativas < maxTentativas) {
+      await new Promise(resolve => setTimeout(resolve, 5000)) // Aguarda 5s
+      completedJob = await cloudconvert.jobs.get(job.id)
+      tentativas++
+      console.log(`[CloudConvert] Status: ${completedJob.status} (${tentativa}/${maxTentativas})`)
+    }
+
+    if (completedJob.status === 'failed') {
+      console.error('[CloudConvert] Conversão falhou:', completedJob)
+      return null
+    }
+
+    // Obtém arquivo convertido
+    const exportTask = completedJob.tasks.filter((task: any) => task.name === 'export-file')[0]
+    if (!exportTask?.result?.files?.[0]) {
+      console.error('[CloudConvert] Arquivo não encontrado')
+      return null
+    }
+
+    const fileUrl = exportTask.result.files[0].url
+    console.log('[CloudConvert] ✅ Conversão ok, baixando MP3...')
+
+    const mp3Response = await fetch(fileUrl)
+    if (!mp3Response.ok) {
+      console.error('[CloudConvert] Erro ao baixar:', mp3Response.status)
+      return null
+    }
+
+    const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer())
+    console.log('[CloudConvert] ✅ MP3 pronto:', mp3Buffer.length, 'bytes')
+    return mp3Buffer
+
+  } catch (error) {
+    console.error('[CloudConvert] Erro:', error)
+    return null
+  }
 }
 
 // Detecta status da ligacao pela transcricao
@@ -1133,19 +1219,35 @@ export async function POST(request: Request) {
       try {
         console.log("[TotalPhone] Salvando áudio no Blob...")
         
-        // Salva áudio como WAV (mais confiável em serverless)
+        // Tenta converter WAV para MP3 com CloudConvert
+        let audioParaSalvar = audioBuffer
+        let formatoSalvo = 'wav'
+        
+        try {
+          const mp3Buffer = await converterWAVParaMP3CloudConvert(audioBuffer)
+          if (mp3Buffer && mp3Buffer.length > 1000) {
+            audioParaSalvar = mp3Buffer
+            formatoSalvo = 'mp3'
+            console.log('[TotalPhone] ✅ Usando MP3 convertido')
+          } else {
+            console.log('[TotalPhone] ⚠️ MP3 não gerado, usando WAV')
+          }
+        } catch (convError) {
+          console.warn('[TotalPhone] ⚠️ Erro na conversão CloudConvert, usando WAV:', convError)
+        }
+        
         const blobResult = await put(
-          `ligacoes/${callid}.wav`,
-          audioBuffer,
+          `ligacoes/${callid}.${formatoSalvo}`,
+          audioParaSalvar,
           {
             access: "public",
-            contentType: "audio/wav",
+            contentType: formatoSalvo === 'mp3' ? "audio/mpeg" : "audio/wav",
             token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
           }
         )
         
         audioBlobUrl = blobResult.url
-        console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl)
+        console.log("[TotalPhone] Áudio salvo no Blob:", audioBlobUrl, `(${formatoSalvo.toUpperCase()})`)
       } catch (blobError) {
         console.error("[TotalPhone] Erro ao salvar no Blob:", blobError)
       }
