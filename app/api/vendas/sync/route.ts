@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { getPeriodoProducaoAtual, timestampToDateString } from "@/lib/periodo-producao"
+import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -153,7 +153,7 @@ export async function POST() {
         responsavel: responsavelNome,
         equipe: equipe,
         valor_venda: valorVenda,
-        data_venda: timestampToDateString(lead.updated_at),
+        data_venda: new Date().toISOString().split("T")[0], // Data de hoje quando sincroniza a venda
       })
     }
 
