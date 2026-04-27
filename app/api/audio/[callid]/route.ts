@@ -47,7 +47,7 @@ export async function GET(
     
     // Monta resposta com headers corretos para o player do Kommo
     const headers: Record<string, string> = {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': 'audio/wav',
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'public, max-age=31536000',
       'Access-Control-Allow-Origin': '*',
@@ -107,7 +107,7 @@ export async function HEAD(
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': 'audio/wav',
       'Accept-Ranges': 'bytes',
       'Content-Length': contentLength,
       'Access-Control-Allow-Origin': '*',
