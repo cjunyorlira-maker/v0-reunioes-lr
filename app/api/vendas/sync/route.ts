@@ -156,6 +156,7 @@ export async function POST() {
         valor_venda: valorVenda,
         data_venda: new Date().toISOString().split("T")[0], // Data de hoje quando sincroniza a venda
       })
+      console.log("[v0] Coletando:", lead.name, "| Responsável:", responsavelNome, "| Equipe:", equipe)
     }
 
     console.log("[v0] Vendas processadas:", vendas.length)
@@ -165,6 +166,8 @@ export async function POST() {
     let updated = 0
 
     for (const venda of vendas) {
+      console.log("[v0] Processando venda:", venda.nome_lead, "| Responsável:", venda.responsavel, "| Valor:", venda.valor_venda, "| Data:", venda.data_venda)
+      
       // Verifica se já existe
       const { data: existing } = await supabase
         .from("vendas")
@@ -174,7 +177,7 @@ export async function POST() {
 
       if (existing) {
         // Atualiza
-        await supabase
+        const { error: updateError } = await supabase
           .from("vendas")
           .update({
             nome_lead: venda.nome_lead,
@@ -184,10 +187,15 @@ export async function POST() {
             updated_at: new Date().toISOString(),
           })
           .eq("kommo_id", venda.kommo_id)
-        updated++
+        if (updateError) {
+          console.error("[v0] Erro ao atualizar venda:", venda.nome_lead, updateError.message)
+        } else {
+          console.log("[v0] ✅ Venda atualizada:", venda.nome_lead)
+          updated++
+        }
       } else {
         // Insere
-        await supabase.from("vendas").insert({
+        const { error: insertError } = await supabase.from("vendas").insert({
           kommo_id: venda.kommo_id,
           nome_lead: venda.nome_lead,
           responsavel: venda.responsavel,
@@ -195,7 +203,12 @@ export async function POST() {
           data_venda: venda.data_venda,
           created_at: new Date().toISOString(),
         })
-        inserted++
+        if (insertError) {
+          console.error("[v0] Erro ao inserir venda:", venda.nome_lead, insertError.message)
+        } else {
+          console.log("[v0] ✅ Venda inserida:", venda.nome_lead)
+          inserted++
+        }
       }
     }
 
