@@ -1559,10 +1559,12 @@ export async function POST(request: Request) {
           duracaoSegundos = duracaoAPI
         }
         
-        // Se conseguiu transcrição da API, detecta status direto COM sipCode
-        if (transcricao) {
+        // ✅ DETECTA STATUS PELO SIP_CODE MESMO SEM TRANSCRIÇÃO
+        // Isso é importante para casos como sip 603, 487, 486, 480
+        // onde a chamada não foi atendida e o áudio é só toque (sem voz)
+        if (sipCode) {
           statusFinal = detectarStatusPorTranscricao(transcricao, duracaoSegundos, sipCode)
-          console.log("[TotalPhone] Status detectado pela transcrição da API:", statusFinal)
+          console.log("[TotalPhone] Status detectado pelo sip_code da API:", statusFinal, '(sip:', sipCode, ')')
         }
       } catch (apiError) {
         console.error("[TotalPhone] Erro ao buscar da API:", apiError)
