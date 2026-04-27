@@ -45,9 +45,13 @@ export async function GET(
     const buffer = await blobResponse.arrayBuffer()
     const totalSize = blobResponse.headers.get('content-length') || buffer.byteLength.toString()
     
+    // Detecta o content-type pela extensão do arquivo no blob
+    const isWav = ligacao.audio_url.toLowerCase().endsWith('.wav')
+    const audioContentType = isWav ? 'audio/wav' : 'audio/mpeg'
+    
     // Monta resposta com headers corretos para o player do Kommo
     const headers: Record<string, string> = {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': audioContentType,
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'public, max-age=31536000',
       'Access-Control-Allow-Origin': '*',
@@ -104,10 +108,14 @@ export async function HEAD(
   const blobResponse = await fetch(ligacao.audio_url, { method: 'HEAD' })
   const contentLength = blobResponse.headers.get('content-length') || '0'
   
+  // Detecta o content-type pela extensão do arquivo no blob
+  const isWav = ligacao.audio_url.toLowerCase().endsWith('.wav')
+  const audioContentType = isWav ? 'audio/wav' : 'audio/mpeg'
+  
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': audioContentType,
       'Accept-Ranges': 'bytes',
       'Content-Length': contentLength,
       'Access-Control-Allow-Origin': '*',

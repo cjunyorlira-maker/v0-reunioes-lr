@@ -83,10 +83,7 @@ async function converterWAVParaMP3CloudConvert(audioBuffer: Buffer): Promise<Buf
   }
 
   try {
-    const cloudconvert = new CloudConvert({
-      sandbox: false,
-      apiKey: process.env.CLOUDCONVERT_API_KEY,
-    })
+    const cloudconvert = new CloudConvert(process.env.CLOUDCONVERT_API_KEY!)
 
     console.log('[CloudConvert] Iniciando conversão WAV → MP3...')
 
@@ -115,22 +112,33 @@ async function converterWAVParaMP3CloudConvert(audioBuffer: Buffer): Promise<Buf
     console.log('[CloudConvert] Job criado:', job.id)
 
     // Faz upload do arquivo
-    await cloudconvert.jobs.upload(job.id, audioBuffer, 'audio.wav')
+    const uploadTask = job.tasks.find((t: any) => t.name === 'import-file')
+    if (!uploadTask) {
+      console.error('[CloudConvert] Task de upload não encontrada')
+      return null
+    }
+    await cloudconvert.tasks.upload(uploadTask, audioBuffer, 'audio.wav')
+    console.log('[CloudConvert] Upload concluído, aguardando conversão...')
 
     // Aguarda conclusão com polling
     let completedJob = job
     let tentativas = 0
-    const maxTentativas = 120 // 10 minutos
+    const maxTentativas = 60 // 5 minutos (5s * 60)
 
-    while (!['finished', 'failed'].includes(completedJob.status) && tentativas < maxTentativas) {
-      await new Promise(resolve => setTimeout(resolve, 5000)) // Aguarda 5s
+    while (!['finished', 'error'].includes(completedJob.status) && tentativas < maxTentativas) {
+      await new Promise(resolve => setTimeout(resolve, 5000))
       completedJob = await cloudconvert.jobs.get(job.id)
       tentativas++
-      console.log(`[CloudConvert] Status: ${completedJob.status} (${tentativa}/${maxTentativas})`)
+      console.log(`[CloudConvert] Status: ${completedJob.status} (${tentativas}/${maxTentativas})`)
     }
 
-    if (completedJob.status === 'failed') {
+    if (completedJob.status === 'error') {
       console.error('[CloudConvert] Conversão falhou:', completedJob)
+      return null
+    }
+
+    if (completedJob.status !== 'finished') {
+      console.error('[CloudConvert] Timeout aguardando conversão')
       return null
     }
 
