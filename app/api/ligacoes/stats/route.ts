@@ -40,26 +40,53 @@ export async function GET(request: Request) {
 
     const supabase = createSupabaseAdmin()
 
-    let query = supabase.from("ligacoes").select("*")
+    // Busca TODAS as ligações do período (paginação manual pra superar limite padrão de 1000)
+    let todasLigacoes: any[] = []
+    let pageStart = 0
+    const pageSize = 1000
+    let hasMore = true
 
-    if (equipe && equipe !== "all") {
-      query = query.eq("equipe", equipe)
-    }
-    if (dataInicio) {
-      query = query.gte("data_ligacao", dataInicio)
-    }
-    if (dataFim) {
-      query = query.lte("data_ligacao", dataFim)
+    while (hasMore) {
+      let query = supabase
+        .from("ligacoes")
+        .select("*")
+        .order("data_ligacao", { ascending: false })
+        .range(pageStart, pageStart + pageSize - 1)
+
+      if (equipe && equipe !== "all") {
+        query = query.eq("equipe", equipe)
+      }
+      if (dataInicio) {
+        query = query.gte("data_ligacao", dataInicio)
+      }
+      if (dataFim) {
+        query = query.lte("data_ligacao", dataFim)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error("[Stats] Erro:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      if (!data || data.length === 0) {
+        hasMore = false
+        break
+      }
+
+      todasLigacoes = todasLigacoes.concat(data)
+
+      if (data.length < pageSize) {
+        hasMore = false
+      } else {
+        pageStart += pageSize
+      }
     }
 
-    const { data: ligacoes, error } = await query
+    console.log('[Stats] Total carregado:', todasLigacoes.length, '| Período:', dataInicio, '→', dataFim)
 
-    if (error) {
-      console.error("[Stats] Erro:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    const lista = ligacoes || []
+    const lista = todasLigacoes
 
     // ============================================
     // STATS POR VENDEDOR
