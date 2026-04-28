@@ -892,9 +892,7 @@ export default function AtendimentosPage() {
                 )}
               </div>
             </div>
-            {/* fecha grid inferior */}
           </div>
-          {/* fecha flex-col gap-6 */}
           )
         ) : (
           /* Relatorio Kanban - Motivos de Nao Fechamento */
