@@ -485,19 +485,39 @@ export default function LigacoesPage() {
             const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
             const primeiroNome = (s: string) => normalizar(s).split(" ")[0]
 
-            // Busca vendedor por nome completo OU primeiro nome
+            // Busca vendedor - prioriza match exato, depois por sobrenome
             const buscarVendedor = (nomeBusca: string): VendedorStats | null => {
               const buscaNorm = normalizar(nomeBusca)
-              const buscaPrimeiro = primeiroNome(nomeBusca)
+              const buscaParts = buscaNorm.split(" ")
+              const buscaPrimeiro = buscaParts[0]
+              const buscaSobrenome = buscaParts[1] || ""
               
-              // 1. Tenta match exato normalizado
+              // 1. Tenta match exato normalizado (ex: "joao lucas" === "joão lucas")
               for (const v of stats.porVendedor) {
                 if (normalizar(v.vendedor) === buscaNorm) return v
               }
               
-              // 2. Tenta match pelo primeiro nome (ex: "Bianca" casa com "Bianca Silva")
-              for (const v of stats.porVendedor) {
-                if (primeiroNome(v.vendedor) === buscaPrimeiro) return v
+              // 2. Se tem sobrenome na busca, tenta match nome + sobrenome (ex: "Joao Lucas")
+              if (buscaSobrenome) {
+                for (const v of stats.porVendedor) {
+                  const vParts = normalizar(v.vendedor).split(" ")
+                  if (vParts[0] === buscaPrimeiro && vParts[1] === buscaSobrenome) return v
+                }
+              }
+              
+              // 3. Se nao encontrou e e um nome composto, tenta match por sobrenome (ex: "Lucas" acha "Joao Lucas")
+              if (buscaSobrenome) {
+                for (const v of stats.porVendedor) {
+                  const vNorm = normalizar(v.vendedor)
+                  if (vNorm.includes(buscaSobrenome)) return v
+                }
+              }
+              
+              // 4. Fallback: tenta match pelo primeiro nome (so se for um nome unico como "Bianca")
+              if (!buscaSobrenome) {
+                for (const v of stats.porVendedor) {
+                  if (primeiroNome(v.vendedor) === buscaPrimeiro) return v
+                }
               }
               
               return null
