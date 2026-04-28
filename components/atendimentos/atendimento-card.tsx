@@ -305,19 +305,19 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             </div>
           )}
 
-          {/* Resumo da análise */}
-          {atendimento.resumo && (
+          {/* Resumo da analise - apenas para fechados ou fechou=null */}
+          {atendimento.resumo && atendimento.fechou !== false && (
             <p className='text-sm text-white/70 line-clamp-2 bg-black/10 p-3 rounded-xl border border-white/5'>
               {atendimento.resumo}
             </p>
           )}
 
-          {/* Motivo nao fechamento - alerta */}
-          {atendimento.motivo_nao_fechamento && !atendimento.fechou && (
+          {/* Motivo nao fechamento - apenas para fechados (nao aparece no card nao fechado, fica na analise) */}
+          {atendimento.motivo_nao_fechamento && atendimento.fechou === true && (
             <div className='p-3 rounded-xl bg-red-500/10 border border-red-500/20'>
               <p className='text-xs text-red-400 font-bold mb-1 flex items-center gap-1'>
                 <AlertTriangle className='w-3 h-3' />
-                Motivo do Não Fechamento
+                Motivo do Nao Fechamento
               </p>
               <p className='text-xs text-white/70'>{atendimento.motivo_nao_fechamento}</p>
             </div>
@@ -326,42 +326,44 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
           {/* Botoes de Acao */}
           <div className='flex flex-col gap-2 pt-2'>
 
-            {/* Linha 1: Gravar Retorno + Analise + Marcar Fechou (apenas Nao Fechados) */}
+            {/* Botoes Nao Fechados: Gravar Retorno + Analise em linha, Fechou embaixo */}
             {isConcluido && atendimento.fechou === false && (
-              <div className='flex gap-2'>
-                {!showRecorderRetorno && (
-                  <Button
-                    onClick={() => setShowRecorderRetorno(true)}
-                    size='sm'
-                    className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
-                  >
-                    <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
-                    Gravar Retorno
-                  </Button>
-                )}
-                {temAnalise && (
-                  <Button
-                    onClick={() => setShowAnalise(true)}
-                    size='sm'
-                    className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
-                  >
-                    <Eye className='w-3.5 h-3.5 mr-1.5' />
-                    Analise
-                  </Button>
-                )}
-                {/* Botao para marcar como Fechou */}
+              <div className='flex flex-col gap-2'>
+                <div className='flex gap-2'>
+                  {!showRecorderRetorno && (
+                    <Button
+                      onClick={() => setShowRecorderRetorno(true)}
+                      size='sm'
+                      className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                    >
+                      <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
+                      Gravar Retorno
+                    </Button>
+                  )}
+                  {temAnalise && (
+                    <Button
+                      onClick={() => setShowAnalise(true)}
+                      size='sm'
+                      className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                    >
+                      <Eye className='w-3.5 h-3.5 mr-1.5' />
+                      Analise
+                    </Button>
+                  )}
+                </div>
+                {/* Botao Fechou em linha propria */}
                 <Button
                   onClick={() => handleMarkResult(true)}
                   disabled={markingResult !== null}
                   size='sm'
-                  className='h-9 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-lg transition-all duration-300'
-                  title='Marcar como Fechou'
+                  className='w-full h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/25 text-xs font-semibold rounded-lg transition-all duration-300'
                 >
                   {markingResult === 'fechou' ? (
-                    <Loader2 className='w-3.5 h-3.5 animate-spin' />
+                    <Loader2 className='w-3.5 h-3.5 mr-1.5 animate-spin' />
                   ) : (
-                    <CheckCircle className='w-3.5 h-3.5' />
+                    <CheckCircle className='w-3.5 h-3.5 mr-1.5' />
                   )}
+                  Marcar como Fechou
                 </Button>
               </div>
             )}

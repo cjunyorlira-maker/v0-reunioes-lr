@@ -709,9 +709,9 @@ export default function AtendimentosPage() {
                 </div>
               </div>
 
-              {/* Coluna Fechados */}
+              {/* Coluna Fechados - sub-colunas por dia */}
               <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-emerald-500/10">
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-emerald-500/10 flex-shrink-0">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
@@ -721,33 +721,35 @@ export default function AtendimentosPage() {
                   </div>
                   <Badge className="bg-emerald-500/30 text-emerald-400 border-0 text-xs">{fechados.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                  {fechadosPorDia.map(grupo => (
-                    <div key={grupo.data}>
-                      <div className="flex items-center gap-2 py-2 px-1">
-                        <Calendar className="w-3 h-3 text-emerald-400/60" />
-                        <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">{formatarDataGrupo(grupo.data)}</span>
-                        <div className="flex-1 h-px bg-emerald-500/20" />
-                        <span className="text-[10px] text-emerald-400/60">{grupo.atendimentos.length}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {grupo.atendimentos.map((atendimento) => (
-                          <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                        ))}
-                      </div>
+                {fechados.length === 0 ? (
+                  <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                    Nenhum fechado
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-x-auto overflow-y-hidden">
+                    <div className="flex gap-3 p-3 h-full" style={{ minWidth: 'max-content' }}>
+                      {fechadosPorDia.map(grupo => (
+                        <div key={grupo.data} className="flex flex-col w-64 min-h-0 rounded-xl overflow-hidden border border-emerald-500/15" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                          <div className="flex items-center gap-2 px-3 py-2 border-b border-emerald-500/15 bg-emerald-500/10 flex-shrink-0">
+                            <Calendar className="w-3 h-3 text-emerald-400/70" />
+                            <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider flex-1">{formatarDataGrupo(grupo.data)}</span>
+                            <span className="text-[10px] text-emerald-400/60 bg-emerald-500/20 px-1.5 py-0.5 rounded-full">{grupo.atendimentos.length}</span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                            {grupo.atendimentos.map((atendimento) => (
+                              <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {fechados.length === 0 && (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
-                      Nenhum fechado
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {/* Coluna Nao Fechados */}
+              {/* Coluna Nao Fechados - sub-colunas por dia */}
               <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-red-500/10">
+                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-red-500/10 flex-shrink-0">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-rose-600">
                     <XCircle className="w-4 h-4 text-white" />
                   </div>
@@ -757,28 +759,30 @@ export default function AtendimentosPage() {
                   </div>
                   <Badge className="bg-red-500/30 text-red-400 border-0 text-xs">{naoFechados.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                  {naoFechadosPorDia.map(grupo => (
-                    <div key={grupo.data}>
-                      <div className="flex items-center gap-2 py-2 px-1">
-                        <Calendar className="w-3 h-3 text-red-400/60" />
-                        <span className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider">{formatarDataGrupo(grupo.data)}</span>
-                        <div className="flex-1 h-px bg-red-500/20" />
-                        <span className="text-[10px] text-red-400/60">{grupo.atendimentos.length}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {grupo.atendimentos.map((atendimento) => (
-                          <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                        ))}
-                      </div>
+                {naoFechados.length === 0 ? (
+                  <div className="flex items-center justify-center h-32 text-white/30 text-xs">
+                    Nenhum nao fechado
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-x-auto overflow-y-hidden">
+                    <div className="flex gap-3 p-3 h-full" style={{ minWidth: 'max-content' }}>
+                      {naoFechadosPorDia.map(grupo => (
+                        <div key={grupo.data} className="flex flex-col w-64 min-h-0 rounded-xl overflow-hidden border border-red-500/15" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                          <div className="flex items-center gap-2 px-3 py-2 border-b border-red-500/15 bg-red-500/10 flex-shrink-0">
+                            <Calendar className="w-3 h-3 text-red-400/70" />
+                            <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider flex-1">{formatarDataGrupo(grupo.data)}</span>
+                            <span className="text-[10px] text-red-400/60 bg-red-500/20 px-1.5 py-0.5 rounded-full">{grupo.atendimentos.length}</span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                            {grupo.atendimentos.map((atendimento) => (
+                              <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {naoFechados.length === 0 && (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
-                      Nenhum nao fechado
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           )
