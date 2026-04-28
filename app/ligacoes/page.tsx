@@ -474,92 +474,27 @@ export default function LigacoesPage() {
           )}
 
           {/* Piores Vendedores - dois cards lado a lado */}
-          {stats && (() => {
-            const VENDEDORES_FIXOS = [
-              "Bianca Isabela",
-              "Amanda Souza",
-              "Ana Beatriz",
-              "João Lucas",
-              "João Victor",
-              "Lidiane Fonseca",
-              "Rafaella Antunes",
-              "Lucas Dionisio",
-              "Ana Gabrielly",
-              "Isabelly Ribeiro",
-              "Gabrielly Pereira",
-              "Nicolas Moraes",
-              "Brayan Bertolai",
+          {stats && stats.porVendedor.length > 0 && (() => {
+            // Lista de vendedores a excluir
+            const EXCLUIR = [
+              "Emily Machado",
+              "Ramal Desconhecido",
+              "Janaina Dantas",
+              "Rogerio Martins",
+              "Willy Santana",
+              "Alex Negreiros",
+              "Klaiver Seabra",
+              "Yuri Pereira",
+              "Nathan Caue",
             ]
 
-            // Normaliza nome para comparacao (remove acentos, lowercase)
+            // Normaliza para comparacao
             const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
 
-            // Busca vendedor - prioriza match exato, depois compostos, depois first name
-            const buscarVendedor = (nomeBusca: string): VendedorStats | null => {
-              const buscaNorm = normalizar(nomeBusca)
-              const buscaParts = buscaNorm.split(" ")
-              
-              // 1. Match EXATO normalizado - ex: "Ana B" === "Ana B", "Joao Lucas" === "João Lucas"
-              for (const v of stats.porVendedor) {
-                if (normalizar(v.vendedor) === buscaNorm) return v
-              }
-              
-              // 2. Se busca tem 2+ partes (nome composto), tenta match por sequencia exata
-              // Ex: "Joao Lucas" procura alguém com "joao" e "lucas" em sequencia
-              if (buscaParts.length >= 2) {
-                for (const v of stats.porVendedor) {
-                  const vNorm = normalizar(v.vendedor)
-                  const vParts = vNorm.split(" ")
-                  
-                  // Verifica se todos os parts estao em sequencia
-                  let match = true
-                  for (let i = 0; i < buscaParts.length; i++) {
-                    if (vParts[i] !== buscaParts[i]) {
-                      match = false
-                      break
-                    }
-                  }
-                  if (match) return v
-                }
-              }
-              
-              // 3. Se busca e um nome UNICO (sem espaco), tenta match APENAS se for o primeiro nome
-              // Isso evita "Lucas" casar com "Joao Lucas"
-              if (buscaParts.length === 1) {
-                for (const v of stats.porVendedor) {
-                  const vNorm = normalizar(v.vendedor)
-                  const vParts = vNorm.split(" ")
-                  // So match se o primeiro nome for exatamente igual
-                  if (vParts[0] === buscaNorm && vParts.length === 1) {
-                    // E se o vendedor no banco TAMBEM tem nome unico (nao e parte de um composto)
-                    return v
-                  }
-                }
-              }
-              
-              return null
-            }
-
-            const todos: VendedorStats[] = VENDEDORES_FIXOS.map(nome => {
-              const encontrado = buscarVendedor(nome)
-              if (encontrado) return encontrado
-              return {
-                vendedor: nome,
-                equipe: "-",
-                total: 0,
-                atendidas: 0,
-                nao_atendidas: 0,
-                taxa_atendimento: 0,
-                tempo_total_chamadas_segundos: 0,
-                tempo_real_fala_segundos: 0,
-                tempo_medio_fala_segundos: 0,
-                analisadas: 0,
-                score_vendedor_medio: null,
-                score_lead_medio: null,
-                reunioes_marcadas: 0,
-                leads_viavel_alta: 0,
-                leads_inviaveis: 0,
-              }
+            // Filtra: usa TODOS os vendedores, menos os da lista de exclusão
+            const todos = stats.porVendedor.filter(v => {
+              const vNorm = normalizar(v.vendedor)
+              return !EXCLUIR.some(exc => normalizar(exc) === vNorm)
             })
 
             const pioresLigacoes = [...todos].sort((a, b) => a.total - b.total).slice(0, 5)
