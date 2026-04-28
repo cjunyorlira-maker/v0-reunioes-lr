@@ -739,7 +739,7 @@ te interessa o PARCELAMENTO? Porque minha função
 aqui é justamente a parte de liberação do crédito."
 [ESCUTAR a resposta com atenção]
 
-PASSO 3 �� TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
+PASSO 3 ��� TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
 - Parcelado → seguir para qualificação
 - À vista → reverter mostrando vantagens
 - Insistente no imóvel → mencionar parcerias
@@ -1506,7 +1506,7 @@ async function enviarNotaKommo(
     // ============================================
     if (analise.objecoes_cliente && analise.objecoes_cliente.length > 0) {
       nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
-      nota += `\n\n📚 COMO CONTORNAR ESSAS OBJEÇÕES:`
+      nota += `\n\n��� COMO CONTORNAR ESSAS OBJEÇÕES:`
       analise.objecoes_cliente.slice(0, 5).forEach((obj: any) => {
         nota += `\n\n🗣️ "${obj.objecao || 'N/A'}"`
         nota += `\n→ ${obj.resposta_ideal || 'Resposta não disponível'}`
@@ -1894,8 +1894,8 @@ export async function POST(request: Request) {
     const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
       await buscarLeadKommoPorTelefone(telefoneNormalizado, vendedorData?.kommo_user_id || null)
     
-    kommoLeadId = lead_id
-    kommoContactId = contact_id
+    let kommoLeadId: number | null = lead_id
+    let kommoContactId: number | null = contact_id
     
     // ============================================================
     // BUSCAR DADOS AUTORITATIVOS DO LEAD NO KOMMO
@@ -2078,8 +2078,6 @@ export async function POST(request: Request) {
     console.log("[TotalPhone] Ligação salva:", ligacao?.id)
     
     // 6. Envia para Kommo (sempre, independente de ter sido atendida ou não)
-    let kommoLeadId: number | null = null
-    let kommoContactId: number | null = null
 
     if (telefoneCliente) {
       // Se não encontrou nem lead NEM contato, IGNORA
