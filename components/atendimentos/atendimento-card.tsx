@@ -407,6 +407,23 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                 </Button>
               )}
 
+              {/* Botao Reverter para Nao Fechado - apenas fechados */}
+              {isConcluido && atendimento.fechou === true && (
+                <Button
+                  onClick={() => handleMarkResult(false)}
+                  disabled={markingResult !== null}
+                  size='sm'
+                  className='h-7 px-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/25 text-[11px] font-semibold rounded-md transition-all duration-300'
+                  title='Reverter para Nao Fechado'
+                >
+                  {markingResult === 'nao_fechou' ? (
+                    <Loader2 className='w-3 h-3 animate-spin' />
+                  ) : (
+                    <RotateCcw className='w-3 h-3' />
+                  )}
+                </Button>
+              )}
+
               {/* Botao Deletar - apenas Admin */}
               {userEquipe === 'Admin' && (
                 <Button
