@@ -668,26 +668,41 @@ export default function LigacoesPage() {
               border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="p-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                   <Phone className="w-4 h-4 text-white" />
                 </div>
                 <h2 className="text-white font-bold">Ligacoes ({ligacoes.length})</h2>
               </div>
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger className="w-40 bg-black/30 border-white/10 text-white rounded-xl">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10">
-                  <SelectItem value="all">Todos status</SelectItem>
-                  <SelectItem value="atendida">Atendidas</SelectItem>
-                  <SelectItem value="nao_atendida">Nao atendidas</SelectItem>
-                  <SelectItem value="cancelada">Canceladas</SelectItem>
-                  <SelectItem value="caixa_postal">Caixa postal</SelectItem>
-                  <SelectItem value="ocupado">Ocupado</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select value={filtroVendedor} onValueChange={setFiltroVendedor}>
+                  <SelectTrigger className="w-44 bg-black/30 border-white/10 text-white rounded-xl">
+                    <SelectValue placeholder="Todos vendedores" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10 max-h-64">
+                    <SelectItem value="all">Todos vendedores</SelectItem>
+                    {(stats?.porVendedor ?? [])
+                      .sort((a, b) => a.vendedor.localeCompare(b.vendedor))
+                      .map(v => (
+                        <SelectItem key={v.vendedor} value={v.vendedor}>{v.vendedor}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="w-40 bg-black/30 border-white/10 text-white rounded-xl">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectItem value="all">Todos status</SelectItem>
+                    <SelectItem value="atendida">Atendidas</SelectItem>
+                    <SelectItem value="nao_atendida">Nao atendidas</SelectItem>
+                    <SelectItem value="cancelada">Canceladas</SelectItem>
+                    <SelectItem value="caixa_postal">Caixa postal</SelectItem>
+                    <SelectItem value="ocupado">Ocupado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="p-4">
               {loadingLigacoes ? (
