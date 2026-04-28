@@ -474,20 +474,28 @@ export default function LigacoesPage() {
           )}
 
           {/* Piores Vendedores - dois cards lado a lado */}
-          {stats && stats.porVendedor.length > 0 && (() => {
+          {stats && (() => {
             const VENDEDORES_FIXOS = [
-              "Bianca", "Amanda", "Ana B", "João Lucas", "João Vitor",
+              "Bianca", "Amanda", "Ana B", "Joao Lucas", "Joao Vitor",
               "Lidiane", "Rafaella", "Lucas", "Ana G", "Isabelly",
               "Gabrielly", "Nicolas", "Brayan",
             ]
 
-            // Garante que todos os vendedores fixos aparecem, mesmo sem dados
-            const vendedoresComDados = new Map(stats.porVendedor.map(v => [v.vendedor, v]))
+            // Normaliza nome para comparacao (remove acentos, lowercase)
+            const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+
+            // Mapeia vendedores existentes por nome normalizado
+            const vendedoresComDados = new Map<string, VendedorStats>()
+            stats.porVendedor.forEach(v => {
+              vendedoresComDados.set(normalizar(v.vendedor), v)
+            })
+
             const todos: VendedorStats[] = VENDEDORES_FIXOS.map(nome => {
-              if (vendedoresComDados.has(nome)) return vendedoresComDados.get(nome)!
+              const nomeNorm = normalizar(nome)
+              if (vendedoresComDados.has(nomeNorm)) return vendedoresComDados.get(nomeNorm)!
               return {
                 vendedor: nome,
-                equipe: "—",
+                equipe: "-",
                 total: 0,
                 atendidas: 0,
                 nao_atendidas: 0,
