@@ -1950,8 +1950,13 @@ export async function POST(request: Request) {
             ]
             
             if (tiposValidos.includes(analise.tipo_ligacao) && analise.tipo_ligacao !== tipoLigacao) {
-              console.log('[Tipo] 🔄 Claude reclassificou:', tipoLigacao, '→', analise.tipo_ligacao)
-              tipoLigacao = analise.tipo_ligacao
+              // Só sobrescreve via Claude se NÃO temos dados autoritativos do Kommo
+              if (!dadosKommo?.tipoLigacaoEsperado) {
+                console.log('[Tipo] 🔄 Claude reclassificou (sem dados Kommo):', tipoLigacao, '→', analise.tipo_ligacao)
+                tipoLigacao = analise.tipo_ligacao
+              } else {
+                console.log('[Tipo] 🔒 Claude tentou reclassificar para', analise.tipo_ligacao, 'mas mantendo CRM:', tipoLigacao)
+              }
             }
           }
         }
