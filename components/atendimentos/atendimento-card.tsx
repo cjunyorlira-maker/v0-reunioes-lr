@@ -193,48 +193,48 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
         backdropFilter: 'blur(8px)',
       }}>
         {/* Linha colorida no topo */}
-        <div className={`h-1.5 w-full bg-gradient-to-r ${statusColor}`} />
+        <div className={`h-0.5 w-full bg-gradient-to-r ${statusColor}`} />
 
         {/* Indicador de Gravacao em Tempo Real */}
         {atendimento.gravando && (
-          <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500/20 to-orange-500/20 border-b border-red-500/30'>
-            <span className='relative flex h-3 w-3'>
+          <div className='flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-red-500/20 to-orange-500/20 border-b border-red-500/30'>
+            <span className='relative flex h-2 w-2'>
               <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75'></span>
-              <span className='relative inline-flex rounded-full h-3 w-3 bg-red-500'></span>
+              <span className='relative inline-flex rounded-full h-2 w-2 bg-red-500'></span>
             </span>
-            <p className='text-red-400 text-xs font-bold animate-pulse'>
+            <p className='text-red-400 text-[11px] font-bold animate-pulse'>
               {atendimento.gravando_por || 'Alguem'} esta gravando...
             </p>
           </div>
         )}
 
-        <CardContent className='p-5 space-y-4'>
+        <CardContent className='p-3 space-y-2.5'>
           {/* Header: Status e Badges */}
-          <div className='flex items-start justify-between gap-2'>
-            <div className={`px-3 py-1.5 rounded-lg bg-gradient-to-r ${statusColor} text-white text-xs font-bold`}>
+          <div className='flex items-center justify-between gap-2'>
+            <div className={`px-2 py-1 rounded-md bg-gradient-to-r ${statusColor} text-white text-[10px] font-bold`}>
               {statusLabel}
             </div>
-            <div className='flex gap-2 flex-wrap'>
+            <div className='flex gap-1.5 flex-wrap'>
               {atendimento.is_benchmark && (
-                <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[10px]'>
-                  <Star className='w-3 h-3 mr-1' />
+                <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[9px] px-1.5 py-0'>
+                  <Star className='w-2.5 h-2.5 mr-0.5' />
                   Benchmark
                 </Badge>
               )}
               {isConcluido && temAnalise && (
-                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[10px]'>
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[9px] px-1.5 py-0'>
                   Analisado
                 </Badge>
               )}
               {isConcluido && atendimento.fechou === false && (
-                <Badge className='bg-red-500/25 text-red-400 border-0 text-[10px]'>
-                  <XCircle className='w-3 h-3 mr-1' />
+                <Badge className='bg-red-500/25 text-red-400 border-0 text-[9px] px-1.5 py-0'>
+                  <XCircle className='w-2.5 h-2.5 mr-0.5' />
                   Nao Fechou
                 </Badge>
               )}
               {isConcluido && atendimento.fechou === true && (
-                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[10px]'>
-                  <CheckCircle className='w-3 h-3 mr-1' />
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[9px] px-1.5 py-0'>
+                  <CheckCircle className='w-2.5 h-2.5 mr-0.5' />
                   Fechou
                 </Badge>
               )}
@@ -243,40 +243,40 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
           {/* Nome do Lead */}
           <div>
-            <h3 className='text-base font-bold text-white mb-1'>
+            <h3 className='text-sm font-bold text-white leading-tight'>
               {atendimento.nome_lead || 'Sem nome'}
             </h3>
-            <p className='text-xs text-white/40 line-clamp-1'>ID: {atendimento.kommo_id}</p>
+            <p className='text-[10px] text-white/40'>ID: {atendimento.kommo_id}</p>
           </div>
 
           {/* Atendente, Vendedor e Equipe */}
-          <div className='p-3 rounded-xl bg-black/10 border border-white/5 space-y-2'>
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='flex items-center gap-2'>
-                <User className='w-4 h-4 text-[#d4af37]' />
+          <div className='p-2 rounded-lg bg-black/10 border border-white/5 space-y-1.5'>
+            <div className='grid grid-cols-2 gap-2'>
+              <div className='flex items-center gap-1.5'>
+                <User className='w-3 h-3 text-[#d4af37] flex-shrink-0' />
                 <div className='min-w-0'>
-                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Atendente</p>
-                  <p className='text-xs font-bold text-white truncate'>
+                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Atendente</p>
+                  <p className='text-[11px] font-bold text-white truncate'>
                     {atendimento.atendente || 'Nao informado'}
                   </p>
                 </div>
               </div>
-              <div className='flex items-center gap-2'>
-                <Building2 className='w-4 h-4 text-[#d4af37]' />
+              <div className='flex items-center gap-1.5'>
+                <Building2 className='w-3 h-3 text-[#d4af37] flex-shrink-0' />
                 <div className='min-w-0'>
-                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Equipe</p>
-                  <p className='text-xs font-bold text-white truncate'>
+                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Equipe</p>
+                  <p className='text-[11px] font-bold text-white truncate'>
                     {atendimento.equipe || 'Padrao'}
                   </p>
                 </div>
               </div>
             </div>
             {atendimento.responsavel && atendimento.responsavel !== atendimento.atendente && (
-              <div className='flex items-center gap-2 pt-2 border-t border-white/5'>
-                <User className='w-3.5 h-3.5 text-violet-400' />
+              <div className='flex items-center gap-1.5 pt-1.5 border-t border-white/5'>
+                <User className='w-3 h-3 text-violet-400 flex-shrink-0' />
                 <div className='min-w-0'>
-                  <p className='text-[10px] text-white/40 uppercase tracking-wide'>Vendedor</p>
-                  <p className='text-xs font-medium text-white/80 truncate'>
+                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Vendedor</p>
+                  <p className='text-[11px] font-medium text-white/80 truncate'>
                     {atendimento.responsavel}
                   </p>
                 </div>
@@ -286,16 +286,16 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
           {/* Score Geral - destaque */}
           {temAnalise && (
-            <div className='p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20'>
-              <div className='flex items-end justify-between'>
+            <div className='px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20'>
+              <div className='flex items-center justify-between gap-2'>
                 <div>
-                  <p className='text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1'>📊 Score Geral</p>
-                  <p className={cn('text-3xl font-black', getScoreColor(atendimento.score_geral))}>
+                  <p className='text-[9px] text-white/50 uppercase tracking-widest font-bold'>Score Geral</p>
+                  <p className={cn('text-xl font-black leading-none mt-0.5', getScoreColor(atendimento.score_geral))}>
                     {atendimento.score_geral?.toFixed(1)}
-                    <span className='text-lg text-white/40 font-normal ml-1'>/10</span>
+                    <span className='text-sm text-white/40 font-normal ml-0.5'>/10</span>
                   </p>
                 </div>
-                <div className='flex-1 h-2 mx-4 rounded-full bg-white/10 overflow-hidden'>
+                <div className='flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden'>
                   <div
                     className='h-full bg-gradient-to-r from-emerald-500 to-teal-500'
                     style={{ width: `${Math.min((atendimento.score_geral! / 10) * 100, 100)}%` }}
@@ -307,36 +307,36 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
           {/* Resumo da analise - apenas para fechados ou fechou=null */}
           {atendimento.resumo && atendimento.fechou !== false && (
-            <p className='text-sm text-white/70 line-clamp-2 bg-black/10 p-3 rounded-xl border border-white/5'>
+            <p className='text-[11px] text-white/70 line-clamp-2 bg-black/10 px-2.5 py-2 rounded-lg border border-white/5'>
               {atendimento.resumo}
             </p>
           )}
 
-          {/* Motivo nao fechamento - apenas para fechados (nao aparece no card nao fechado, fica na analise) */}
+          {/* Motivo nao fechamento - apenas para fechados */}
           {atendimento.motivo_nao_fechamento && atendimento.fechou === true && (
-            <div className='p-3 rounded-xl bg-red-500/10 border border-red-500/20'>
-              <p className='text-xs text-red-400 font-bold mb-1 flex items-center gap-1'>
-                <AlertTriangle className='w-3 h-3' />
+            <div className='px-2.5 py-2 rounded-lg bg-red-500/10 border border-red-500/20'>
+              <p className='text-[10px] text-red-400 font-bold mb-0.5 flex items-center gap-1'>
+                <AlertTriangle className='w-2.5 h-2.5' />
                 Motivo do Nao Fechamento
               </p>
-              <p className='text-xs text-white/70'>{atendimento.motivo_nao_fechamento}</p>
+              <p className='text-[11px] text-white/70'>{atendimento.motivo_nao_fechamento}</p>
             </div>
           )}
 
           {/* Botoes de Acao */}
-          <div className='flex flex-col gap-2 pt-2'>
+          <div className='flex flex-col gap-1.5 pt-1'>
 
             {/* Botoes Nao Fechados: Gravar Retorno + Analise em linha, Fechou embaixo */}
             {isConcluido && atendimento.fechou === false && (
-              <div className='flex flex-col gap-2'>
-                <div className='flex gap-2'>
+              <div className='flex flex-col gap-1.5'>
+                <div className='flex gap-1.5'>
                   {!showRecorderRetorno && (
                     <Button
                       onClick={() => setShowRecorderRetorno(true)}
                       size='sm'
-                      className='flex-1 h-9 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                      className='flex-1 h-7 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-[11px] font-semibold rounded-md transition-all duration-300'
                     >
-                      <RotateCcw className='w-3.5 h-3.5 mr-1.5' />
+                      <RotateCcw className='w-3 h-3 mr-1' />
                       Gravar Retorno
                     </Button>
                   )}
@@ -344,9 +344,9 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                     <Button
                       onClick={() => setShowAnalise(true)}
                       size='sm'
-                      className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                      className='flex-1 h-7 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-[11px] font-semibold rounded-md transition-all duration-300'
                     >
-                      <Eye className='w-3.5 h-3.5 mr-1.5' />
+                      <Eye className='w-3 h-3 mr-1' />
                       Analise
                     </Button>
                   )}
@@ -356,12 +356,12 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                   onClick={() => handleMarkResult(true)}
                   disabled={markingResult !== null}
                   size='sm'
-                  className='w-full h-9 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/25 text-xs font-semibold rounded-lg transition-all duration-300'
+                  className='w-full h-7 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/25 text-[11px] font-semibold rounded-md transition-all duration-300'
                 >
                   {markingResult === 'fechou' ? (
-                    <Loader2 className='w-3.5 h-3.5 mr-1.5 animate-spin' />
+                    <Loader2 className='w-3 h-3 mr-1 animate-spin' />
                   ) : (
-                    <CheckCircle className='w-3.5 h-3.5 mr-1.5' />
+                    <CheckCircle className='w-3 h-3 mr-1' />
                   )}
                   Marcar como Fechou
                 </Button>
@@ -369,21 +369,17 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             )}
 
             {/* Linha final: Kommo + Gravar (aguardando) + Analise (demais) + Delete */}
-            <div className='flex gap-2'>
-              {/* Botao Kommo - sempre visivel se tiver kommo_id */}
+            <div className='flex gap-1.5'>
+              {/* Botao Kommo */}
               {atendimento.kommo_id && (
                 <a
                   href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${atendimento.kommo_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className='h-9 w-9 flex-shrink-0 flex items-center justify-center rounded-lg border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] hover:shadow-[0_0_15px_rgba(107,79,187,0.3)] transition-all'
+                  className='h-7 w-7 flex-shrink-0 flex items-center justify-center rounded-md border border-[rgba(107,79,187,0.4)] bg-[rgba(107,79,187,0.15)] hover:bg-[rgba(107,79,187,0.25)] hover:border-[rgba(107,79,187,0.6)] transition-all'
                   title="Abrir no Kommo"
                 >
-                  <img
-                    src="/images/kommo-logo.png"
-                    alt="Kommo"
-                    className="w-5 h-5"
-                  />
+                  <img src="/images/kommo-logo.png" alt="Kommo" className="w-4 h-4" />
                 </a>
               )}
 
@@ -392,21 +388,21 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                 <Button
                   onClick={() => setShowRecorder(true)}
                   size='sm'
-                  className='flex-1 h-9 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                  className='flex-1 h-7 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-[11px] font-semibold rounded-md transition-all duration-300'
                 >
-                  <Mic className='w-3.5 h-3.5 mr-1.5' />
+                  <Mic className='w-3 h-3 mr-1' />
                   Gravar
                 </Button>
               )}
 
-              {/* Botao Ver Analise - concluido mas nao e nao-fechado (fechados ou fechou=null) */}
+              {/* Botao Ver Analise - fechados ou fechou=null */}
               {temAnalise && isConcluido && atendimento.fechou !== false && (
                 <Button
                   onClick={() => setShowAnalise(true)}
                   size='sm'
-                  className='flex-1 h-9 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-semibold rounded-lg transition-all duration-300'
+                  className='flex-1 h-7 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-[11px] font-semibold rounded-md transition-all duration-300'
                 >
-                  <Eye className='w-3.5 h-3.5 mr-1.5' />
+                  <Eye className='w-3 h-3 mr-1' />
                   Analise
                 </Button>
               )}
@@ -416,10 +412,10 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='h-9 w-9 flex-shrink-0 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
+                  className='h-7 w-7 flex-shrink-0 rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/15 border border-white/10'
                   onClick={() => setShowDeleteConfirm(true)}
                 >
-                  <Trash2 className='w-4 h-4' />
+                  <Trash2 className='w-3 h-3' />
                 </Button>
               )}
             </div>
@@ -427,15 +423,15 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
           {/* Confirmacao de Delete */}
           {showDeleteConfirm && (
-            <div className='mt-3 p-4 rounded-xl bg-red-500/15 border border-red-500/25'>
-              <p className='text-red-400 text-sm font-bold mb-3'>Confirmar exclusao?</p>
-              <p className='text-white/60 text-xs mb-3'>Esta acao nao pode ser desfeita.</p>
-              <div className='flex gap-2'>
+            <div className='mt-2 p-2.5 rounded-lg bg-red-500/15 border border-red-500/25'>
+              <p className='text-red-400 text-xs font-bold mb-1'>Confirmar exclusao?</p>
+              <p className='text-white/60 text-[11px] mb-2'>Esta acao nao pode ser desfeita.</p>
+              <div className='flex gap-1.5'>
                 <Button
                   onClick={handleDeleteAtendimento}
                   disabled={deletingAtendimento}
                   size='sm'
-                  className='flex-1 h-8 bg-red-500 hover:bg-red-600 text-white text-xs'
+                  className='flex-1 h-7 bg-red-500 hover:bg-red-600 text-white text-[11px]'
                 >
                   {deletingAtendimento ? <Loader2 className='w-3 h-3 animate-spin' /> : 'Sim, Excluir'}
                 </Button>
@@ -443,7 +439,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                   onClick={() => setShowDeleteConfirm(false)}
                   size='sm'
                   variant='ghost'
-                  className='flex-1 h-8 text-white/60 hover:text-white text-xs'
+                  className='flex-1 h-7 text-white/60 hover:text-white text-[11px]'
                 >
                   Cancelar
                 </Button>
