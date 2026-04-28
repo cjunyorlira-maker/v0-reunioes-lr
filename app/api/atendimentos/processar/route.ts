@@ -22,23 +22,26 @@ const KOMMO_ACCESS_TOKEN = process.env.KOMMO_ACCESS_TOKEN
 const KOMMO_SUBDOMAIN = process.env.KOMMO_SUBDOMAIN
 
 // Prompt para análise de RETORNO - COMPLEMENTO do atendimento anterior
-const PROMPT_ANALISE_RETORNO = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário.
+const PROMPT_ANALISE_RETORNO = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário/automotivo, treinado no método Alan Caçula.
 
 CONTEXTO IMPORTANTE:
 Este é um RETORNO/COMPLEMENTO de um atendimento anterior que não fechou. O cliente voltou para continuar a negociação.
 NÃO é uma reanálise - é um COMPLEMENTO para verificar se o vendedor conseguiu fechar desta vez.
 
+⚠️ ATENÇÃO: O FGTS NÃO É MAIS ACEITO como entrada no consórcio. Se o cliente quer usar SÓ FGTS, o lead é INVIÁVEL.
+
 DADOS DO ATENDIMENTO ANTERIOR:
 {contexto_anterior}
 
 FOCO DA ANÁLISE:
-O objetivo principal é verificar se o CLIENTE FECHOU ou não neste retorno.
+1. O cliente FECHOU desta vez?
+2. As objeções pendentes do atendimento anterior foram resolvidas?
+3. O perfil do cliente mudou (conseguiu entrada, decisor presente)?
 
-ANALISE APENAS:
-1. O cliente FECHOU a venda neste retorno?
-2. Resumo breve do que aconteceu neste retorno
-3. Se não fechou, qual foi o motivo
-4. O que o vendedor pode fazer para fechar numa próxima
+GARANTIA DE CONTEMPLAÇÃO:
+✅ ACEITÁVEL: criar expectativa de contemplação rápida
+⛔ CRÍTICO: dar DATA/PRAZO específico ("vai ser contemplado em 6 meses")
+NÃO marcar como crítico só porque "garantiu contemplação" — só se DEU DATA.
 
 RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
 {
@@ -46,100 +49,178 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   "score_abordagem": número 0-10,
   "score_consorcio": número 0-10,
   "score_fechamento": número 0-10,
-  "resumo": "texto de 2-3 linhas resumindo O QUE ACONTECEU neste retorno",
-  "pontos_positivos": ["array de pontos positivos deste retorno"],
-  "pontos_criticos": ["array de pontos críticos deste retorno"],
+  "resumo": "texto de 2-3 linhas resumindo este retorno",
+  "pontos_positivos": ["array"],
+  "pontos_criticos": ["array"],
   "objecoes_cliente": [
-    {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
+    {"objecao": "string", "resposta_vendedor": "string", "eficaz": true/false}
   ],
+  "perfil_cliente": {
+    "tipo": "sem_entrada|apenas_pesquisando|indeciso|vai_analisar|decisor_com_freio|cliente_trauma|cliente_fechado_por_vendedor|cliente_naturalmente_fechado|pronto_pra_fechar|sem_perfil_real",
+    "tem_entrada": true/false/null,
+    "conexao_com_vendedor": "boa|regular|fraca",
+    "viabilidade_fechamento_atual": "alta|media|baixa|inviavel"
+  },
   "garantiu_contemplacao": true/false,
+  "deu_data_ou_prazo_contemplacao": true/false,
   "tecnicas_fechamento": {
     "tentou_fechar": true/false,
     "quantidade_tentativas": número,
     "tecnicas_usadas": ["array"],
-    "resultado": "fechou/nao_fechou/em_aberto"
+    "resultado": "fechou|nao_fechou|em_aberto"
   },
-  "motivo_nao_fechamento": "string principal ou null se fechou",
-  "proximo_passo_sugerido": "string com recomendação clara",
-  "feedback_coaching": "texto breve - o que fazer para fechar"
+  "motivo_nao_fechamento": "string ou null se fechou",
+  "categoria_motivo": "vendedor|cliente|neutro|null",
+  "proximo_passo_sugerido": "string acionável",
+  "feedback_coaching": "texto breve focado em fechamento"
 }
 
 IMPORTANTE:
 - Speaker 0 = Supervisor/Vendedor
 - Speaker 1 = Cliente
-- Responda APENAS com o JSON válido, sem texto adicional
+- Responda APENAS com o JSON válido
 - O mais importante é identificar se FECHOU ou NÃO FECHOU
+- Seja conservador: vendedor padrão = 5-6/10
 
 ## Transcrição do Retorno:
 `
 
-// Prompt completo do Claude para analise de atendimentos (criado no Workbench)
-const PROMPT_ANALISE = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário.
+// Prompt completo do Claude para analise de atendimentos - V2 com método Alan Caçula
+const PROMPT_ANALISE = `Você é um especialista em análise de atendimentos comerciais de financiamento e consórcio imobiliário/automotivo, treinado no método Alan Caçula.
 
 CONTEXTO DO NEGÓCIO:
-O cliente foi captado pelo pré-vendas com a proposta de conhecer um "sistema próprio de financiamento" diferenciado. Ele vem à agência acreditando que vai ver algo que nunca viu antes. O atendimento presencial é feito pelo supervisor (não pelo pré-vendas). A estratégia é: apresentar o financiamento mostrando as limitações do mercado, e conduzir naturalmente para o consórcio, que é o produto principal.
+A LR Multimarcas é uma agência de CRÉDITO IMOBILIÁRIO/AUTOMOTIVO. O carro chefe é o CONSÓRCIO. O cliente foi captado pelo pré-vendas com a proposta de conhecer um "sistema próprio de financiamento" diferenciado. Ele vem à agência acreditando que vai ver algo que nunca viu antes. O atendimento presencial é feito pelo SUPERVISOR (não pelo pré-vendas). A estratégia é: apresentar o financiamento mostrando as limitações do mercado, e conduzir naturalmente para o consórcio (produto principal).
+
+⚠️ ATENÇÃO: O FGTS NÃO É MAIS ACEITO como entrada no consórcio. Se o cliente quer usar SÓ FGTS, o lead é INVIÁVEL.
 
 ANALISE OS SEGUINTES PONTOS:
 
 1. ABORDAGEM INICIAL
 - O atendimento foi humanizado ou frio/robótico?
-- Houve rapport e conexão com o cliente?
-- O supervisor coletou informações importantes do cliente (perfil, objetivo, situação financeira, tem entrada ou não)?
-- Identificou resistências iniciais do cliente?
+- Houve rapport e conexão real com o cliente?
+- Coletou perfil completo (objetivo, situação financeira, entrada, decisor)?
+- Identificou resistências iniciais?
 - O cliente demonstrou abertura ou já chegou resistente?
 
 2. APRESENTAÇÃO DO FINANCIAMENTO
-- Se por ventura não for apresentado o financiamento entender o porquê — se o cliente já queria consórcio isso pode ser válido, mas deve estar justificado no atendimento.
-- Foi apresentado de forma dinâmica ou só leu a tela sem argumentação?
-- Houve muitas pausas e silêncios sem propósito?
-- Apresentou os diferenciais e argumentou sobre os juros do mercado?
-- Falou do sistema próprio como diferencial?
-- Usou exemplos reais para ilustrar?
-- Conduziu naturalmente para o consórcio ao mostrar as limitações do financiamento? (a ideia é que o cliente saia do financiamento com a sensação de que se não conseguiu aqui, não vai conseguir em lugar nenhum)
-- Argumentou sobre o porquê o financiamento não é a melhor opção naquele momento?
+- Apresentou de forma dinâmica ou só leu telas sem argumentação?
+- Argumentou sobre os juros do mercado e limitações?
+- Falou do "sistema próprio" como diferencial?
+- Conduziu naturalmente para o consórcio mostrando as limitações?
+- A ideia: cliente sair com a sensação "se não consigo aqui, não consigo em lugar nenhum"
 
 3. APRESENTAÇÃO DO CONSÓRCIO
-- Explicou bem o funcionamento de sorteio e lance?
-- Falou sobre possibilidade de contemplação? ATENÇÃO: possibilidade é diferente de garantia — o vendedor pode e deve mencionar que existe a possibilidade de contemplação por sorteio ou lance, mas NUNCA pode garantir data ou prazo. Avaliar se o vendedor deixou claro que é uma possibilidade e não uma certeza. Marcar como CRÍTICO se garantiu data ou prazo de contemplação.
-- Apresentou referências e cases de clientes realizados?
-- Mostrou o site da empresa e Reclame Aqui como prova social?
-- Explicou bem os diferenciais do consórcio vs financiamento?
-- Quais foram as objeções do cliente e como foram respondidas?
-- O vendedor identificou e respondeu a REAL dor do cliente, ou apenas contornou superficialmente sem resolver o que realmente estava travando a decisão? Avaliar se as respostas às objeções foram diretas e resolveram a raiz do problema ou se foram desvios que ignoraram o ponto central do cliente.
-- O cliente demonstrou resistência? Em qual momento?
+- Explicou bem sorteio e lance?
+- Apresentou cases reais e prova social (Reclame Aqui, site)?
+- Respondeu a REAL dor do cliente ou só desviou?
+- Cliente demonstrou resistência? Em qual momento?
 
 4. SITUAÇÃO FINANCEIRA DO CLIENTE
-- O cliente tinha entrada disponível?
-- Qual foi o impeditivo identificado para fechar?
-- O perfil financeiro foi bem mapeado?
-- Investigar o REAL motivo do não fechamento — muitas vezes o cliente diz "vou pensar" mas há um motivo real por trás (medo, cônjuge, situação financeira, não entendeu o produto, não confiou no vendedor). Avaliar se o vendedor investigou fundo ou aceitou a resposta superficial do cliente.
+- Tinha entrada disponível?
+- Mapeou o perfil financeiro completo?
+- Investigou o REAL motivo do não fechamento (não aceitou "vou pensar" superficial)?
 
 5. TÉCNICAS DE FECHAMENTO
-- O vendedor tentou fechar? Quantas vezes?
-- Quais técnicas de fechamento foram usadas?
-- Como respondeu às objeções de fechamento?
-- O cliente ficou de pensar? O vendedor tentou contornar?
+- Tentou fechar? Quantas vezes?
+- Quais técnicas usou?
+- Tentou contornar o "vou pensar"?
+- Aproveitou as janelas de fechamento (quando cliente sinalizou interesse)?
 
-6. COERÊNCIA E QUALIDADE DA ARGUMENTAÇÃO
-- O atendimento teve uma linha lógica e progressiva, ou ficou confuso e sem direção?
-- O vendedor usou os argumentos na ordem e contexto corretos, ou jogou todas as argumentações de forma aleatória sem conexão com o momento da conversa?
-- ATENÇÃO: um atendimento pode aparentemente ter usado "todas as argumentações" mas se foram usadas fora de ordem ou fora de contexto, o efeito é nulo ou negativo. Avaliar se cada argumento foi usado no momento certo e em resposta ao que o cliente estava sentindo naquele instante.
-- O vendedor soube ler o momento do cliente e adaptar o discurso, ou seguiu um roteiro fixo independente das reações?
+6. COERÊNCIA E ARGUMENTAÇÃO
+- Linha lógica progressiva ou confuso?
+- Argumentos no momento certo ou aleatórios?
+- Soube ler o momento do cliente e adaptar?
 
-7. AVALIAÇÃO GERAL DO TEMPO
-- Quanto tempo em cada etapa (financiamento / consórcio)?
-- Houve momento de desengajamento do cliente?
-- O ritmo foi adequado ou apressado/lento demais?
+7. AVALIAÇÃO DE TEMPO
+- Houve momento de desengajamento?
+- Ritmo adequado ou apressado/lento?
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 ANÁLISE DO PERFIL DO CLIENTE (CRÍTICO!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLASSIFIQUE O CLIENTE EM UM DOS 10 TIPOS:
+
+1. SEM_ENTRADA: Não tem nenhum recurso disponível ("não tenho nada guardado")
+2. APENAS_PESQUISANDO: Curioso, sem intenção real de comprar agora
+3. INDECISO: Tem perfil mas trava na decisão (medo, insegurança)
+4. VAI_ANALISAR: Tem entrada disponível mas pediu pra pensar
+5. DECISOR_COM_FREIO: Precisa aval de cônjuge/sócio/gestor
+6. CLIENTE_TRAUMA: Já teve experiência ruim com consórcio (não foi contemplado, demorou)
+7. CLIENTE_FECHADO_POR_VENDEDOR: Vendedor não criou conexão, cliente travou
+8. CLIENTE_NATURALMENTE_FECHADO: Perfil reservado, fala pouco por natureza
+9. PRONTO_PRA_FECHAR: Sinalizou interesse claro mas vendedor não conduziu
+10. SEM_PERFIL_REAL: Renda incompatível com parcela, não viável
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 CATEGORIZAÇÃO DO MOTIVO DO NÃO FECHAMENTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GRUPO A — CULPA DO VENDEDOR (cobrar do supervisor):
+- Não tentou nenhum fechamento
+- Aceitou "vou pensar" sem explorar
+- Não investigou objeção real (ficou na superfície)
+- Não criou urgência (custo de oportunidade)
+- Não agendou retorno concreto
+- Cliente sinalizou interesse e vendedor não conduziu
+- Argumentação fora de ordem
+- Não validou se cliente é o decisor
+- Apresentação muito longa, repetitiva, gerou fadiga
+
+GRUPO B — CULPA DO CLIENTE (não cobrar):
+- Sem entrada real (não tinha como)
+- Decisor não estava presente (descobriu na hora)
+- Renda incompatível com parcela
+- Quer usar SÓ FGTS sem renda (não aceito mais)
+- Cliente sem perfil real (orçamento muito apertado)
+
+GRUPO C — NEUTROS (anotar pra próximo contato):
+- Cliente vai analisar com entrada disponível (legítimo)
+- Pendência burocrática (documento, comprovante)
+- Pré-aprovação pendente
+- Trauma anterior que vendedor identificou mas não conseguiu desconstruir
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 GARANTIA DE CONTEMPLAÇÃO — REGRA REVISADA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONCEITO IMPORTANTE (método Alan Caçula):
+A contemplação É garantida CONTRATUALMENTE — todo consorciado SERÁ contemplado em algum momento. O que NÃO se garante é a DATA.
+
+✅ ACEITÁVEL (criar expectativa positiva):
+- "Existe possibilidade de contemplação rápida"
+- "Já vi clientes contemplados em 2-3 meses"
+- "Vamos buscar a contemplação juntos"
+- "Se Deus quiser, no primeiro mês a gente busca"
+- "Eu só faço consórcio com você se for pra dar certo"
+- "A contemplação é garantida contratualmente, só não a data"
+
+⛔ CRÍTICO (garantia explícita de DATA/PRAZO):
+- "Você VAI ser contemplado em 6 meses"
+- "GARANTO que em até 1 ano você tem o crédito"
+- "Pode confiar, em X meses está com o bem"
+- "Em até 90 dias você é contemplado"
+
+DIFERENÇA-CHAVE: Possibilidade futura (verbo no condicional/subjuntivo) = OK
+Promessa concreta com prazo (verbo na 1a pessoa direta + tempo) = CRÍTICO
+
+NÃO marcar como crítico apenas porque o vendedor "garantiu contemplação" — só marcar se ele DEU DATA OU PRAZO específico.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CLASSIFICAÇÕES ESPECIAIS — marcar como CRÍTICO se:
-⛔ Garantiu data ou prazo de contemplação no consórcio
-⛔ Foi direto demais dizendo que o cliente não tem perfil para financiamento
-⛔ Não tentou nenhuma técnica de fechamento
-⛔ Atendimento completamente robótico sem conexão humana
-⛔ Ignorou completamente a real objeção do cliente e apenas desviou sem resolver
-⛔ Argumentaç��o completamente fora de ordem e de contexto, tornando o atendimento confuso e sem progressão
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+⛔ Garantiu DATA OU PRAZO específico de contemplação (não só "garantiu contemplação")
+⛔ Foi direto demais dizendo que cliente "não tem perfil"
+⛔ Não tentou nenhuma técnica de fechamento
+⛔ Atendimento robótico sem conexão humana
+⛔ Ignorou a REAL objeção do cliente
+⛔ Argumentação fora de ordem e contexto
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 {
   "score_geral": número 0-10,
   "score_abordagem": número 0-10,
@@ -152,12 +233,29 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   "objecoes_cliente": [
     {"objecao": "o que o cliente disse", "resposta_vendedor": "como o vendedor respondeu", "eficaz": true/false}
   ],
+  "perfil_cliente": {
+    "tipo": "sem_entrada|apenas_pesquisando|indeciso|vai_analisar|decisor_com_freio|cliente_trauma|cliente_fechado_por_vendedor|cliente_naturalmente_fechado|pronto_pra_fechar|sem_perfil_real",
+    "tem_entrada": true/false/null,
+    "valor_entrada_disponivel": "string ou null",
+    "experiencia_anterior_consorcio": {
+      "ja_teve": true/false/null,
+      "experiencia_foi": "ruim|boa|neutra|null",
+      "motivo_experiencia_ruim": "string ou null"
+    },
+    "conexao_com_vendedor": "boa|regular|fraca",
+    "motivo_conexao_fraca": "vendedor_nao_criou|cliente_naturalmente_fechado|null",
+    "e_decisor": true/false/null,
+    "barreiras_identificadas": ["array de barreiras"],
+    "viabilidade_fechamento_atual": "alta|media|baixa|inviavel"
+  },
   "situacao_financeira": {
     "tinha_entrada": true/false/null,
     "impeditivo_principal": "string",
     "perfil_mapeado": true/false
   },
   "garantiu_contemplacao": true/false,
+  "deu_data_ou_prazo_contemplacao": true/false,
+  "trecho_garantia_data": "string com a frase exata se deu prazo, null caso contrário",
   "usou_prova_social": {
     "reclame_aqui": true/false,
     "site_empresa": true/false,
@@ -167,11 +265,14 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
     "tentou_fechar": true/false,
     "quantidade_tentativas": número,
     "tecnicas_usadas": ["array"],
-    "resultado": "fechou/nao_fechou/em_aberto"
+    "resultado": "fechou|nao_fechou|em_aberto",
+    "janelas_de_fechamento_perdidas": número
   },
   "motivo_nao_fechamento": "string principal ou null se fechou",
-  "proximo_passo_sugerido": "string com recomendação clara",
-  "feedback_coaching": "texto de coaching para o vendedor — o que melhorar no próximo atendimento"
+  "categoria_motivo": "vendedor|cliente|neutro|null",
+  "explicacao_categoria": "string explicando por que está nessa categoria",
+  "proximo_passo_sugerido": "string com recomendação clara e ACIONÁVEL",
+  "feedback_coaching": "texto de coaching detalhado para o vendedor"
 }
 
 IMPORTANTE: 
@@ -179,6 +280,9 @@ IMPORTANTE:
 - Speaker 1 = Cliente
 - Responda APENAS com o JSON válido, sem texto adicional
 - Se algo não ficou claro na transcrição, indique null
+- Seja CONSERVADOR nos scores: vendedor padrão (sem destaque) = 5-6/10
+- Score 9-10 só para excelência genuína
+- Score 0-3 só para erros críticos graves
 
 ## Transcrição da Reunião:
 `
@@ -239,10 +343,135 @@ async function withRetry<T>(
   return null
 }
 
+/**
+ * Gera nota ENXUTA para enviar ao Kommo
+ * Diferente do resumo do sistema (mais técnico)
+ * Foco: PRÉ-VENDAS + SUPERVISOR
+ * Objetivo: feedback rápido pra ambos os papéis
+ */
+function gerarNotaKommoEnxuta(analise: any, vendedor: string, nomeCliente?: string): string {
+  if (!analise) return ''
+  
+  const tipoCliente = analise.perfil_cliente?.tipo || 'indefinido'
+  const temEntrada = analise.perfil_cliente?.tem_entrada
+  const conexao = analise.perfil_cliente?.conexao_com_vendedor || 'regular'
+  const viabilidade = analise.perfil_cliente?.viabilidade_fechamento_atual || 'media'
+  const fechou = analise.tecnicas_fechamento?.resultado === 'fechou'
+  const motivo = analise.motivo_nao_fechamento
+  const categoria = analise.categoria_motivo
+  const expRuim = analise.perfil_cliente?.experiencia_anterior_consorcio?.experiencia_foi === 'ruim'
+  
+  // Mapeamento de tipos para descrição amigável
+  const tipoLabel: Record<string, string> = {
+    sem_entrada: '💸 Sem entrada disponível',
+    apenas_pesquisando: '🔍 Apenas pesquisando (sem urgência real)',
+    indeciso: '🤔 Indeciso (tem perfil mas trava na decisão)',
+    vai_analisar: '📊 Vai analisar (com entrada disponível)',
+    decisor_com_freio: '👥 Precisa aval de cônjuge/sócio/gestor',
+    cliente_trauma: '⚠️ Trauma com consórcio anterior',
+    cliente_fechado_por_vendedor: '🔒 Cliente travou (vendedor não criou conexão)',
+    cliente_naturalmente_fechado: '🤐 Perfil naturalmente reservado',
+    pronto_pra_fechar: '🔥 Estava pronto pra fechar',
+    sem_perfil_real: '❌ Sem perfil financeiro real',
+  }
+  
+  let nota = `🎯 *ANÁLISE IA — ATENDIMENTO PRESENCIAL*`
+  if (nomeCliente) nota += ` — *${nomeCliente}*`
+  
+  // PERFIL DO CLIENTE
+  nota += `\n\n👤 *PERFIL DO CLIENTE*`
+  nota += `\n• Tipo: ${tipoLabel[tipoCliente] || tipoCliente}`
+  if (temEntrada !== null && temEntrada !== undefined) {
+    nota += `\n• Tem entrada: ${temEntrada ? 'Sim ✅' : 'Não ❌'}`
+    if (analise.perfil_cliente?.valor_entrada_disponivel) {
+      nota += ` (${analise.perfil_cliente.valor_entrada_disponivel})`
+    }
+  }
+  if (expRuim) {
+    nota += `\n• ⚠️ Já teve experiência ruim com consórcio`
+    const motivoExp = analise.perfil_cliente?.experiencia_anterior_consorcio?.motivo_experiencia_ruim
+    if (motivoExp) nota += ` — ${motivoExp}`
+  }
+  nota += `\n• Conexão na conversa: ${conexao === 'boa' ? '🟢 Boa' : conexao === 'regular' ? '🟡 Regular' : '🔴 Fraca'}`
+  if (conexao === 'fraca' && analise.perfil_cliente?.motivo_conexao_fraca === 'vendedor_nao_criou') {
+    nota += ` (vendedor não criou rapport)`
+  }
+  
+  // RESULTADO
+  if (fechou) {
+    nota += `\n\n✅ *FECHOU A VENDA!*`
+  } else {
+    nota += `\n\n❌ *NÃO FECHOU*`
+    if (motivo) {
+      nota += `\n• Motivo: ${motivo}`
+    }
+    if (categoria === 'vendedor') {
+      nota += `\n• 🔍 *Categoria: Falha do vendedor*`
+    } else if (categoria === 'cliente') {
+      nota += `\n• 🔍 *Categoria: Limitação do cliente*`
+    } else if (categoria === 'neutro') {
+      nota += `\n• 🔍 *Categoria: Neutro (acompanhar)*`
+    }
+  }
+  
+  // FEEDBACK PRO PRÉ-VENDAS (só se categoria for vendedor ou neutro)
+  if (categoria === 'vendedor' || categoria === 'neutro' || tipoCliente === 'decisor_com_freio' || tipoCliente === 'sem_entrada') {
+    nota += `\n\n📞 *FEEDBACK PRO PRÉ-VENDAS*`
+    
+    if (tipoCliente === 'sem_entrada') {
+      nota += `\n• Lead chegou SEM entrada real. Validar isso na qualificação.`
+    } else if (tipoCliente === 'decisor_com_freio') {
+      nota += `\n• Cliente precisa de aval de outra pessoa. Validar "você decide sozinho?" antes de marcar.`
+    } else if (tipoCliente === 'apenas_pesquisando') {
+      nota += `\n• Lead estava só pesquisando. Aprofundar urgência na qualificação.`
+    } else if (categoria === 'vendedor') {
+      nota += `\n• Lead chegou com perfil. Foi falha da execução do supervisor.`
+    } else {
+      nota += `\n• Acompanhar próxima abordagem desse perfil.`
+    }
+  }
+  
+  // FEEDBACK PRO SUPERVISOR (sempre que não fechou)
+  if (!fechou) {
+    nota += `\n\n🎓 *FEEDBACK PRO SUPERVISOR (${vendedor})*`
+    
+    const proximoPasso = analise.proximo_passo_sugerido
+    if (proximoPasso) {
+      nota += `\n• ${proximoPasso}`
+    }
+    
+    // Pontos críticos resumidos (top 2)
+    const pontosCriticos = analise.pontos_criticos || []
+    const top2Criticos = pontosCriticos.slice(0, 2)
+    if (top2Criticos.length > 0) {
+      nota += `\n\n*Pontos a melhorar:*`
+      top2Criticos.forEach((p: string) => {
+        // Limpa o "CRÍTICO —" do início pra ficar mais curto
+        const clean = p.replace(/^[⛔]?\s*CR[ÍI]TICO\s*[—-]\s*/i, '').replace(/^GRAVE\s*[—-]\s*/i, '')
+        nota += `\n• ${clean}`
+      })
+    }
+  }
+  
+  // SCORES (sempre)
+  nota += `\n\n📊 *Score Geral: ${analise.score_geral || 0}/10*`
+  
+  // VIABILIDADE FUTURA
+  if (!fechou && viabilidade === 'inviavel') {
+    nota += `\n\n💡 *RECOMENDAÇÃO: Lead INVIÁVEL no momento. Marcar adequadamente no Kommo.*`
+  } else if (!fechou && viabilidade === 'alta') {
+    nota += `\n\n💡 *Lead com BOM POTENCIAL. Vale follow-up estruturado.*`
+  }
+  
+  nota += `\n\n_Gerado automaticamente — Vendedor: ${vendedor}_`
+  
+  return nota
+}
+
 export async function POST(request: Request) {
   const supabase = createServiceClient()
   let atendimentoId: string | null = null
-
+  
   try {
     console.log("[v0] Processar POST iniciado")
     const body = await request.json()
@@ -599,28 +828,9 @@ async function enviarNotaKommo(
 ): Promise<boolean> {
   if (!KOMMO_ACCESS_TOKEN || !KOMMO_SUBDOMAIN) throw new Error("Credenciais Kommo ausentes")
 
-  // Monta o texto da nota formatado
-  const motivo = analise.motivo_nao_fechamento
-    ? `\n❌ *Motivo não fechou:* ${analise.motivo_nao_fechamento}`
-    : "\n✅ *Resultado:* Fechamento realizado"
-
-  const pontosPositivos = (analise.pontos_positivos || []).map((p: string) => `  + ${p}`).join("\n")
-  const pontosCriticos = (analise.pontos_criticos || []).map((p: string) => `  - ${p}`).join("\n")
-
-  const nota = `🤖 *Análise IA do Atendimento — ${nomeLead}*\n\n` +
-    `📋 *Resumo:* ${analise.resumo || "—"}\n` +
-    motivo + "\n\n" +
-    `📊 *Scores:*\n` +
-    `  • Geral: ${analise.score_geral || "—"}/10\n` +
-    `  • Abordagem: ${analise.score_abordagem || "—"}/10\n` +
-    `  • Financiamento: ${analise.score_financiamento || "—"}/10\n` +
-    `  • Consórcio: ${analise.score_consorcio || "—"}/10\n` +
-    `  • Fechamento: ${analise.score_fechamento || "—"}/10\n\n` +
-    (pontosPositivos ? `✅ *Pontos Positivos:*\n${pontosPositivos}\n\n` : "") +
-    (pontosCriticos ? `⚠️ *Pontos a Melhorar:*\n${pontosCriticos}\n\n` : "") +
-    `💡 *Coaching:* ${analise.feedback_coaching || "—"}\n\n` +
-    `_Gerado automaticamente — Vendedor: ${responsavel}_`
-
+  // ETAPA 4: Usa a NOVA nota enxuta focada em pré-vendas + supervisor
+  const notaKommoEnxuta = gerarNotaKommoEnxuta(analise, responsavel, nomeLead)
+  
   // Busca o leadId numerico pelo kommo_id
   const searchRes = await fetch(
     `https://${KOMMO_SUBDOMAIN}.kommo.com/api/v4/leads?query=${kommoId}`,
@@ -642,7 +852,7 @@ async function enviarNotaKommo(
         Authorization: `Bearer ${KOMMO_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([{ note_type: "common", params: { text: nota } }]),
+      body: JSON.stringify([{ note_type: "common", params: { text: notaKommoEnxuta } }]),
     }
   )
 
