@@ -4,6 +4,7 @@ import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 import CloudConvert from "cloudconvert"
 import { gerarPDFAnalise } from "@/lib/gerarPDFAnalise"
+import { buscarDadosLeadKommo, montarContextoKommoParaIA } from "@/lib/buscarDadosLeadKommo"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -582,7 +583,8 @@ async function analisarComClaude(
   transcricao: string,
   tipoDetectado: string,
   duracao: number,
-  vendedorNome: string
+  vendedorNome: string,
+  contextoKommo: string = ''
 ): Promise<any> {
   try {
     const anthropic = new Anthropic()
@@ -926,12 +928,54 @@ EXEMPLO ERRADO (NUNCA FAÇA):
 "Separe imóveis de 220-240k na região e ofereça visita..."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCORE DUAL: VENDEDOR vs LEAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONCEITO CRÍTICO: Vendedor pode fazer ligação MAGISTRAL com um lead 
+INVIÁVEL e não conseguir fechar. ISSO NÃO É CULPA DELE.
+
+Você deve avaliar 2 dimensões SEPARADAS:
+
+1) SCORE_VENDEDOR (0-100):
+   - Aplicou método Alan Caçula?
+   - Validou dados do CRM (quando havia)?
+   - Aprofundou os 4 pilares?
+   - Fez pergunta-chave de reversão (quando aplicável)?
+   - Marcou reunião / próximo passo?
+   - Manteve postura consultiva?
+
+2) SCORE_LEAD (0-100):
+   - Tem perfil real de crédito?
+   - Tem entrada compatível com o crédito desejado?
+   - É decisor (não está pedindo info pra terceiros)?
+   - Renda compatível com parcela?
+   - Tem urgência ou só pesquisando há meses?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SINAIS DE LEAD INVIÁVEL (LR Multimarcas)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Marcar perfil_lead.viabilidade = "inviavel" quando o cliente:
+
+- ENTRADA ZERO: Não tem nenhum valor disponível em conta
+- FGTS COMO ÚNICA ENTRADA NO CONSÓRCIO: FGTS NÃO É MAIS ACEITO
+- NÃO É O DECISOR: Cliente está ligando "pra outra pessoa"
+- DESPROPORÇÃO RENDA/CRÉDITO: Parcela ≤ R$ 500 querendo crédito ≥ R$ 200.000
+- CLIENTE-CURIOSO: Só está "vendo preço", "comparando", sem intenção real
+- NOME SUJO + SEM RECURSO: Restrição grande sem capacidade de quitar
+
+Se identificar 1+ desses sinais → perfil_lead.viabilidade = "inviavel" 
+ou "baixa". E NÃO PENALIZE o vendedor por não fechar.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "tipo_ligacao": "facebook_grupos|simulador_empresa|simulador_facebook|ativacao_whatsapp|confirmacao_reuniao|retorno",
   "resumo_executivo": "1-2 frases resumindo o resultado",
-  "score_geral": 0-100,
+  "score_vendedor": "0-100, avalia EXECUÇÃO do método (independente da viabilidade do lead)",
+  "score_lead": "0-100, avalia VIABILIDADE comercial do lead (independente do vendedor)",
+  "score_geral": "média ponderada considerando os 2 acima",
   "cliente_interessado": true/false,
   "agendou_retorno": true/false,
   "quatro_pilares": {
@@ -942,8 +986,15 @@ SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
     "momento": "agora|pesquisando|indefinido"
   },
   "perfil_lead": {
+    "viabilidade": "alta|media|baixa|inviavel",
+    "tem_perfil_credito": true,
+    "tem_entrada_real": true,
+    "e_decisor": true,
     "nivel_interesse": "alto|medio|baixo",
     "tipo_cliente": "client_bom|client_morno|client_ruim",
+    "barreiras_intransponiveis": ["lista de barreiras que tornam o lead inviável"],
+    "viavel_para_proximo_contato": true,
+    "comentario_perfil": "explicação clara da viabilidade do lead",
     "objecoes_principais": ["array de objeções ouvidas"],
     "barreiras_compra": ["array de barreiras reais vs percebidas"]
   },
@@ -953,7 +1004,11 @@ SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
     "data_sugerida": "string ou null"
   },
   "vendedor_performance": {
-    "qualidade": "excelente|bom|medio|ruim",
+    "qualidade": "excelente|boa|regular|fraca",
+    "validou_dados_crm": true,
+    "aprofundou_pilares": true,
+    "marcou_reuniao": true,
+    "comentario_performance": "avaliação técnica do vendedor",
     "tipo_cliente": "vend_bom|vend_ruim",
     "3_segredos_metodo": {
       "consultor_nao_vendedor": true/false,
@@ -974,15 +1029,25 @@ SCHEMA DE RETORNO JSON (RESPEITAR EXATAMENTE)
       "comentario_reversao": "string explicando como foi"
     }
   },
-  "objecoes_tratadas": [
+  "objecoes_cliente": [
     {
       "objecao": "string",
+      "eficaz": true/false,
+      "respondeu_com_pergunta": true/false,
+      "significado_real": "string",
       "resposta_vendedor": "string",
-      "foi_pergunta_ou_ataque": "pergunta|ataque",
-      "resultado": "converteu|nao_converteu"
+      "resposta_ideal": "string"
     }
   ],
+  "pontos_positivos": ["array"],
+  "pontos_criticos": ["array"],
   "alertas_criticos": ["array"],
+  "abordagem_credito": {
+    "apresentou_valores_concretos": true/false,
+    "usou_simulacao": true/false,
+    "houve_negociacao": true/false,
+    "foi_generico": true/false
+  },
   "proximo_passo_sugerido": "string",
   "script_proxima_ligacao": "Para tipo facebook_grupos: forneça SCRIPT PRONTO para o vendedor usar em próxima ligação SIMILAR. Inclua: apresentação, pergunta-chave de reversão, perguntas dos 4 pilares, e fechamento com 2 opções de horário. Use linguagem natural pronta pra falar. Para outros tipos: deixe null.",
   "feedback_vendedor": "Coaching com: 1) o que fez bem 2) cada ponto crítico com exemplo concreto de como deveria ter sido feito 3) como contornar cada objeção 4) script ideal para os primeiros 2 minutos 5) o que dizer no próximo contato"
@@ -1001,6 +1066,7 @@ IMPORTANTE:
 - Vendedor: ${vendedorNome}
 - Tipo identificado pela detecção automática: ${tipoDetectado}
 - Duração: ${duracao} segundos
+${contextoKommo}
 
 TRANSCRIÇÃO DA LIGAÇÃO:
 ${transcricao}`
@@ -1337,7 +1403,10 @@ async function enviarNotaKommo(
     // ============================================
     let nota = `${emoji} ANÁLISE — ${(analise.tipo_ligacao || 'LIGAÇÃO').toUpperCase().replace(/_/g, ' ')} (Score: ${analise.score_geral || 0}/100)`
     nota += `\n\n📝 RESUMO: ${analise.resumo_executivo || 'N/A'}`
-    nota += `\n\n📊 SCORES: Geral ${analise.score_geral || 0} | Abertura ${analise.score_abertura || 0} | Qualif. ${analise.score_qualificacao || 0} | Crédito ${analise.score_abordagem_credito || 0} | Reunião ${analise.score_conducao_reuniao || 0}`
+    nota += `\n\n📊 SCORES:`
+    nota += `\n• Vendedor: ${analise.score_vendedor || analise.score_geral || 0}/100 ${analise.vendedor_performance?.qualidade ? `(${analise.vendedor_performance.qualidade})` : ''}`
+    nota += `\n• Lead: ${analise.score_lead || 'N/A'}/100 ${analise.perfil_lead?.viabilidade ? `(viabilidade ${analise.perfil_lead.viabilidade})` : ''}`
+    nota += `\n• Geral: ${analise.score_geral || 0}/100`
     
     // ============================================
     // 4 PILARES + DADOS DA REUNIÃO
@@ -1346,6 +1415,26 @@ async function enviarNotaKommo(
     nota += `\n• Crédito: ${pilares.credito || '—'} | Parcela: ${pilares.parcela || '—'} | Entrada: ${pilares.entrada || '—'} | Momento: ${pilares.momento || '—'}`
     nota += `\n\n📅 REUNIÃO: ${reuniao.marcou ? `✅ Marcada (${reuniao.tipo || 'tipo indefinido'})` : '❌ Não marcada'}`
     nota += `\n💰 ABORDAGEM CRÉDITO: ${credito.apresentou_valores_concretos ? '✅ Valores concretos' : '❌ Sem valores concretos'} | ${credito.usou_simulacao ? '✅ Simulação' : '❌ Sem simulação'}`
+    
+    // PERFIL DO LEAD (novo bloco)
+    if (analise.perfil_lead?.viabilidade && analise.perfil_lead.viabilidade !== 'alta') {
+      nota += `\n\n⚠️ PERFIL DO LEAD: ${analise.perfil_lead.viabilidade.toUpperCase()}`
+      
+      if (analise.perfil_lead.barreiras_intransponiveis?.length > 0) {
+        nota += `\n🚧 Barreiras:`
+        analise.perfil_lead.barreiras_intransponiveis.slice(0, 4).forEach((b: string) => {
+          nota += `\n  • ${b}`
+        })
+      }
+      
+      if (analise.perfil_lead.comentario_perfil) {
+        nota += `\n💬 ${analise.perfil_lead.comentario_perfil}`
+      }
+      
+      if (analise.perfil_lead.viabilidade === 'inviavel') {
+        nota += `\n💡 SUGESTÃO: Marcar como "sem perfil" no Kommo e focar em leads viáveis.`
+      }
+    }
     nota += `\n🎯 QUALIFICAÇÃO: ${qualificacao.qualificou_antes_de_falar_muito ? '✅ Qualificou bem' : '❌ Falhou em qualificar'} | ${ouvirFalarEmoji} ${qualificacao.proporcao_falar_ouvir || 'N/A'}`
     
     // ============================================
@@ -1509,7 +1598,10 @@ async function enviarNotaKommoContato(
     let nota = `⚠️ CONTATO SEM LEAD ATIVO — Análise da Ligação\n\n`
     nota += `${emoji} ANÁLISE — ${(analise.tipo_ligacao || 'LIGAÇÃO').toUpperCase().replace(/_/g, ' ')} (Score: ${analise.score_geral || 0}/100)`
     nota += `\n\n📝 RESUMO: ${analise.resumo_executivo || 'N/A'}`
-    nota += `\n\n📊 SCORES: Geral ${analise.score_geral || 0} | Abertura ${analise.score_abertura || 0} | Qualif. ${analise.score_qualificacao || 0} | Crédito ${analise.score_abordagem_credito || 0} | Reunião ${analise.score_conducao_reuniao || 0}`
+    nota += `\n\n📊 SCORES:`
+    nota += `\n• Vendedor: ${analise.score_vendedor || analise.score_geral || 0}/100 ${analise.vendedor_performance?.qualidade ? `(${analise.vendedor_performance.qualidade})` : ''}`
+    nota += `\n• Lead: ${analise.score_lead || 'N/A'}/100 ${analise.perfil_lead?.viabilidade ? `(viabilidade ${analise.perfil_lead.viabilidade})` : ''}`
+    nota += `\n• Geral: ${analise.score_geral || 0}/100`
     nota += `\n\n🎯 4 PILARES (${pilares.pilares_coletados || 0}/4) ${interesseEmoji}`
     nota += `\n• Crédito: ${pilares.credito || '—'} | Parcela: ${pilares.parcela || '—'} | Entrada: ${pilares.entrada || '—'} | Momento: ${pilares.momento || '—'}`
     nota += `\n\n📅 REUNIÃO: ${reuniao.marcou ? `✅ Marcada (${reuniao.tipo || 'tipo indefinido'})` : '❌ Não marcada'}`
@@ -1520,6 +1612,26 @@ async function enviarNotaKommoContato(
       nota += `\n\n🔄 REVERSÃO PARA CRÉDITO:`
       nota += `\n${reversao.aplicou_pergunta_reversao ? '✅' : '❌'} Aplicou pergunta-chave | Qualidade: ${reversao.qualidade_reversao || 'N/A'}`
       if (reversao.comentario_reversao) nota += `\n💬 ${reversao.comentario_reversao}`
+    }
+    
+    // PERFIL DO LEAD (novo bloco)
+    if (analise.perfil_lead?.viabilidade && analise.perfil_lead.viabilidade !== 'alta') {
+      nota += `\n\n⚠️ PERFIL DO LEAD: ${analise.perfil_lead.viabilidade.toUpperCase()}`
+      
+      if (analise.perfil_lead.barreiras_intransponiveis?.length > 0) {
+        nota += `\n🚧 Barreiras:`
+        analise.perfil_lead.barreiras_intransponiveis.slice(0, 4).forEach((b: string) => {
+          nota += `\n  • ${b}`
+        })
+      }
+      
+      if (analise.perfil_lead.comentario_perfil) {
+        nota += `\n💬 ${analise.perfil_lead.comentario_perfil}`
+      }
+      
+      if (analise.perfil_lead.viabilidade === 'inviavel') {
+        nota += `\n💡 SUGESTÃO: Marcar como "sem perfil" no Kommo e focar em leads viáveis.`
+      }
     }
     
     if (analise.alertas_criticos && analise.alertas_criticos.length > 0) {
@@ -1817,7 +1929,8 @@ export async function POST(request: Request) {
           transcricao,
           tipoLigacao,
           duracaoSegundos,
-          vendedorData?.vendedor || 'Vendedor'
+          vendedorData?.vendedor || 'Vendedor',
+          contextoKommo
         )
         if (analise) {
           console.log('[Análise IA] ✅ Análise concluída. Score geral:', analise.score_geral)
@@ -1945,6 +2058,21 @@ export async function POST(request: Request) {
       
       kommoLeadId = lead_id
       kommoContactId = contact_id
+      
+      // ============================================================
+      // BUSCAR DADOS AUTORITATIVOS DO LEAD NO KOMMO
+      // ============================================================
+      let dadosKommo: any = null
+      let contextoKommo = ''
+
+      if (lead_id) {
+        dadosKommo = await buscarDadosLeadKommo(lead_id)
+        if (dadosKommo?.tipoLigacaoEsperado) {
+          console.log('[Kommo] Origem CRM:', dadosKommo.origem, '→ tipo:', dadosKommo.tipoLigacaoEsperado)
+          tipoLigacao = dadosKommo.tipoLigacaoEsperado
+        }
+        contextoKommo = montarContextoKommoParaIA(dadosKommo)
+      }
       
       // Se não encontrou nem lead NEM contato, IGNORA
       if (!lead_id && !contact_id) {
