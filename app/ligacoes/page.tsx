@@ -156,12 +156,6 @@ function getViabilidadeBadge(viabilidade: string | undefined) {
 }
 
 export default function LigacoesPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [equipe, setEquipe] = useState("")
-  const [senha, setSenha] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  
   const [ligacoes, setLigacoes] = useState<Ligacao[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loadingLigacoes, setLoadingLigacoes] = useState(false)
@@ -221,35 +215,9 @@ export default function LigacoesPage() {
   }, [filtroStatus, filtroEquipe, filtroVendedor, periodo, dataInicioCustom, dataFimCustom])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      carregarStats()
-      carregarLigacoes()
-    }
-  }, [isAuthenticated, carregarStats, carregarLigacoes])
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
-    
-    try {
-      const res = await fetch("/api/auth/equipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ equipe, senha }),
-      })
-      
-      if (res.ok) {
-        setIsAuthenticated(true)
-      } else {
-        setError("Senha incorreta")
-      }
-    } catch {
-      setError("Erro ao autenticar")
-    } finally {
-      setLoading(false)
-    }
-  }
+    carregarStats()
+    carregarLigacoes()
+  }, [carregarStats, carregarLigacoes])
 
   const handlePlayPause = (ligacao: Ligacao) => {
     if (!ligacao.audio_url) return
@@ -270,48 +238,13 @@ export default function LigacoesPage() {
     setPlayingId(ligacao.id)
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-900/50 backdrop-blur border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-white text-center">📞 Dashboard de Ligações</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <Select value={equipe} onValueChange={setEquipe}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                  <SelectValue placeholder="Selecione sua equipe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EQUIPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Input
-                type="password"
-                placeholder="Senha da equipe"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                className="bg-slate-800 border-slate-700 text-white"
-              />
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || !equipe || !senha}>
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">📞 Dashboard de Ligações</h1>
-            <p className="text-slate-400 mt-1">Análise completa de produtividade — {equipe}</p>
+            <p className="text-slate-400 mt-1">Análise completa de produtividade</p>
           </div>
           <Button onClick={() => { carregarStats(); carregarLigacoes() }} variant="outline" className="border-slate-700">
             <RefreshCw className="w-4 h-4 mr-2" />
