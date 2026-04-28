@@ -473,6 +473,124 @@ export default function LigacoesPage() {
             </div>
           )}
 
+          {/* Piores Vendedores - dois cards lado a lado */}
+          {stats && stats.porVendedor.length > 0 && (() => {
+            const VENDEDORES_FIXOS = [
+              "Bianca", "Amanda", "Ana B", "João Lucas", "João Vitor",
+              "Lidiane", "Rafaella", "Lucas", "Ana G", "Isabelly",
+              "Gabrielly", "Nicolas", "Brayan",
+            ]
+
+            // Garante que todos os vendedores fixos aparecem, mesmo sem dados
+            const vendedoresComDados = new Map(stats.porVendedor.map(v => [v.vendedor, v]))
+            const todos: VendedorStats[] = VENDEDORES_FIXOS.map(nome => {
+              if (vendedoresComDados.has(nome)) return vendedoresComDados.get(nome)!
+              return {
+                vendedor: nome,
+                equipe: "—",
+                total: 0,
+                atendidas: 0,
+                nao_atendidas: 0,
+                taxa_atendimento: 0,
+                tempo_total_chamadas_segundos: 0,
+                tempo_real_fala_segundos: 0,
+                tempo_medio_fala_segundos: 0,
+                analisadas: 0,
+                score_vendedor_medio: null,
+                score_lead_medio: null,
+                reunioes_marcadas: 0,
+                leads_viavel_alta: 0,
+                leads_inviaveis: 0,
+              }
+            })
+
+            const pioresLigacoes = [...todos].sort((a, b) => a.total - b.total).slice(0, 5)
+            const pioresProdutividade = [...todos].sort((a, b) => a.tempo_real_fala_segundos - b.tempo_real_fala_segundos).slice(0, 5)
+
+            const cardStyle = {
+              background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(239,68,68,0.08)",
+              border: "1px solid rgba(255,80,80,0.15)",
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Piores em volume de ligacoes */}
+                <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+                  <div className="p-4 border-b border-red-500/20 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-rose-700 flex items-center justify-center">
+                      <PhoneMissed className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-white font-bold text-sm">Menos ligacoes</h2>
+                      <p className="text-red-300/60 text-[10px] uppercase tracking-wider">Volume total de tentativas</p>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {pioresLigacoes.map((v, idx) => {
+                      const colors = EQUIPE_COLORS[v.equipe] || EQUIPE_COLORS["Admin"]
+                      const pct = stats.geral.total > 0 ? (v.total / stats.geral.total) * 100 : 0
+                      return (
+                        <div key={v.vendedor} className="flex items-center gap-3">
+                          <span className="text-red-400/60 text-xs font-mono w-4">{idx + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-white text-sm font-medium truncate">{v.vendedor}</span>
+                              <span className="text-red-300 font-bold text-sm ml-2">{v.total}</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-red-600 to-rose-500 transition-all duration-500"
+                                style={{ width: `${Math.max(pct, 2)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Piores em produtividade de fala */}
+                <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+                  <div className="p-4 border-b border-orange-500/20 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-700 flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-white font-bold text-sm">Menos tempo de fala</h2>
+                      <p className="text-orange-300/60 text-[10px] uppercase tracking-wider">Produtividade real com clientes</p>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {pioresProdutividade.map((v, idx) => {
+                      const maxSeg = Math.max(...pioresProdutividade.map(x => x.tempo_real_fala_segundos), 1)
+                      const pct = (v.tempo_real_fala_segundos / maxSeg) * 100
+                      return (
+                        <div key={v.vendedor} className="flex items-center gap-3">
+                          <span className="text-orange-400/60 text-xs font-mono w-4">{idx + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-white text-sm font-medium truncate">{v.vendedor}</span>
+                              <span className="text-orange-300 font-bold text-sm ml-2">{formatTotalDuration(v.tempo_real_fala_segundos)}</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-orange-600 to-amber-500 transition-all duration-500"
+                                style={{ width: `${Math.max(pct, 2)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Performance por Vendedor - Glassmorphism */}
           <div
             className="rounded-2xl overflow-hidden"

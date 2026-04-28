@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, Plus, LogOut, Trophy, Mic } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, LogOut, Trophy, Mic, Phone } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface HeaderProps {
@@ -122,6 +122,20 @@ export function Header({ weekLabel, onPrevWeek, onNextWeek, onNewLead }: HeaderP
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <Mic className="h-4 w-4 relative z-10" />
           <span className="hidden sm:inline relative z-10">Atendimentos</span>
+        </Link>
+
+        {/* Ligacoes button */}
+        <Link
+          href="/ligacoes"
+          className="group relative flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #0891b2, #06b6d4)",
+            boxShadow: "0 4px 20px rgba(6,182,212,0.3)",
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <Phone className="h-4 w-4 relative z-10" />
+          <span className="hidden sm:inline relative z-10">Ligacoes</span>
         </Link>
         
         {/* Logout */}
