@@ -282,6 +282,32 @@ export default function AtendimentosPage() {
   const fechados = concluidos.filter((a) => a.fechou)
   const naoFechados = concluidos.filter((a) => !a.fechou)
   const taxaConversao = concluidos.length > 0 ? ((fechados.length / concluidos.length) * 100).toFixed(1) : "0"
+
+  // Helper para agrupar atendimentos por dia
+  const agruparPorDia = (lista: Atendimento[]) => {
+    const grupos: Record<string, Atendimento[]> = {}
+    lista.forEach(a => {
+      const data = a.data_atendimento?.split('T')[0] || 'sem-data'
+      if (!grupos[data]) grupos[data] = []
+      grupos[data].push(a)
+    })
+    // Ordena as datas (mais recente primeiro)
+    const datasOrdenadas = Object.keys(grupos).sort((a, b) => b.localeCompare(a))
+    return datasOrdenadas.map(data => ({ data, atendimentos: grupos[data] }))
+  }
+
+  const formatarDataGrupo = (dataStr: string) => {
+    if (dataStr === 'sem-data') return 'Sem data'
+    const hoje = new Date().toISOString().split('T')[0]
+    const ontem = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    if (dataStr === hoje) return 'Hoje'
+    if (dataStr === ontem) return 'Ontem'
+    const [ano, mes, dia] = dataStr.split('-')
+    return `${dia}/${mes}`
+  }
+
+  const fechadosPorDia = agruparPorDia(fechados)
+  const naoFechadosPorDia = agruparPorDia(naoFechados)
   const mediaScore = concluidos.filter(a => a.score_geral).reduce((acc, a) => acc + (a.score_geral || 0), 0) / (concluidos.filter(a => a.score_geral).length || 1)
 
   const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
@@ -695,9 +721,21 @@ export default function AtendimentosPage() {
                   </div>
                   <Badge className="bg-emerald-500/30 text-emerald-400 border-0 text-xs">{fechados.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {fechados.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {fechadosPorDia.map(grupo => (
+                    <div key={grupo.data}>
+                      <div className="flex items-center gap-2 py-2 px-1">
+                        <Calendar className="w-3 h-3 text-emerald-400/60" />
+                        <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">{formatarDataGrupo(grupo.data)}</span>
+                        <div className="flex-1 h-px bg-emerald-500/20" />
+                        <span className="text-[10px] text-emerald-400/60">{grupo.atendimentos.length}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {grupo.atendimentos.map((atendimento) => (
+                          <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                   {fechados.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">
@@ -719,9 +757,21 @@ export default function AtendimentosPage() {
                   </div>
                   <Badge className="bg-red-500/30 text-red-400 border-0 text-xs">{naoFechados.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {naoFechados.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {naoFechadosPorDia.map(grupo => (
+                    <div key={grupo.data}>
+                      <div className="flex items-center gap-2 py-2 px-1">
+                        <Calendar className="w-3 h-3 text-red-400/60" />
+                        <span className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider">{formatarDataGrupo(grupo.data)}</span>
+                        <div className="flex-1 h-px bg-red-500/20" />
+                        <span className="text-[10px] text-red-400/60">{grupo.atendimentos.length}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {grupo.atendimentos.map((atendimento) => (
+                          <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                   {naoFechados.length === 0 && (
                     <div className="flex items-center justify-center h-32 text-white/30 text-xs">

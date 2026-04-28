@@ -214,7 +214,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             <div className={`px-3 py-1.5 rounded-lg bg-gradient-to-r ${statusColor} text-white text-xs font-bold`}>
               {statusLabel}
             </div>
-            <div className='flex gap-2'>
+            <div className='flex gap-2 flex-wrap'>
               {atendimento.is_benchmark && (
                 <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[10px]'>
                   <Star className='w-3 h-3 mr-1' />
@@ -223,7 +223,19 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
               )}
               {isConcluido && temAnalise && (
                 <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[10px]'>
-                  ✓ Analisado
+                  Analisado
+                </Badge>
+              )}
+              {isConcluido && atendimento.fechou === false && (
+                <Badge className='bg-red-500/25 text-red-400 border-0 text-[10px]'>
+                  <XCircle className='w-3 h-3 mr-1' />
+                  Nao Fechou
+                </Badge>
+              )}
+              {isConcluido && atendimento.fechou === true && (
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[10px]'>
+                  <CheckCircle className='w-3 h-3 mr-1' />
+                  Fechou
                 </Badge>
               )}
             </div>
@@ -314,7 +326,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
           {/* Botoes de Acao */}
           <div className='flex flex-col gap-2 pt-2'>
 
-            {/* Linha 1: Gravar Retorno + Analise (apenas Não Fechados) */}
+            {/* Linha 1: Gravar Retorno + Analise + Marcar Fechou (apenas Nao Fechados) */}
             {isConcluido && atendimento.fechou === false && (
               <div className='flex gap-2'>
                 {!showRecorderRetorno && (
@@ -337,6 +349,20 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                     Analise
                   </Button>
                 )}
+                {/* Botao para marcar como Fechou */}
+                <Button
+                  onClick={() => handleMarkResult(true)}
+                  disabled={markingResult !== null}
+                  size='sm'
+                  className='h-9 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-lg transition-all duration-300'
+                  title='Marcar como Fechou'
+                >
+                  {markingResult === 'fechou' ? (
+                    <Loader2 className='w-3.5 h-3.5 animate-spin' />
+                  ) : (
+                    <CheckCircle className='w-3.5 h-3.5' />
+                  )}
+                </Button>
               </div>
             )}
 

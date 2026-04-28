@@ -22,6 +22,7 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
   const [uploadProgress, setUploadProgress] = useState("")
   const [error, setError] = useState("")
   const [bars, setBars] = useState<number[]>(Array(BAR_COUNT).fill(3))
+  const [showMotivational, setShowMotivational] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -96,6 +97,11 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
 
   const startRecording = async () => {
     setError("")
+    
+    // Mostra mensagem motivacional por 2 segundos
+    setShowMotivational(true)
+    setTimeout(() => setShowMotivational(false), 2000)
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
@@ -212,6 +218,26 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
 
   return (
     <div className="space-y-3">
+      {/* Mensagem Motivacional - Full Screen Overlay */}
+      {showMotivational && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="text-center px-8 animate-in zoom-in-95 duration-500">
+            <div className="text-6xl mb-6">&#128293;</div>
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+              Faca Sempre o Seu Melhor!
+            </h1>
+            <p className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
+              VAI PARA CIMA!
+            </p>
+            <div className="mt-8 flex justify-center gap-2">
+              <span className="text-4xl animate-bounce delay-0">&#128170;</span>
+              <span className="text-4xl animate-bounce delay-100">&#11088;</span>
+              <span className="text-4xl animate-bounce delay-200">&#128640;</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border border-white/10 overflow-hidden" style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(12px)" }}>
         {/* Header colorido de estado */}
         <div className={`h-1 w-full transition-all duration-500 ${isRecording ? "bg-gradient-to-r from-red-500 to-rose-400" : isUploading ? "bg-gradient-to-r from-violet-500 to-purple-400" : "bg-gradient-to-r from-white/10 to-white/5"}`} />
