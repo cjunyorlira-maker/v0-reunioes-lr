@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,6 +14,8 @@ import {
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { getWeekDays, getWeekRange, getWeekLabel, formatDateForDB } from "@/lib/date-utils"
+import type { WeekDay } from "@/lib/types"
 
 interface Atendimento {
   id: string
@@ -155,6 +157,14 @@ export default function AtendimentosPage() {
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [weekDays, setWeekDays] = useState<WeekDay[]>([])
+  const [weekLabel, setWeekLabel] = useState("")
+
+  useEffect(() => {
+    setWeekDays(getWeekDays(weekOffset))
+    setWeekLabel(getWeekLabel(weekOffset))
+  }, [weekOffset])
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -308,6 +318,25 @@ export default function AtendimentosPage() {
 
   const fechadosPorDia = agruparPorDia(fechados)
   const naoFechadosPorDia = agruparPorDia(naoFechados)
+
+  // Para Aguardando e Gravando: filtra apenas os da semana atual selecionada
+  const aguardandoPorDia = useMemo(() => {
+    if (!weekDays.length) return []
+    return weekDays.map(day => {
+      const dataStr = formatDateForDB(day.date)
+      const lista = aguardando.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
+      return { day, lista }
+    })
+  }, [aguardando, weekDays])
+
+  const processandoPorDia = useMemo(() => {
+    if (!weekDays.length) return []
+    return weekDays.map(day => {
+      const dataStr = formatDateForDB(day.date)
+      const lista = processando.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
+      return { day, lista }
+    })
+  }, [processando, weekDays])
   const mediaScore = concluidos.filter(a => a.score_geral).reduce((acc, a) => acc + (a.score_geral || 0), 0) / (concluidos.filter(a => a.score_geral).length || 1)
 
   const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
@@ -660,54 +689,132 @@ export default function AtendimentosPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-280px)] overflow-hidden">
-              {/* Coluna Aguardando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-amber-500/10">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
-                    <Clock className="w-4 h-4 text-white" />
+            <div className="flex flex-col gap-6">
+
+              {/* ====== SECAO SEMANA: Aguardando + Gravando por dia ====== */}
+              {/* Navegacao de semana */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setWeekOffset(w => w - 1)}
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180" />
+                </button>
+                <span className="text-sm font-bold text-white/80">{weekLabel}</span>
+                <button
+                  onClick={() => setWeekOffset(w => w + 1)}
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                {weekOffset !== 0 && (
+                  <button
+                    onClick={() => setWeekOffset(0)}
+                    className="text-[11px] px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-all"
+                  >
+                    Semana atual
+                  </button>
+                )}
+              </div>
+
+              {/* Aguardando — colunas por dia */}
+              <div className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-amber-500/10">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                    <Clock className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-sm font-bold text-white">Aguardando</h2>
-                    <p className="text-[10px] text-white/50">Prontos para gravar</p>
-                  </div>
+                  <h2 className="text-sm font-bold text-white flex-1">Aguardando</h2>
                   <Badge className="bg-amber-500/30 text-amber-400 border-0 text-xs">{aguardando.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {aguardando.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                  ))}
-                  {aguardando.length === 0 && (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
-                      Nenhum aguardando
-                    </div>
-                  )}
+                <div className="overflow-x-auto">
+                  <div className="flex gap-3 p-3" style={{ minWidth: 'max-content' }}>
+                    {aguardandoPorDia.map(({ day, lista }) => {
+                      const isToday = day.isToday
+                      return (
+                        <div
+                          key={day.date.toISOString()}
+                          className={`w-[280px] flex-shrink-0 rounded-xl border transition-all duration-300 ${isToday ? 'border-amber-500/30' : 'border-white/5 hover:border-white/10'}`}
+                          style={{ background: isToday ? 'rgba(245,158,11,0.05)' : 'rgba(0,0,0,0.15)' }}
+                        >
+                          {/* Header do dia */}
+                          <div className={`flex items-center gap-2.5 p-3 rounded-t-xl border-b ${isToday ? 'border-amber-500/20 bg-amber-500/10' : 'border-white/5 bg-black/20'}`}>
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-[15px] font-extrabold ${isToday ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black' : 'bg-white/8 text-white/70'}`}>
+                              {day.dayNumber}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[12px] font-bold uppercase tracking-wide ${isToday ? 'text-amber-400' : 'text-white/60'}`}>{day.dayName}</p>
+                              {isToday && <p className="text-[10px] text-emerald-400 font-bold">Hoje</p>}
+                            </div>
+                            <div className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${lista.length > 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-white/20'}`}>
+                              {lista.length}
+                            </div>
+                          </div>
+                          {/* Cards */}
+                          <div className="p-2 space-y-2 max-h-[320px] overflow-y-auto">
+                            {lista.length === 0 ? (
+                              <p className="text-[11px] text-white/20 text-center py-6">Sem atendimentos</p>
+                            ) : (
+                              lista.map(atendimento => (
+                                <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Coluna Gravando/Processando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-blue-500/10">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
-                    <Mic className="w-4 h-4 text-white" />
+              {/* Gravando — colunas por dia */}
+              <div className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-blue-500/10">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
+                    <Mic className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-sm font-bold text-white">Gravando</h2>
-                    <p className="text-[10px] text-white/50">Em andamento</p>
-                  </div>
+                  <h2 className="text-sm font-bold text-white flex-1">Gravando</h2>
                   <Badge className="bg-blue-500/30 text-blue-400 border-0 text-xs">{processando.length}</Badge>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {processando.map((atendimento) => (
-                    <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                  ))}
-                  {processando.length === 0 && (
-                    <div className="flex items-center justify-center h-32 text-white/30 text-xs">
-                      Nenhum gravando
-                    </div>
-                  )}
+                <div className="overflow-x-auto">
+                  <div className="flex gap-3 p-3" style={{ minWidth: 'max-content' }}>
+                    {processandoPorDia.map(({ day, lista }) => {
+                      const isToday = day.isToday
+                      return (
+                        <div
+                          key={day.date.toISOString()}
+                          className={`w-[280px] flex-shrink-0 rounded-xl border transition-all duration-300 ${isToday ? 'border-blue-500/30' : 'border-white/5 hover:border-white/10'}`}
+                          style={{ background: isToday ? 'rgba(59,130,246,0.05)' : 'rgba(0,0,0,0.15)' }}
+                        >
+                          <div className={`flex items-center gap-2.5 p-3 rounded-t-xl border-b ${isToday ? 'border-blue-500/20 bg-blue-500/10' : 'border-white/5 bg-black/20'}`}>
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-[15px] font-extrabold ${isToday ? 'bg-gradient-to-br from-blue-400 to-cyan-600 text-white' : 'bg-white/8 text-white/70'}`}>
+                              {day.dayNumber}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[12px] font-bold uppercase tracking-wide ${isToday ? 'text-blue-400' : 'text-white/60'}`}>{day.dayName}</p>
+                              {isToday && <p className="text-[10px] text-emerald-400 font-bold">Hoje</p>}
+                            </div>
+                            <div className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${lista.length > 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-white/20'}`}>
+                              {lista.length}
+                            </div>
+                          </div>
+                          <div className="p-2 space-y-2 max-h-[320px] overflow-y-auto">
+                            {lista.length === 0 ? (
+                              <p className="text-[11px] text-white/20 text-center py-6">Sem atendimentos</p>
+                            ) : (
+                              lista.map(atendimento => (
+                                <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
+
+              {/* ====== SECAO INFERIOR: Fechados + Nao Fechados ====== */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
               {/* Coluna Fechados - sub-colunas por dia */}
               <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
@@ -784,7 +891,8 @@ export default function AtendimentosPage() {
                   </div>
                 )}
               </div>
-            </div>
+              </div>{/* fecha grid inferior */}
+            </div>{/* fecha flex-col gap-6 */}
           )
         ) : (
           /* Relatorio Kanban - Motivos de Nao Fechamento */
