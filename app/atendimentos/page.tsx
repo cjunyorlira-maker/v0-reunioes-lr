@@ -295,6 +295,11 @@ export default function AtendimentosPage() {
 
 
   // Nao Fechados e Fechados — colunas por semana (igual Aguardando/Gravando)
+  const weekDatesSet = useMemo(() => {
+    if (!weekDays.length) return new Set<string>()
+    return new Set(weekDays.map(d => formatDateForDB(d.date)))
+  }, [weekDays])
+
   const naoFechadosPorDia = useMemo(() => {
     if (!weekDays.length) return []
     return weekDays.map(day => {
@@ -312,6 +317,21 @@ export default function AtendimentosPage() {
       return { day, lista }
     })
   }, [fechados, weekDays])
+
+  // Atendimentos que NAO estao na semana selecionada (para mostrar em coluna extra)
+  const outrosNaoFechados = useMemo(() => {
+    return naoFechados.filter(a => {
+      const dataStr = a.data_atendimento?.split('T')[0] || ''
+      return !weekDatesSet.has(dataStr)
+    })
+  }, [naoFechados, weekDatesSet])
+
+  const outrosFechados = useMemo(() => {
+    return fechados.filter(a => {
+      const dataStr = a.data_atendimento?.split('T')[0] || ''
+      return !weekDatesSet.has(dataStr)
+    })
+  }, [fechados, weekDatesSet])
 
   // Aguardando e Gravando: filtra apenas os da semana atual selecionada
   const aguardandoPorDia = useMemo(() => {
@@ -726,6 +746,7 @@ export default function AtendimentosPage() {
                   dayTextActive: 'text-red-400',
                   countActive: 'bg-red-500/20 text-red-400',
                   data: naoFechadosPorDia,
+                  outros: outrosNaoFechados,
                 },
                 {
                   key: 'fechados',
@@ -741,8 +762,9 @@ export default function AtendimentosPage() {
                   dayTextActive: 'text-emerald-400',
                   countActive: 'bg-emerald-500/20 text-emerald-400',
                   data: fechadosPorDia,
+                  outros: outrosFechados,
                 },
-              ] as const).map(sec => (
+              ]).map(sec => (
                 <div key={sec.key} className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
                   <div className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 ${sec.bg}`}>
                     <div className={`p-1.5 rounded-lg ${sec.iconBg}`}>{sec.icon}</div>
@@ -783,6 +805,30 @@ export default function AtendimentosPage() {
                           </div>
                         )
                       })}
+                      {/* Coluna "Outras datas" para atendimentos fora da semana */}
+                      {sec.outros.length > 0 && (
+                        <div
+                          className="w-[280px] flex-shrink-0 rounded-xl border border-white/10 transition-all duration-300"
+                          style={{ background: 'rgba(0,0,0,0.2)' }}
+                        >
+                          <div className="flex items-center gap-2.5 p-3 rounded-t-xl border-b border-white/10 bg-white/5">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[13px] font-bold bg-white/10 text-white/50">
+                              ...
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-bold uppercase tracking-wide text-white/50">Outras datas</p>
+                            </div>
+                            <div className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-white/10 text-white/50">
+                              {sec.outros.length}
+                            </div>
+                          </div>
+                          <div className="p-2 space-y-2 max-h-[380px] overflow-y-auto">
+                            {sec.outros.map(atendimento => (
+                              <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
