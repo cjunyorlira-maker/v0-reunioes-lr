@@ -476,9 +476,19 @@ export default function LigacoesPage() {
           {/* Piores Vendedores - dois cards lado a lado */}
           {stats && (() => {
             const VENDEDORES_FIXOS = [
-              "Bianca", "Amanda", "Ana B", "Joao Lucas", "Joao Vitor",
-              "Lidiane", "Rafaella", "Lucas", "Ana G", "Isabelly",
-              "Gabrielly", "Nicolas", "Brayan",
+              "Bianca Isabela",
+              "Amanda Souza",
+              "Ana Beatriz",
+              "João Lucas",
+              "João Victor",
+              "Lidiane Fonseca",
+              "Rafaella Antunes",
+              "Lucas Dionisio",
+              "Ana Gabrielly",
+              "Isabelly Ribeiro",
+              "Gabrielly Pereira",
+              "Nicolas Moraes",
+              "Brayan Bertolai",
             ]
 
             // Normaliza nome para comparacao (remove acentos, lowercase)
