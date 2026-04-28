@@ -477,46 +477,38 @@ export default function LigacoesPage() {
           {stats && (() => {
             const VENDEDORES_FIXOS = [
               "Bianca", "Amanda", "Ana B", "Joao Lucas", "Joao Vitor",
-              "Lidiane", "Rafaella", "Lucas", "Ana G", "Isabelly",
+              "Lidiane", "Rafaella", "Ana G", "Isabelly",
               "Gabrielly", "Nicolas", "Brayan",
             ]
 
             // Normaliza nome para comparacao (remove acentos, lowercase)
             const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
-            const primeiroNome = (s: string) => normalizar(s).split(" ")[0]
 
-            // Busca vendedor - prioriza match exato, depois por sobrenome
+            // Busca vendedor - prioriza match exato
             const buscarVendedor = (nomeBusca: string): VendedorStats | null => {
               const buscaNorm = normalizar(nomeBusca)
-              const buscaParts = buscaNorm.split(" ")
-              const buscaPrimeiro = buscaParts[0]
-              const buscaSobrenome = buscaParts[1] || ""
               
-              // 1. Tenta match exato normalizado (ex: "joao lucas" === "joão lucas")
+              // 1. Tenta match exato normalizado
               for (const v of stats.porVendedor) {
                 if (normalizar(v.vendedor) === buscaNorm) return v
               }
               
-              // 2. Se tem sobrenome na busca, tenta match nome + sobrenome (ex: "Joao Lucas")
-              if (buscaSobrenome) {
-                for (const v of stats.porVendedor) {
-                  const vParts = normalizar(v.vendedor).split(" ")
-                  if (vParts[0] === buscaPrimeiro && vParts[1] === buscaSobrenome) return v
-                }
-              }
-              
-              // 3. Se nao encontrou e e um nome composto, tenta match por sobrenome (ex: "Lucas" acha "Joao Lucas")
-              if (buscaSobrenome) {
+              // 2. Se tem espacos (nome composto), tenta match parcial mais rigoroso
+              if (nomeBusca.includes(" ")) {
+                const buscaParts = buscaNorm.split(" ")
                 for (const v of stats.porVendedor) {
                   const vNorm = normalizar(v.vendedor)
-                  if (vNorm.includes(buscaSobrenome)) return v
+                  const vParts = vNorm.split(" ")
+                  // So match se TODOS os parts da busca estao em sequencia no vendedor
+                  if (vNorm.includes(buscaParts.join(" "))) return v
                 }
               }
               
-              // 4. Fallback: tenta match pelo primeiro nome (so se for um nome unico como "Bianca")
-              if (!buscaSobrenome) {
+              // 3. Se e um nome unico, tenta first name match
+              if (!nomeBusca.includes(" ")) {
                 for (const v of stats.porVendedor) {
-                  if (primeiroNome(v.vendedor) === buscaPrimeiro) return v
+                  const vFirst = normalizar(v.vendedor).split(" ")[0]
+                  if (vFirst === buscaNorm) return v
                 }
               }
               
