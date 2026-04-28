@@ -483,16 +483,29 @@ export default function LigacoesPage() {
 
             // Normaliza nome para comparacao (remove acentos, lowercase)
             const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+            const primeiroNome = (s: string) => normalizar(s).split(" ")[0]
 
-            // Mapeia vendedores existentes por nome normalizado
-            const vendedoresComDados = new Map<string, VendedorStats>()
-            stats.porVendedor.forEach(v => {
-              vendedoresComDados.set(normalizar(v.vendedor), v)
-            })
+            // Busca vendedor por nome completo OU primeiro nome
+            const buscarVendedor = (nomeBusca: string): VendedorStats | null => {
+              const buscaNorm = normalizar(nomeBusca)
+              const buscaPrimeiro = primeiroNome(nomeBusca)
+              
+              // 1. Tenta match exato normalizado
+              for (const v of stats.porVendedor) {
+                if (normalizar(v.vendedor) === buscaNorm) return v
+              }
+              
+              // 2. Tenta match pelo primeiro nome (ex: "Bianca" casa com "Bianca Silva")
+              for (const v of stats.porVendedor) {
+                if (primeiroNome(v.vendedor) === buscaPrimeiro) return v
+              }
+              
+              return null
+            }
 
             const todos: VendedorStats[] = VENDEDORES_FIXOS.map(nome => {
-              const nomeNorm = normalizar(nome)
-              if (vendedoresComDados.has(nomeNorm)) return vendedoresComDados.get(nomeNorm)!
+              const encontrado = buscarVendedor(nome)
+              if (encontrado) return encontrado
               return {
                 vendedor: nome,
                 equipe: "-",
