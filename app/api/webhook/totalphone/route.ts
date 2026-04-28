@@ -739,7 +739,7 @@ te interessa o PARCELAMENTO? Porque minha função
 aqui é justamente a parte de liberação do crédito."
 [ESCUTAR a resposta com atenção]
 
-PASSO 3 — TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
+PASSO 3 �� TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
 - Parcelado → seguir para qualificação
 - À vista → reverter mostrando vantagens
 - Insistente no imóvel → mencionar parcerias
@@ -1884,6 +1884,34 @@ export async function POST(request: Request) {
       console.log('[TotalPhone] Tipo de ligação detectado:', tipoLigacao)
     }
 
+    // ============================================================
+    // ✅ BUSCA LEAD DO KOMMO E DADOS DO LEAD (ANTES da análise IA)
+    // ============================================================
+    const telefoneNormalizado = normalizarTelefone(telefoneCliente)
+    console.log('[TotalPhone] Telefone normalizado:', telefoneCliente, '->', telefoneNormalizado)
+    
+    // Busca lead/contato no Kommo pelo telefone
+    const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
+      await buscarLeadKommoPorTelefone(telefoneNormalizado, vendedorData?.kommo_user_id || null)
+    
+    kommoLeadId = lead_id
+    kommoContactId = contact_id
+    
+    // ============================================================
+    // BUSCAR DADOS AUTORITATIVOS DO LEAD NO KOMMO
+    // ============================================================
+    let dadosKommo: any = null
+    let contextoKommo = ''
+
+    if (lead_id) {
+      dadosKommo = await buscarDadosLeadKommo(lead_id)
+      if (dadosKommo?.tipoLigacaoEsperado) {
+        console.log('[Kommo] Origem CRM:', dadosKommo.origem, '→ tipo:', dadosKommo.tipoLigacaoEsperado)
+        tipoLigacao = dadosKommo.tipoLigacaoEsperado
+      }
+      contextoKommo = montarContextoKommoParaIA(dadosKommo)
+    }
+
     // Analisa com Claude SOMENTE se foi atendida com conversa real
     // Só dispara análise IA se TODAS as condições forem verdadeiras
     const podeAnalisarComIA = (() => {
@@ -2054,31 +2082,6 @@ export async function POST(request: Request) {
     let kommoContactId: number | null = null
 
     if (telefoneCliente) {
-      const telefoneNormalizado = normalizarTelefone(telefoneCliente)
-      console.log('[TotalPhone] Telefone normalizado:', telefoneCliente, '->', telefoneNormalizado)
-      
-      // Busca lead/contato no Kommo pelo telefone
-      const { lead_id, contact_id, responsible_user_id: respUserKommo } = 
-        await buscarLeadKommoPorTelefone(telefoneNormalizado, vendedorData?.kommo_user_id || null)
-      
-      kommoLeadId = lead_id
-      kommoContactId = contact_id
-      
-      // ============================================================
-      // BUSCAR DADOS AUTORITATIVOS DO LEAD NO KOMMO
-      // ============================================================
-      let dadosKommo: any = null
-      let contextoKommo = ''
-
-      if (lead_id) {
-        dadosKommo = await buscarDadosLeadKommo(lead_id)
-        if (dadosKommo?.tipoLigacaoEsperado) {
-          console.log('[Kommo] Origem CRM:', dadosKommo.origem, '→ tipo:', dadosKommo.tipoLigacaoEsperado)
-          tipoLigacao = dadosKommo.tipoLigacaoEsperado
-        }
-        contextoKommo = montarContextoKommoParaIA(dadosKommo)
-      }
-      
       // Se não encontrou nem lead NEM contato, IGNORA
       if (!lead_id && !contact_id) {
         console.log('[TotalPhone] ⚠️ Lead/Contato não encontrado no Kommo, pulando envio da chamada')
