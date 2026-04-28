@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Lock, Phone, PhoneOff, PhoneIncoming, PhoneOutgoing, Clock, 
-  ArrowLeft, TrendingUp, Users, Play, Pause, Loader2, 
-  ChevronRight, Star, BarChart3, XCircle, CheckCircle, FileAudio
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Phone, PhoneCall, PhoneMissed, PhoneOff, Clock, Calendar, ExternalLink,
+  Play, Pause, Filter, RefreshCw, Trophy, TrendingUp, Users, Flame,
+  Snowflake, AlertTriangle, CheckCircle2, XCircle, FileText,
 } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
 
 interface Ligacao {
   id: string
@@ -20,21 +20,47 @@ interface Ligacao {
   vendedor: string
   equipe: string
   telefone_cliente: string
-  direcao: string
   duracao_segundos: number
   status: string
   tipo_origem: string | null
-  audio_url_original: string
   audio_url: string | null
   transcricao: string | null
   analise_ia: any
   score_geral: number | null
   resumo: string | null
   kommo_lead_id: string | null
-  enviado_kommo: boolean
   data_ligacao: string
   processado_em: string | null
-  created_at: string
+}
+
+interface VendedorStats {
+  vendedor: string
+  equipe: string
+  total: number
+  atendidas: number
+  nao_atendidas: number
+  taxa_atendimento: number
+  tempo_total_chamadas_segundos: number
+  tempo_real_fala_segundos: number
+  tempo_medio_fala_segundos: number
+  analisadas: number
+  score_vendedor_medio: number | null
+  score_lead_medio: number | null
+  reunioes_marcadas: number
+  leads_viavel_alta: number
+  leads_inviaveis: number
+}
+
+interface EquipeStats {
+  equipe: string
+  total: number
+  atendidas: number
+  nao_atendidas: number
+  taxa_atendimento: number
+  tempo_real_fala_segundos: number
+  score_vendedor_medio: number | null
+  reunioes_marcadas: number
+  vendedores_count: number
 }
 
 interface Stats {
@@ -42,20 +68,20 @@ interface Stats {
     total: number
     atendidas: number
     nao_atendidas: number
-    tempo_total_segundos: number
+    canceladas: number
+    caixa_postal: number
+    ocupado: number
+    tempo_total_chamadas_segundos: number
+    tempo_real_fala_segundos: number
+    taxa_atendimento: number
     analisadas: number
     pendentes_analise: number
+    reunioes_marcadas: number
+    leads_viavel_alta: number
+    leads_inviaveis: number
   }
-  porVendedor: Array<{
-    vendedor: string
-    equipe: string
-    total: number
-    atendidas: number
-    nao_atendidas: number
-    tempo_total_segundos: number
-    analisadas: number
-    score_medio: number | null
-  }>
+  porEquipe: EquipeStats[]
+  porVendedor: VendedorStats[]
 }
 
 const EQUIPES = ["Elite", "Guerreiros", "Gladiadores", "Samurais", "Legado", "Lobos", "TDM", "Admin"]
@@ -80,10 +106,53 @@ function formatDuration(seconds: number): string {
 function formatTotalDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
   const mins = Math.floor((seconds % 3600) / 60)
-  if (hours > 0) {
-    return `${hours}h ${mins}min`
-  }
+  if (hours > 0) return `${hours}h ${mins}min`
   return `${mins}min`
+}
+
+function getDateRange(periodo: string): { dataInicio: string; dataFim: string } {
+  const now = new Date()
+  const dataFim = now.toISOString()
+  let dataInicio = ""
+
+  if (periodo === "hoje") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    dataInicio = start.toISOString()
+  } else if (periodo === "semana") {
+    const day = now.getDay()
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+    const start = new Date(now.getFullYear(), now.getMonth(), diff, 0, 0, 0)
+    dataInicio = start.toISOString()
+  } else if (periodo === "mes") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
+    dataInicio = start.toISOString()
+  }
+
+  return { dataInicio, dataFim }
+}
+
+function getStatusBadge(status: string) {
+  const map: Record<string, { label: string; color: string; icon: any }> = {
+    "atendida": { label: "Atendida", color: "bg-green-500/20 text-green-300 border-green-500/30", icon: PhoneCall },
+    "nao_atendida": { label: "Não atendida", color: "bg-orange-500/20 text-orange-300 border-orange-500/30", icon: PhoneMissed },
+    "cancelada": { label: "Cancelada", color: "bg-red-500/20 text-red-300 border-red-500/30", icon: PhoneOff },
+    "caixa_postal": { label: "Caixa postal", color: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Phone },
+    "ocupado": { label: "Ocupado", color: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", icon: Phone },
+    "numero_errado": { label: "Nº errado", color: "bg-pink-500/20 text-pink-300 border-pink-500/30", icon: XCircle },
+    "fora_area": { label: "Fora área", color: "bg-gray-500/20 text-gray-300 border-gray-500/30", icon: PhoneOff },
+  }
+  return map[status] || { label: status, color: "bg-gray-500/20 text-gray-300 border-gray-500/30", icon: Phone }
+}
+
+function getViabilidadeBadge(viabilidade: string | undefined) {
+  if (!viabilidade) return null
+  const map: Record<string, { label: string; color: string; icon: any }> = {
+    "alta": { label: "Alta", color: "text-red-400 bg-red-500/10 border-red-500/30", icon: Flame },
+    "media": { label: "Média", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", icon: TrendingUp },
+    "baixa": { label: "Baixa", color: "text-blue-400 bg-blue-500/10 border-blue-500/30", icon: Snowflake },
+    "inviavel": { label: "Inviável", color: "text-gray-400 bg-gray-500/10 border-gray-500/30", icon: XCircle },
+  }
+  return map[viabilidade] || null
 }
 
 export default function LigacoesPage() {
@@ -92,542 +161,504 @@ export default function LigacoesPage() {
   const [senha, setSenha] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  
   const [ligacoes, setLigacoes] = useState<Ligacao[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loadingLigacoes, setLoadingLigacoes] = useState(false)
+  
+  const [periodo, setPeriodo] = useState<string>("hoje")
+  const [dataInicioCustom, setDataInicioCustom] = useState("")
+  const [dataFimCustom, setDataFimCustom] = useState("")
   const [filtroStatus, setFiltroStatus] = useState<string>("all")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
-  const [processandoId, setProcessandoId] = useState<string | null>(null)
+  const [filtroVendedor, setFiltroVendedor] = useState<string>("all")
+  
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null)
 
-  useEffect(() => {
-    const savedEquipe = localStorage.getItem("ligacoes_equipe")
-    if (savedEquipe) {
-      setEquipe(savedEquipe)
-      setIsAuthenticated(true)
+  const buildDateParams = () => {
+    if (periodo === "custom") {
+      return { dataInicio: dataInicioCustom, dataFim: dataFimCustom }
     }
-  }, [])
+    return getDateRange(periodo)
+  }
 
-  const fetchLigacoes = useCallback(async () => {
+  const carregarStats = useCallback(async () => {
+    try {
+      const { dataInicio, dataFim } = buildDateParams()
+      const params = new URLSearchParams()
+      if (filtroEquipe !== "all") params.append("equipe", filtroEquipe)
+      if (dataInicio) params.append("dataInicio", dataInicio)
+      if (dataFim) params.append("dataFim", dataFim)
+      
+      const res = await fetch(`/api/ligacoes/stats?${params}`)
+      const data = await res.json()
+      if (res.ok) setStats(data)
+    } catch (err) {
+      console.error("Erro stats:", err)
+    }
+  }, [periodo, dataInicioCustom, dataFimCustom, filtroEquipe])
+
+  const carregarLigacoes = useCallback(async () => {
     setLoadingLigacoes(true)
     try {
-      const equipeParam = equipe === "Admin" ? (filtroEquipe !== "all" ? filtroEquipe : "all") : equipe
-      const res = await fetch(`/api/ligacoes?equipe=${equipeParam}&status=${filtroStatus}`)
+      const { dataInicio, dataFim } = buildDateParams()
+      const params = new URLSearchParams()
+      if (filtroStatus !== "all") params.append("status", filtroStatus)
+      if (filtroEquipe !== "all") params.append("equipe", filtroEquipe)
+      if (filtroVendedor !== "all") params.append("vendedor", filtroVendedor)
+      if (dataInicio) params.append("dataInicio", dataInicio)
+      if (dataFim) params.append("dataFim", dataFim)
+      
+      const res = await fetch(`/api/ligacoes?${params}`)
       const data = await res.json()
-      if (data.ligacoes) {
-        setLigacoes(data.ligacoes)
-      }
+      if (res.ok) setLigacoes(data.ligacoes || [])
     } catch (err) {
-      console.error("Erro ao carregar ligações:", err)
+      console.error("Erro ligações:", err)
     } finally {
       setLoadingLigacoes(false)
     }
-  }, [equipe, filtroStatus, filtroEquipe])
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const equipeParam = equipe === "Admin" ? (filtroEquipe !== "all" ? filtroEquipe : "all") : equipe
-      const res = await fetch(`/api/ligacoes/stats?equipe=${equipeParam}`)
-      const data = await res.json()
-      setStats(data)
-    } catch (err) {
-      console.error("Erro ao carregar stats:", err)
-    }
-  }, [equipe, filtroEquipe])
+  }, [filtroStatus, filtroEquipe, filtroVendedor, periodo, dataInicioCustom, dataFimCustom])
 
   useEffect(() => {
-    if (!isAuthenticated || !equipe) return
-    
-    fetchLigacoes()
-    fetchStats()
-    
-    // Subscribe para atualizações em tempo real
-    const supabase = createClient()
-    const channel = supabase
-      .channel('ligacoes-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'ligacoes'
-        },
-        () => {
-          fetchLigacoes()
-          fetchStats()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+    if (isAuthenticated) {
+      carregarStats()
+      carregarLigacoes()
     }
-  }, [isAuthenticated, equipe, fetchLigacoes, fetchStats])
+  }, [isAuthenticated, carregarStats, carregarLigacoes])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
-
+    
     try {
-      const res = await fetch("/api/atendimentos/auth", {
+      const res = await fetch("/api/auth/equipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ equipe, senha }),
       })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || "Erro ao autenticar")
-        return
+      
+      if (res.ok) {
+        setIsAuthenticated(true)
+      } else {
+        setError("Senha incorreta")
       }
-
-      localStorage.setItem("ligacoes_equipe", equipe)
-      setIsAuthenticated(true)
-    } catch (err) {
-      setError("Erro ao conectar com o servidor")
+    } catch {
+      setError("Erro ao autenticar")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("ligacoes_equipe")
-    setIsAuthenticated(false)
-    setEquipe("")
-    setSenha("")
-    setLigacoes([])
-    setStats(null)
-    if (audioRef) {
-      audioRef.pause()
-      setAudioRef(null)
-    }
-    setPlayingId(null)
-  }
-
-  const handleProcessar = async (ligacaoId: string) => {
-    setProcessandoId(ligacaoId)
-    try {
-      const res = await fetch(`/api/ligacoes/${ligacaoId}/processar`, {
-        method: "POST",
-      })
-      const data = await res.json()
-      
-      if (!res.ok) {
-        alert(`Erro: ${data.error}`)
-        return
-      }
-
-      // Atualiza a lista
-      fetchLigacoes()
-      fetchStats()
-    } catch (err) {
-      alert("Erro ao processar ligação")
-    } finally {
-      setProcessandoId(null)
-    }
-  }
-
   const handlePlayPause = (ligacao: Ligacao) => {
-    const audioUrl = ligacao.audio_url || ligacao.audio_url_original
+    if (!ligacao.audio_url) return
     
     if (playingId === ligacao.id && audioRef) {
       audioRef.pause()
       setPlayingId(null)
       return
     }
-
-    if (audioRef) {
-      audioRef.pause()
-    }
-
-    const audio = new Audio(audioUrl)
+    
+    if (audioRef) audioRef.pause()
+    
+    const audio = new Audio(ligacao.audio_url)
     audio.play()
     audio.onended = () => setPlayingId(null)
+    
     setAudioRef(audio)
     setPlayingId(ligacao.id)
   }
 
-  const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
-
-  // Tela de Login
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center bg-black">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: "brightness(0.45) saturate(1.3)" }}
-        >
-          <source src="/videos/login-bg.mp4" type="video/mp4" />
-        </video>
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
-
-        <div className="relative z-10 w-full max-w-sm mx-4">
-          <div className="relative rounded-3xl overflow-hidden" style={{ background: "transparent" }}>
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
-
-            <div className="px-8 pt-8 pb-8">
-              <div className="flex flex-col items-center mb-8">
-                <div className="relative w-44 h-44 mb-2">
-                  <div
-                    className="absolute inset-0 blur-3xl opacity-30"
-                    style={{ background: "radial-gradient(circle, #d4af37 0%, transparent 65%)" }}
-                  />
-                  <img
-                    src="/logo-lr-gold.png"
-                    alt="LR Multimarcas"
-                    className="relative w-full h-full object-contain"
-                    style={{ filter: "drop-shadow(0 0 24px rgba(212,175,55,0.5))" }}
-                  />
-                </div>
-                <h1 className="text-2xl font-black text-white tracking-tight text-center drop-shadow-lg">
-                  Central de Ligacoes
-                </h1>
-                <p className="text-white/60 text-xs mt-1 font-medium tracking-wide drop-shadow">
-                  Analise e acompanhe as ligacoes da equipe
-                </p>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#d4af37]/80 uppercase tracking-[0.15em]">
-                    Equipe
-                  </label>
-                  <Select value={equipe} onValueChange={setEquipe}>
-                    <SelectTrigger
-                      className="h-13 rounded-xl border text-white transition-all duration-200"
-                      style={{
-                        background: "rgba(0,0,0,0.25)",
-                        backdropFilter: "blur(12px)",
-                        borderColor: equipe ? "rgba(212,175,55,0.6)" : "rgba(255,255,255,0.2)",
-                      }}
-                    >
-                      <SelectValue placeholder="Selecione sua equipe" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="rounded-xl border-white/10"
-                      style={{ background: "rgba(10,8,4,0.95)", backdropFilter: "blur(24px)" }}
-                    >
-                      {EQUIPES.map((eq) => (
-                        <SelectItem
-                          key={eq}
-                          value={eq}
-                          className="text-white hover:bg-white/8 rounded-lg cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3 py-0.5">
-                            <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${EQUIPE_COLORS[eq]?.gradient || "from-gray-500 to-gray-600"}`} />
-                            <span className="font-medium">{eq}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#d4af37]/80 uppercase tracking-[0.15em]">
-                    Senha
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="password"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                      placeholder="* * * *"
-                      maxLength={4}
-                      className="h-13 rounded-xl text-white text-center text-xl tracking-[0.5em] font-bold placeholder:text-white/30 transition-all duration-200 border"
-                      style={{
-                        background: "rgba(0,0,0,0.25)",
-                        backdropFilter: "blur(12px)",
-                        borderColor: senha.length > 0 ? "rgba(212,175,55,0.6)" : "rgba(255,255,255,0.2)",
-                      }}
-                    />
-                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/25 py-3 px-4 rounded-xl">
-                    <XCircle className="w-4 h-4 flex-shrink-0" />
-                    {error}
-                  </div>
-                )}
-
-                <div className="pt-1">
-                  <button
-                    type="submit"
-                    disabled={!equipe || senha.length !== 4 || loading}
-                    className="relative w-full h-14 rounded-xl text-base font-black tracking-wide transition-all duration-300 overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: "linear-gradient(135deg, #c9a227 0%, #f5d742 50%, #c9a227 100%)",
-                      boxShadow: (!equipe || senha.length !== 4 || loading) ? "none" : "0 0 30px rgba(212,175,55,0.5), 0 4px 20px rgba(0,0,0,0.4)",
-                      color: "#0a0800",
-                    }}
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-5 h-5 border-2 border-black/30 border-t-black/80 rounded-full animate-spin" />
-                        <span>Conectando...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <span>Acessar Central</span>
-                        <ChevronRight className="w-5 h-5" />
-                      </div>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-slate-900/50 backdrop-blur border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white text-center">📞 Dashboard de Ligações</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <Select value={equipe} onValueChange={setEquipe}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="Selecione sua equipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EQUIPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input
+                type="password"
+                placeholder="Senha da equipe"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <Button type="submit" className="w-full" disabled={loading || !equipe || !senha}>
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  // Dashboard principal
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-amber-400" />
-                  Central de Ligacoes
-                </h1>
-                <p className="text-sm text-white/50">Equipe {equipe}</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">📞 Dashboard de Ligações</h1>
+            <p className="text-slate-400 mt-1">Análise completa de produtividade — {equipe}</p>
+          </div>
+          <Button onClick={() => { carregarStats(); carregarLigacoes() }} variant="outline" className="border-slate-700">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
 
-            <div className="flex items-center gap-3">
-              {equipe === "Admin" && (
-                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-                  <SelectTrigger className="w-40 bg-white/5 border-white/10">
-                    <SelectValue placeholder="Todas equipes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas equipes</SelectItem>
-                    {EQUIPES.filter(e => e !== "Admin").map(eq => (
-                      <SelectItem key={eq} value={eq}>{eq}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <Card className="bg-slate-900/50 backdrop-blur border-slate-800">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-white">
+                <Calendar className="w-5 h-5" />
+                <span className="font-semibold">Período:</span>
+              </div>
+              <Tabs value={periodo} onValueChange={setPeriodo} className="flex-1">
+                <TabsList className="bg-slate-800">
+                  <TabsTrigger value="hoje">Hoje</TabsTrigger>
+                  <TabsTrigger value="semana">Esta semana</TabsTrigger>
+                  <TabsTrigger value="mes">Este mês</TabsTrigger>
+                  <TabsTrigger value="custom">Personalizado</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {periodo === "custom" && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={dataInicioCustom.split("T")[0]}
+                    onChange={(e) => setDataInicioCustom(new Date(e.target.value).toISOString())}
+                    className="bg-slate-800 border-slate-700 text-white w-40"
+                  />
+                  <span className="text-slate-400">até</span>
+                  <Input
+                    type="date"
+                    value={dataFimCustom.split("T")[0]}
+                    onChange={(e) => setDataFimCustom(new Date(e.target.value + "T23:59:59").toISOString())}
+                    className="bg-slate-800 border-slate-700 text-white w-40"
+                  />
+                </div>
               )}
-              
+            </div>
+          </CardContent>
+        </Card>
+
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <Card className="bg-slate-900/50 backdrop-blur border-slate-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <Phone className="w-8 h-8 text-blue-400" />
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-white">{stats.geral.total}</p>
+                    <p className="text-xs text-slate-400">Total</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-green-950/30 backdrop-blur border-green-800/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <PhoneCall className="w-8 h-8 text-green-400" />
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-green-300">{stats.geral.atendidas}</p>
+                    <p className="text-xs text-green-200/70">Atendidas ({stats.geral.taxa_atendimento}%)</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-orange-950/30 backdrop-blur border-orange-800/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <PhoneMissed className="w-8 h-8 text-orange-400" />
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-orange-300">{stats.geral.nao_atendidas}</p>
+                    <p className="text-xs text-orange-200/70">Tentativas</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-purple-950/30 backdrop-blur border-purple-800/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <Clock className="w-8 h-8 text-purple-400" />
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-purple-300">{formatTotalDuration(stats.geral.tempo_real_fala_segundos)}</p>
+                    <p className="text-xs text-purple-200/70">Tempo de fala real</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-blue-950/30 backdrop-blur border-blue-800/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <Calendar className="w-8 h-8 text-blue-400" />
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-blue-300">{stats.geral.reunioes_marcadas}</p>
+                    <p className="text-xs text-blue-200/70">Reuniões</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-red-950/30 backdrop-blur border-red-800/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <Flame className="w-8 h-8 text-red-400" />
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-red-300">{stats.geral.leads_viavel_alta}</p>
+                    <p className="text-xs text-red-200/70">Leads quentes</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {stats && stats.porEquipe.length > 0 && (
+          <Card className="bg-slate-900/50 backdrop-blur border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                Ranking de Equipes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {stats.porEquipe.slice(0, 8).map((eq, idx) => {
+                  const colors = EQUIPE_COLORS[eq.equipe] || EQUIPE_COLORS["Admin"]
+                  return (
+                    <div key={eq.equipe} className={`flex items-center justify-between p-3 rounded-lg bg-gradient-to-r ${colors.gradient} bg-opacity-10`}>
+                      <div className="flex items-center gap-4">
+                        <span className="text-2xl">{idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}º`}</span>
+                        <div>
+                          <p className="font-bold text-white">{eq.equipe}</p>
+                          <p className="text-xs text-white/70">{eq.vendedores_count} vendedores</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-6 text-right">
+                        <div>
+                          <p className="text-lg font-bold text-white">{formatTotalDuration(eq.tempo_real_fala_segundos)}</p>
+                          <p className="text-xs text-white/70">Tempo fala</p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-white">{eq.atendidas}</p>
+                          <p className="text-xs text-white/70">Atendidas</p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-white">{eq.taxa_atendimento}%</p>
+                          <p className="text-xs text-white/70">Taxa atend.</p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-white">{eq.score_vendedor_medio || "—"}</p>
+                          <p className="text-xs text-white/70">Score méd.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-slate-900/50 backdrop-blur border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-cyan-400" />
+              Performance por Vendedor
+            </CardTitle>
+            <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+              <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas equipes</SelectItem>
+                {EQUIPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-slate-800">
+                    <th className="pb-2">Vendedor</th>
+                    <th className="pb-2">Equipe</th>
+                    <th className="pb-2 text-center">Atendidas</th>
+                    <th className="pb-2 text-center">Tentativas</th>
+                    <th className="pb-2 text-center">Taxa</th>
+                    <th className="pb-2 text-center">Tempo Fala</th>
+                    <th className="pb-2 text-center">Médio/Atend.</th>
+                    <th className="pb-2 text-center">Score Vend.</th>
+                    <th className="pb-2 text-center">Score Lead</th>
+                    <th className="pb-2 text-center">Reuniões</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats?.porVendedor.map((v) => {
+                    const colors = EQUIPE_COLORS[v.equipe] || EQUIPE_COLORS["Admin"]
+                    return (
+                      <tr key={v.vendedor} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                        <td className="py-2 text-white font-medium">{v.vendedor}</td>
+                        <td className="py-2">
+                          <Badge className={`bg-gradient-to-r ${colors.gradient} text-white border-0`}>
+                            {v.equipe}
+                          </Badge>
+                        </td>
+                        <td className="py-2 text-center text-green-400 font-bold">{v.atendidas}</td>
+                        <td className="py-2 text-center text-orange-400">{v.nao_atendidas}</td>
+                        <td className="py-2 text-center text-white">{v.taxa_atendimento}%</td>
+                        <td className="py-2 text-center text-purple-300 font-bold">{formatTotalDuration(v.tempo_real_fala_segundos)}</td>
+                        <td className="py-2 text-center text-slate-300">{formatDuration(v.tempo_medio_fala_segundos)}</td>
+                        <td className="py-2 text-center">
+                          <span className={`font-bold ${(v.score_vendedor_medio || 0) >= 70 ? 'text-green-400' : (v.score_vendedor_medio || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {v.score_vendedor_medio ?? "—"}
+                          </span>
+                        </td>
+                        <td className="py-2 text-center text-slate-300">{v.score_lead_medio ?? "—"}</td>
+                        <td className="py-2 text-center text-blue-400 font-bold">{v.reunioes_marcadas}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900/50 backdrop-blur border-slate-800">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle className="text-white">📞 Ligações ({ligacoes.length})</CardTitle>
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger className="w-36 bg-white/5 border-white/10">
+                <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos status</SelectItem>
                   <SelectItem value="atendida">Atendidas</SelectItem>
-                  <SelectItem value="nao_atendida">Nao Atendidas</SelectItem>
+                  <SelectItem value="nao_atendida">Não atendidas</SelectItem>
+                  <SelectItem value="cancelada">Canceladas</SelectItem>
+                  <SelectItem value="caixa_postal">Caixa postal</SelectItem>
+                  <SelectItem value="ocupado">Ocupado</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Button variant="outline" onClick={handleLogout} className="border-white/10 hover:bg-white/10">
-                Sair
-              </Button>
             </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Stats Cards */}
-      {stats && (
-        <div className="container mx-auto px-4 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <div className="flex items-center gap-2 text-white/50 text-sm mb-1">
-                <Phone className="w-4 h-4" />
-                Total
-              </div>
-              <div className="text-2xl font-bold">{stats.geral.total}</div>
-            </div>
-
-            <div className="bg-emerald-500/10 rounded-2xl p-4 border border-emerald-500/20">
-              <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1">
-                <CheckCircle className="w-4 h-4" />
-                Atendidas
-              </div>
-              <div className="text-2xl font-bold text-emerald-400">{stats.geral.atendidas}</div>
-            </div>
-
-            <div className="bg-red-500/10 rounded-2xl p-4 border border-red-500/20">
-              <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-                <PhoneOff className="w-4 h-4" />
-                Nao Atendidas
-              </div>
-              <div className="text-2xl font-bold text-red-400">{stats.geral.nao_atendidas}</div>
-            </div>
-
-            <div className="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/20">
-              <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
-                <Clock className="w-4 h-4" />
-                Tempo Total
-              </div>
-              <div className="text-2xl font-bold text-blue-400">
-                {formatTotalDuration(stats.geral.tempo_total_segundos)}
-              </div>
-            </div>
-
-            <div className="bg-amber-500/10 rounded-2xl p-4 border border-amber-500/20">
-              <div className="flex items-center gap-2 text-amber-400 text-sm mb-1">
-                <Star className="w-4 h-4" />
-                Analisadas
-              </div>
-              <div className="text-2xl font-bold text-amber-400">{stats.geral.analisadas}</div>
-            </div>
-
-            <div className="bg-purple-500/10 rounded-2xl p-4 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 text-sm mb-1">
-                <FileAudio className="w-4 h-4" />
-                Pendentes
-              </div>
-              <div className="text-2xl font-bold text-purple-400">{stats.geral.pendentes_analise}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Lista de Ligacoes */}
-      <div className="container mx-auto px-4 pb-8">
-        <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
-          <div className="p-4 border-b border-white/10">
-            <h2 className="font-semibold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-amber-400" />
-              Ligacoes Recentes
-              {loadingLigacoes && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
-            </h2>
-          </div>
-
-          <div className="divide-y divide-white/5">
-            {ligacoes.length === 0 ? (
-              <div className="p-8 text-center text-white/50">
-                Nenhuma ligacao encontrada
-              </div>
+          </CardHeader>
+          <CardContent>
+            {loadingLigacoes ? (
+              <p className="text-slate-400 text-center py-8">Carregando...</p>
+            ) : ligacoes.length === 0 ? (
+              <p className="text-slate-400 text-center py-8">Nenhuma ligação no período</p>
             ) : (
-              ligacoes.map((lig) => (
-                <div key={lig.id} className="p-4 hover:bg-white/5 transition-colors">
-                  <div className="flex items-center gap-4">
-                    {/* Icone de direcao */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      lig.direcao === "saida" 
-                        ? "bg-blue-500/20 text-blue-400" 
-                        : "bg-green-500/20 text-green-400"
-                    }`}>
-                      {lig.direcao === "saida" ? (
-                        <PhoneOutgoing className="w-5 h-5" />
-                      ) : (
-                        <PhoneIncoming className="w-5 h-5" />
-                      )}
-                    </div>
-
-                    {/* Info principal */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{lig.vendedor || "Desconhecido"}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {lig.equipe}
-                        </Badge>
-                        {lig.status === "atendida" ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                            Atendida
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                            Nao Atendida
-                          </Badge>
-                        )}
-                        {lig.score_geral && (
-                          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                            Score: {lig.score_geral}/10
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-white/50 mt-1">
-                        <span>{lig.telefone_cliente}</span>
-                        <span className="mx-2">•</span>
-                        <span>{formatDuration(lig.duracao_segundos)}</span>
-                        <span className="mx-2">•</span>
-                        <span>{new Date(lig.data_ligacao).toLocaleString("pt-BR")}</span>
-                      </div>
-                      {lig.resumo && (
-                        <p className="text-sm text-white/70 mt-2 line-clamp-2">{lig.resumo}</p>
-                      )}
-                    </div>
-
-                    {/* Acoes */}
-                    <div className="flex items-center gap-2">
-                      {/* Botao Play/Pause */}
-                      {(lig.audio_url || lig.audio_url_original) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full hover:bg-white/10"
-                          onClick={() => handlePlayPause(lig)}
-                        >
-                          {playingId === lig.id ? (
-                            <Pause className="w-5 h-5" />
-                          ) : (
-                            <Play className="w-5 h-5" />
+              <div className="space-y-2">
+                {ligacoes.slice(0, 100).map((lig) => {
+                  const statusInfo = getStatusBadge(lig.status)
+                  const StatusIcon = statusInfo.icon
+                  const viab = lig.analise_ia?.perfil_lead?.viabilidade
+                  const viabBadge = getViabilidadeBadge(viab)
+                  const ViabIcon = viabBadge?.icon
+                  const reuniaoMarcada = lig.analise_ia?.reuniao?.marcou
+                  const colorEquipe = EQUIPE_COLORS[lig.equipe] || EQUIPE_COLORS["Admin"]
+                  const scoreV = lig.analise_ia?.score_vendedor || lig.score_geral
+                  
+                  return (
+                    <div key={lig.id} className="bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 rounded-lg p-4 transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-2">
+                            <Badge className={statusInfo.color}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {statusInfo.label}
+                            </Badge>
+                            <Badge className={`bg-gradient-to-r ${colorEquipe.gradient} text-white border-0`}>
+                              {lig.equipe}
+                            </Badge>
+                            {viabBadge && ViabIcon && (
+                              <Badge className={`${viabBadge.color}`}>
+                                <ViabIcon className="w-3 h-3 mr-1" />
+                                {viabBadge.label}
+                              </Badge>
+                            )}
+                            {reuniaoMarcada && (
+                              <Badge className="text-blue-400 bg-blue-500/10 border-blue-500/30">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Reunião marcada
+                              </Badge>
+                            )}
+                            {scoreV !== null && scoreV !== undefined && (
+                              <Badge className={`${scoreV >= 70 ? 'text-green-400 bg-green-500/10 border-green-500/30' : scoreV >= 50 ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30'}`}>
+                                Score {scoreV}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-white">
+                            <span className="font-bold">{lig.vendedor}</span>
+                            <span className="text-slate-400"> → </span>
+                            <span className="text-cyan-300">{lig.telefone_cliente}</span>
+                            <span className="text-slate-400"> • </span>
+                            <span className="text-slate-300">{formatDuration(lig.duracao_segundos || 0)}</span>
+                            <span className="text-slate-400"> • </span>
+                            <span className="text-slate-400 text-xs">{new Date(lig.data_ligacao).toLocaleString("pt-BR")}</span>
+                          </div>
+                          {lig.resumo && (
+                            <p className="text-slate-300 text-sm mt-2 line-clamp-2">{lig.resumo}</p>
                           )}
-                        </Button>
-                      )}
-
-                      {/* Botao Analisar */}
-                      {lig.status === "atendida" && !lig.transcricao && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                          disabled={processandoId === lig.id}
-                          onClick={() => handleProcessar(lig.id)}
-                        >
-                          {processandoId === lig.id ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Analisando...
-                            </>
-                          ) : (
-                            <>
-                              <Star className="w-4 h-4 mr-2" />
-                              Analisar
-                            </>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {lig.audio_url && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handlePlayPause(lig)}
+                              className="border-slate-700"
+                            >
+                              {playingId === lig.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                            </Button>
                           )}
-                        </Button>
-                      )}
-
-                      {lig.transcricao && (
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Analisada
-                        </Badge>
-                      )}
+                          {lig.kommo_lead_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              asChild
+                              className="border-slate-700"
+                            >
+                              <a
+                                href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lig.kommo_lead_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="w-4 h-4 mr-1" />
+                                Kommo
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))
+                  )
+                })}
+              </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
