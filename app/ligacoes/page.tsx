@@ -650,15 +650,15 @@ export default function LigacoesPage() {
                           <div className="flex items-center gap-2">
                             {lig.audio_url && (
                               <button
-                                onClick={() => handlePlayPause(lig)}
-                                className="group w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300"
+                                onClick={(e) => { e.stopPropagation(); handlePlayPause(lig) }}
+                                className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 overflow-hidden"
                                 style={{
                                   background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
                                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.3)",
                                   border: "1px solid rgba(255,255,255,0.1)",
                                 }}
                               >
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                 {playingId === lig.id ? (
                                   <Pause className="w-4 h-4 text-white/70 group-hover:text-white relative z-10" />
                                 ) : (
@@ -671,14 +671,15 @@ export default function LigacoesPage() {
                                 href={`https://crm2lrmultimarcascom.kommo.com/leads/detail/${lig.kommo_lead_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group h-9 px-3 rounded-xl flex items-center gap-2 transition-all duration-300"
+                                onClick={(e) => e.stopPropagation()}
+                                className="group relative h-9 px-3 rounded-xl flex items-center gap-2 transition-all duration-300 overflow-hidden"
                                 style={{
                                   background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
                                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.3)",
                                   border: "1px solid rgba(255,255,255,0.1)",
                                 }}
                               >
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                 <ExternalLink className="w-4 h-4 text-white/70 group-hover:text-white relative z-10" />
                                 <span className="text-white/70 group-hover:text-white text-xs font-medium relative z-10">Kommo</span>
                               </a>
