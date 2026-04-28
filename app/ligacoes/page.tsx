@@ -477,38 +477,53 @@ export default function LigacoesPage() {
           {stats && (() => {
             const VENDEDORES_FIXOS = [
               "Bianca", "Amanda", "Ana B", "Joao Lucas", "Joao Vitor",
-              "Lidiane", "Rafaella", "Ana G", "Isabelly",
+              "Lidiane", "Rafaella", "Lucas", "Ana G", "Isabelly",
               "Gabrielly", "Nicolas", "Brayan",
             ]
 
             // Normaliza nome para comparacao (remove acentos, lowercase)
             const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
 
-            // Busca vendedor - prioriza match exato
+            // Busca vendedor - prioriza match exato, depois compostos, depois first name
             const buscarVendedor = (nomeBusca: string): VendedorStats | null => {
               const buscaNorm = normalizar(nomeBusca)
+              const buscaParts = buscaNorm.split(" ")
               
-              // 1. Tenta match exato normalizado
+              // 1. Match EXATO normalizado - ex: "Ana B" === "Ana B", "Joao Lucas" === "João Lucas"
               for (const v of stats.porVendedor) {
                 if (normalizar(v.vendedor) === buscaNorm) return v
               }
               
-              // 2. Se tem espacos (nome composto), tenta match parcial mais rigoroso
-              if (nomeBusca.includes(" ")) {
-                const buscaParts = buscaNorm.split(" ")
+              // 2. Se busca tem 2+ partes (nome composto), tenta match por sequencia exata
+              // Ex: "Joao Lucas" procura alguém com "joao" e "lucas" em sequencia
+              if (buscaParts.length >= 2) {
                 for (const v of stats.porVendedor) {
                   const vNorm = normalizar(v.vendedor)
                   const vParts = vNorm.split(" ")
-                  // So match se TODOS os parts da busca estao em sequencia no vendedor
-                  if (vNorm.includes(buscaParts.join(" "))) return v
+                  
+                  // Verifica se todos os parts estao em sequencia
+                  let match = true
+                  for (let i = 0; i < buscaParts.length; i++) {
+                    if (vParts[i] !== buscaParts[i]) {
+                      match = false
+                      break
+                    }
+                  }
+                  if (match) return v
                 }
               }
               
-              // 3. Se e um nome unico, tenta first name match
-              if (!nomeBusca.includes(" ")) {
+              // 3. Se busca e um nome UNICO (sem espaco), tenta match APENAS se for o primeiro nome
+              // Isso evita "Lucas" casar com "Joao Lucas"
+              if (buscaParts.length === 1) {
                 for (const v of stats.porVendedor) {
-                  const vFirst = normalizar(v.vendedor).split(" ")[0]
-                  if (vFirst === buscaNorm) return v
+                  const vNorm = normalizar(v.vendedor)
+                  const vParts = vNorm.split(" ")
+                  // So match se o primeiro nome for exatamente igual
+                  if (vParts[0] === buscaNorm && vParts.length === 1) {
+                    // E se o vendedor no banco TAMBEM tem nome unico (nao e parte de um composto)
+                    return v
+                  }
                 }
               }
               
