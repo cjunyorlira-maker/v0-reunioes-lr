@@ -14,6 +14,7 @@ import {
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
 interface Atendimento {
   id: string
@@ -155,6 +156,7 @@ export default function AtendimentosPage() {
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
+  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao">("producao")
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -247,11 +249,52 @@ export default function AtendimentosPage() {
     setAtendimentos([])
   }
 
-  // Filtra atendimentos por equipe quando Admin seleciona uma equipe especifica
+  // Calcula intervalo de datas para o filtro de periodo
+  const intervaloPeriodo = useMemo(() => {
+    const hoje = new Date()
+    const hojeStr = hoje.toISOString().split("T")[0]
+
+    if (filtroPeriodo === "hoje") {
+      return { inicio: hojeStr, fim: hojeStr }
+    }
+
+    if (filtroPeriodo === "semana") {
+      // Segunda a domingo da semana atual
+      const diaSemana = hoje.getDay() === 0 ? 6 : hoje.getDay() - 1 // 0=seg
+      const segunda = new Date(hoje)
+      segunda.setDate(hoje.getDate() - diaSemana)
+      const domingo = new Date(segunda)
+      domingo.setDate(segunda.getDate() + 6)
+      return {
+        inicio: segunda.toISOString().split("T")[0],
+        fim: domingo.toISOString().split("T")[0],
+      }
+    }
+
+    // producao
+    const periodo = getPeriodoProducaoAtual()
+    return { inicio: periodo.inicio, fim: periodo.fim }
+  }, [filtroPeriodo])
+
+  // Filtra atendimentos por equipe e por periodo
   const atendimentosFiltrados = useMemo(() => {
-    if (equipe !== "Admin" || filtroEquipe === "all") return atendimentos
-    return atendimentos.filter(a => a.equipe === filtroEquipe)
-  }, [atendimentos, equipe, filtroEquipe])
+    let lista = atendimentos
+
+    // Filtro de equipe (Admin)
+    if (equipe === "Admin" && filtroEquipe !== "all") {
+      lista = lista.filter(a => a.equipe === filtroEquipe)
+    }
+
+    // Filtro de periodo — aplica apenas nos concluidos (fechados/nao fechados)
+    // Aguardando e Gravando sao sempre mostrados (sao ativos)
+    lista = lista.filter(a => {
+      if (a.status === "aguardando" || a.status === "gravando" || a.status === "processando") return true
+      const dataAtend = (a.data_atendimento || a.created_at || "").split("T")[0]
+      return dataAtend >= intervaloPeriodo.inicio && dataAtend <= intervaloPeriodo.fim
+    })
+
+    return lista
+  }, [atendimentos, equipe, filtroEquipe, intervaloPeriodo])
 
   // Agrupa motivos de nao fechamento por categoria usando as novas etiquetas
   const motivosPorCategoria = useMemo(() => {
@@ -537,6 +580,27 @@ export default function AtendimentosPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Filtro por periodo */}
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                {([
+                  { key: "hoje", label: "Hoje" },
+                  { key: "semana", label: "Semana" },
+                  { key: "producao", label: "Producao" },
+                ] as const).map(op => (
+                  <button
+                    key={op.key}
+                    onClick={() => setFiltroPeriodo(op.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      filtroPeriodo === op.key
+                        ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
+                        : "text-white/40 hover:text-white/70"
+                    }`}
+                  >
+                    {op.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Filtro por equipe - apenas para Admin */}
               {equipe === "Admin" && (
                 <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
@@ -612,6 +676,16 @@ export default function AtendimentosPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Label do periodo ativo */}
+        <div className="flex items-center gap-2 mb-4 -mt-4">
+          <Calendar className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-[11px] text-white/30">
+            {filtroPeriodo === "hoje" && `Hoje — ${new Date().toLocaleDateString("pt-BR")}`}
+            {filtroPeriodo === "semana" && `Semana — ${intervaloPeriodo.inicio.split("-").reverse().join("/")} a ${intervaloPeriodo.fim.split("-").reverse().join("/")}`}
+            {filtroPeriodo === "producao" && (() => { const p = getPeriodoProducaoAtual(); return `Producao ${p.mesReferencia} — ${p.inicio.split("-").reverse().join("/")} a ${p.fim.split("-").reverse().join("/")}` })()}
+          </span>
         </div>
 
         {activeTab === "atendimentos" ? (
