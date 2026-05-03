@@ -1,5 +1,6 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
+import { getVendedorEquipe } from "@/lib/vendedor-fotos"
 
 // GET - Listar atendimentos da equipe
 export async function GET(request: Request) {
@@ -66,6 +67,9 @@ export async function POST(request: Request) {
       }
     }
 
+    // Determina a equipe correta a partir do responsavel (usando alias/mapeamento)
+    const equipeCorreta = getVendedorEquipe(responsavel) || equipe || "Admin"
+
     // Criar novo atendimento (ou retorno se atendimento_original_id foi passado)
     const { data, error } = await supabase
       .from("atendimentos")
@@ -75,7 +79,7 @@ export async function POST(request: Request) {
         nome_lead,
         responsavel,
         atendente,
-        equipe,
+        equipe: equipeCorreta,
         atendimento_original_id: atendimento_original_id || null,
         status: "aguardando",
         data_atendimento: new Date().toISOString(),

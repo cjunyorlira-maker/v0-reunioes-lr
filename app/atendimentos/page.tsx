@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,8 +14,6 @@ import {
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { getWeekDays, getWeekRange, getWeekLabel, formatDateForDB } from "@/lib/date-utils"
-import type { WeekDay } from "@/lib/types"
 
 interface Atendimento {
   id: string
@@ -157,14 +155,6 @@ export default function AtendimentosPage() {
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
-  const [weekOffset, setWeekOffset] = useState(0)
-  const [weekDays, setWeekDays] = useState<WeekDay[]>([])
-  const [weekLabel, setWeekLabel] = useState("")
-
-  useEffect(() => {
-    setWeekDays(getWeekDays(weekOffset))
-    setWeekLabel(getWeekLabel(weekOffset))
-  }, [weekOffset])
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -292,65 +282,6 @@ export default function AtendimentosPage() {
   const fechados = concluidos.filter((a) => a.fechou)
   const naoFechados = concluidos.filter((a) => !a.fechou)
   const taxaConversao = concluidos.length > 0 ? ((fechados.length / concluidos.length) * 100).toFixed(1) : "0"
-
-
-  // Nao Fechados e Fechados — colunas por semana (igual Aguardando/Gravando)
-  const weekDatesSet = useMemo(() => {
-    if (!weekDays.length) return new Set<string>()
-    return new Set(weekDays.map(d => formatDateForDB(d.date)))
-  }, [weekDays])
-
-  const naoFechadosPorDia = useMemo(() => {
-    if (!weekDays.length) return []
-    return weekDays.map(day => {
-      const dataStr = formatDateForDB(day.date)
-      const lista = naoFechados.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
-      return { day, lista }
-    })
-  }, [naoFechados, weekDays])
-
-  const fechadosPorDia = useMemo(() => {
-    if (!weekDays.length) return []
-    return weekDays.map(day => {
-      const dataStr = formatDateForDB(day.date)
-      const lista = fechados.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
-      return { day, lista }
-    })
-  }, [fechados, weekDays])
-
-  // Atendimentos que NAO estao na semana selecionada (para mostrar em coluna extra)
-  const outrosNaoFechados = useMemo(() => {
-    return naoFechados.filter(a => {
-      const dataStr = a.data_atendimento?.split('T')[0] || ''
-      return !weekDatesSet.has(dataStr)
-    })
-  }, [naoFechados, weekDatesSet])
-
-  const outrosFechados = useMemo(() => {
-    return fechados.filter(a => {
-      const dataStr = a.data_atendimento?.split('T')[0] || ''
-      return !weekDatesSet.has(dataStr)
-    })
-  }, [fechados, weekDatesSet])
-
-  // Aguardando e Gravando: filtra apenas os da semana atual selecionada
-  const aguardandoPorDia = useMemo(() => {
-    if (!weekDays.length) return []
-    return weekDays.map(day => {
-      const dataStr = formatDateForDB(day.date)
-      const lista = aguardando.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
-      return { day, lista }
-    })
-  }, [aguardando, weekDays])
-
-  const processandoPorDia = useMemo(() => {
-    if (!weekDays.length) return []
-    return weekDays.map(day => {
-      const dataStr = formatDateForDB(day.date)
-      const lista = processando.filter(a => (a.data_atendimento?.split('T')[0] || '') === dataStr)
-      return { day, lista }
-    })
-  }, [processando, weekDays])
   const mediaScore = concluidos.filter(a => a.score_geral).reduce((acc, a) => acc + (a.score_geral || 0), 0) / (concluidos.filter(a => a.score_geral).length || 1)
 
   const equipeColors = EQUIPE_COLORS[equipe] || EQUIPE_COLORS["Admin"]
@@ -703,181 +634,88 @@ export default function AtendimentosPage() {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 h-[calc(100vh-280px)]">
 
-              {/* Navegacao de semana — compartilhada por todas as secoes */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setWeekOffset(w => w - 1)}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
-                >
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                </button>
-                <span className="text-sm font-bold text-white/80">{weekLabel}</span>
-                <button
-                  onClick={() => setWeekOffset(w => w + 1)}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                {weekOffset !== 0 && (
-                  <button
-                    onClick={() => setWeekOffset(0)}
-                    className="text-[11px] px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-all"
-                  >
-                    Semana atual
-                  </button>
-                )}
+              {/* Coluna 1: Aguardando */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-amber-500/10 flex-shrink-0">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                    <Clock className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="text-xs font-bold text-white flex-1">Aguardando</h2>
+                  <Badge className="bg-amber-500/30 text-amber-400 border-0 text-[10px]">{aguardando.length}</Badge>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {aguardando.length === 0 ? (
+                    <p className="text-[11px] text-white/20 text-center py-8">Nenhum aguardando</p>
+                  ) : (
+                    aguardando.map(atendimento => (
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                    ))
+                  )}
+                </div>
               </div>
 
-              {/* helper para renderizar uma secao de colunas por dia */}
-              {([ 
-                {
-                  key: 'nao-fechados',
-                  label: 'Nao Fechados',
-                  count: naoFechados.length,
-                  icon: <XCircle className="w-3.5 h-3.5 text-white" />,
-                  bg: 'bg-red-500/10',
-                  iconBg: 'bg-gradient-to-br from-red-500 to-rose-600',
-                  accent: 'border-red-500/30',
-                  accentBg: 'rgba(239,68,68,0.05)',
-                  headerActive: 'border-red-500/20 bg-red-500/10',
-                  dayNumActive: 'bg-gradient-to-br from-red-400 to-rose-600 text-white',
-                  dayTextActive: 'text-red-400',
-                  countActive: 'bg-red-500/20 text-red-400',
-                  data: naoFechadosPorDia,
-                  outros: outrosNaoFechados,
-                },
-                {
-                  key: 'fechados',
-                  label: 'Fechados',
-                  count: fechados.length,
-                  icon: <CheckCircle className="w-3.5 h-3.5 text-white" />,
-                  bg: 'bg-emerald-500/10',
-                  iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-                  accent: 'border-emerald-500/30',
-                  accentBg: 'rgba(16,185,129,0.05)',
-                  headerActive: 'border-emerald-500/20 bg-emerald-500/10',
-                  dayNumActive: 'bg-gradient-to-br from-emerald-400 to-teal-600 text-white',
-                  dayTextActive: 'text-emerald-400',
-                  countActive: 'bg-emerald-500/20 text-emerald-400',
-                  data: fechadosPorDia,
-                  outros: outrosFechados,
-                },
-              ]).map(sec => (
-                <div key={sec.key} className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                  <div className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 ${sec.bg}`}>
-                    <div className={`p-1.5 rounded-lg ${sec.iconBg}`}>{sec.icon}</div>
-                    <h2 className="text-sm font-bold text-white flex-1">{sec.label}</h2>
-                    <Badge className="bg-white/10 text-white/70 border-0 text-xs">{sec.count}</Badge>
+              {/* Coluna 2: Gravando */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-blue-500/10 flex-shrink-0">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
+                    <Mic className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="overflow-x-auto">
-                    <div className="flex gap-3 p-3" style={{ minWidth: 'max-content' }}>
-                      {sec.data.map(({ day, lista }) => {
-                        const isToday = day.isToday
-                        return (
-                          <div
-                            key={day.date.toISOString()}
-                            className={`w-[280px] flex-shrink-0 rounded-xl border transition-all duration-300 ${isToday ? sec.accent : 'border-white/5 hover:border-white/10'}`}
-                            style={{ background: isToday ? sec.accentBg : 'rgba(0,0,0,0.15)' }}
-                          >
-                            <div className={`flex items-center gap-2.5 p-3 rounded-t-xl border-b ${isToday ? sec.headerActive : 'border-white/5 bg-black/20'}`}>
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-[15px] font-extrabold ${isToday ? sec.dayNumActive : 'bg-white/8 text-white/70'}`}>
-                                {day.dayNumber}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-[12px] font-bold uppercase tracking-wide ${isToday ? sec.dayTextActive : 'text-white/60'}`}>{day.dayName}</p>
-                                {isToday && <p className="text-[10px] text-emerald-400 font-bold">Hoje</p>}
-                              </div>
-                              <div className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${lista.length > 0 ? sec.countActive : 'bg-white/5 text-white/20'}`}>
-                                {lista.length}
-                              </div>
-                            </div>
-                            <div className="p-2 space-y-2 max-h-[380px] overflow-y-auto">
-                              {lista.length === 0 ? (
-                                <p className="text-[11px] text-white/20 text-center py-6">Sem atendimentos</p>
-                              ) : (
-                                lista.map(atendimento => (
-                                  <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                      {/* Coluna "Outras datas" para atendimentos fora da semana */}
-                      {sec.outros.length > 0 && (
-                        <div
-                          className="w-[280px] flex-shrink-0 rounded-xl border border-white/10 transition-all duration-300"
-                          style={{ background: 'rgba(0,0,0,0.2)' }}
-                        >
-                          <div className="flex items-center gap-2.5 p-3 rounded-t-xl border-b border-white/10 bg-white/5">
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[13px] font-bold bg-white/10 text-white/50">
-                              ...
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-bold uppercase tracking-wide text-white/50">Outras datas</p>
-                            </div>
-                            <div className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-white/10 text-white/50">
-                              {sec.outros.length}
-                            </div>
-                          </div>
-                          <div className="p-2 space-y-2 max-h-[380px] overflow-y-auto">
-                            {sec.outros.map(atendimento => (
-                              <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <h2 className="text-xs font-bold text-white flex-1">Gravando</h2>
+                  <Badge className="bg-blue-500/30 text-blue-400 border-0 text-[10px]">{processando.length}</Badge>
                 </div>
-              ))}
-
-              {/* ====== SECAO INFERIOR: Aguardando + Gravando em lista ====== */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-                {/* Aguardando — lista simples */}
-                <div className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                  <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-amber-500/10">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
-                      <Clock className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <h2 className="text-sm font-bold text-white flex-1">Aguardando</h2>
-                    <Badge className="bg-amber-500/30 text-amber-400 border-0 text-xs">{aguardando.length}</Badge>
-                  </div>
-                  <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                    {aguardando.length === 0 ? (
-                      <p className="text-[11px] text-white/20 text-center py-8">Nenhum aguardando</p>
-                    ) : (
-                      aguardando.map(atendimento => (
-                        <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                      ))
-                    )}
-                  </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {processando.length === 0 ? (
+                    <p className="text-[11px] text-white/20 text-center py-8">Nenhum gravando</p>
+                  ) : (
+                    processando.map(atendimento => (
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                    ))
+                  )}
                 </div>
-
-                {/* Gravando — lista simples */}
-                <div className="rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
-                  <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-blue-500/10">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
-                      <Mic className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <h2 className="text-sm font-bold text-white flex-1">Gravando</h2>
-                    <Badge className="bg-blue-500/30 text-blue-400 border-0 text-xs">{processando.length}</Badge>
-                  </div>
-                  <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                    {processando.length === 0 ? (
-                      <p className="text-[11px] text-white/20 text-center py-8">Nenhum gravando</p>
-                    ) : (
-                      processando.map(atendimento => (
-                        <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
-                      ))
-                    )}
-                  </div>
-                </div>
-
               </div>
+
+              {/* Coluna 3: Nao Fechados */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-red-500/10 flex-shrink-0">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500 to-rose-600">
+                    <XCircle className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="text-xs font-bold text-white flex-1">Nao Fechados</h2>
+                  <Badge className="bg-red-500/30 text-red-400 border-0 text-[10px]">{naoFechados.length}</Badge>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {naoFechados.length === 0 ? (
+                    <p className="text-[11px] text-white/20 text-center py-8">Nenhum nao fechado</p>
+                  ) : (
+                    naoFechados.map(atendimento => (
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Coluna 4: Fechados */}
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-emerald-500/10 flex-shrink-0">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                    <CheckCircle className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h2 className="text-xs font-bold text-white flex-1">Fechados</h2>
+                  <Badge className="bg-emerald-500/30 text-emerald-400 border-0 text-[10px]">{fechados.length}</Badge>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {fechados.length === 0 ? (
+                    <p className="text-[11px] text-white/20 text-center py-8">Nenhum fechado</p>
+                  ) : (
+                    fechados.map(atendimento => (
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
           )
         ) : (

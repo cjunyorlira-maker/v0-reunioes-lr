@@ -11,11 +11,14 @@ export async function POST(
     
     const supabase = createSupabaseAdmin()
 
+    // Quando inicia gravacao, muda status para "gravando"
+    // Quando para, volta para "aguardando" (a menos que o upload mude para "processando")
     const { error } = await supabase
       .from("atendimentos")
       .update({
         gravando: gravando,
         gravando_por: gravando ? gravando_por : null,
+        status: gravando ? "gravando" : "aguardando",
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
