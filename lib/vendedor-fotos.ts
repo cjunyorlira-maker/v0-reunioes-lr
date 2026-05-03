@@ -15,6 +15,7 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Bianca Simoes":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
   "Bianca Simões":     "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
   "Bianca Isabela":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
+  "Bianca da Silva":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
   "Bianca":            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Bianca-Dfq3tArPi8nQ2grnS8CHJBGHgNktQ3.jpg",
   
   // Yuri Pereira
@@ -146,6 +147,7 @@ export const VENDEDOR_EQUIPE: Record<string, string> = {
   "Amanda Souza": "TDM",
   "Amanda": "TDM",
   "Bianca Isabela": "TDM",
+  "Bianca da Silva": "TDM",
   "Bianca Simoes": "TDM",
   "Bianca Simões": "TDM",
   "Bianca": "TDM",
@@ -173,7 +175,10 @@ export const VENDEDOR_GENERO: Record<string, "M" | "F"> = {
   "Leonardo Freitas": "M",
   "Alex Negreiros": "M",
   "Bianca Simoes": "F",
+  "Bianca Simões": "F",
   "Bianca Isabela": "F",
+  "Bianca da Silva": "F",
+  "Bianca": "F",
   "Yuri Pereira": "M",
   "Lucas Dionisio": "M",
   "Kleinver Seabra": "M",
@@ -215,6 +220,10 @@ const VENDEDOR_ALIAS: Record<string, string> = {
   "Aléxia": "Alexia Cunha",
   "Lidiane": "Lidiane Fonseca",
   "Rafaella": "Rafaella Antunes",
+  "Bianca": "Bianca Isabela",
+  "Bianca da Silva": "Bianca Isabela",
+  "Bianca Simoes": "Bianca Isabela",
+  "Bianca Simões": "Bianca Isabela",
 }
 
 // Função para normalizar nome de vendedor (unifica variações)
