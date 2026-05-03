@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import Anthropic from "@anthropic-ai/sdk"
 import CloudConvert from "cloudconvert"
-import { gerarPDFAnalise } from "@/lib/gerarPDFAnalise"
 import { buscarDadosLeadKommo, montarContextoKommoParaIA } from "@/lib/buscarDadosLeadKommo"
 
 const supabase = createClient(
@@ -739,7 +738,7 @@ te interessa o PARCELAMENTO? Porque minha função
 aqui é justamente a parte de liberação do crédito."
 [ESCUTAR a resposta com atenção]
 
-PASSO 3 ��� TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
+PASSO 3 ���� TRATAR A RESPOSTA CONFORME ROTEIRO ACIMA
 - Parcelado → seguir para qualificação
 - À vista → reverter mostrando vantagens
 - Insistente no imóvel → mencionar parcerias
@@ -1370,8 +1369,7 @@ async function enviarChamadaKommo(
 // Envia nota de analise para o Kommo
 async function enviarNotaKommo(
   leadId: string | number, 
-  analise: any,
-  pdfUrl: string | null = null
+  analise: any
 ): Promise<void> {
   if (!KOMMO_ACCESS_TOKEN || !leadId) return
 
@@ -1519,18 +1517,10 @@ async function enviarNotaKommo(
     if (analise.tipo_ligacao === 'facebook_grupos' && analise.script_proxima_ligacao) {
       nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
       nota += `\n\n🎯 SCRIPT IDEAL PRÓXIMA LIGAÇÃO SIMILAR:\n${analise.script_proxima_ligacao}`
-    }
+        }
     
-    // ============================================
-    // LINK DO PDF COMPLETO
-    // ============================================
-    if (pdfUrl) {
-      nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
-      nota += `\n\n📎 ANÁLISE COMPLETA + TRANSCRIÇÃO:`
-      nota += `\n👉 ${pdfUrl}`
-    }
-    
-    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno`
+    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno
+`
     
     // ============================================
     // ENVIO COM VALIDAÇÃO REAL
@@ -1572,8 +1562,7 @@ async function enviarNotaKommo(
 // Envia nota de análise para o CONTATO no Kommo (quando não tem lead ativo)
 async function enviarNotaKommoContato(
   contactId: string | number, 
-  analise: any,
-  pdfUrl: string | null = null
+  analise: any
 ): Promise<void> {
   if (!KOMMO_ACCESS_TOKEN || !contactId) return
 
@@ -1676,16 +1665,11 @@ async function enviarNotaKommoContato(
       analise.objecoes_cliente.slice(0, 4).forEach((obj: any) => {
         nota += `\n\n🗣️ "${obj.objecao || 'N/A'}"`
         nota += `\n→ ${obj.resposta_ideal || 'Resposta não disponível'}`
-      })
+            })
     }
     
-    if (pdfUrl) {
-      nota += `\n\n━━━━━━━━━━━━━━━━━━━━`
-      nota += `\n\n📎 ANÁLISE COMPLETA + TRANSCRIÇÃO:`
-      nota += `\n👉 ${pdfUrl}`
-    }
-    
-    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno`
+    nota += `\n\n${analise.cliente_interessado ? '✅' : '❌'} Cliente interessado | ${analise.agendou_retorno ? '✅' : '❌'} Agendou retorno
+`
     
     const response = await fetch(
       `https://crm2lrmultimarcascom.kommo.com/api/v4/contacts/${String(contactId)}/notes`,
@@ -2105,55 +2089,13 @@ export async function POST(request: Request) {
           analise?.resumo_executivo || null
         )
         
-        // ============================================================
-        // GERAÇÃO DO PDF DE ANÁLISE COMPLETA
-        // ============================================================
-        let pdfAnaliseUrl: string | null = null
-
-        if (analise && transcricao) {
-          try {
-            console.log('[PDF] Gerando PDF de análise...')
-            
-            const pdfBuffer = await gerarPDFAnalise({
-              callid,
-              vendedor: vendedorData?.vendedor || 'Vendedor',
-              cliente: 'Cliente',
-              telefone: telefoneCliente,
-              duracaoSegundos,
-              dataLigacao: dataLigacaoFormatada || new Date().toISOString(),
-              tipoLigacao,
-              audioUrl: audioBlobUrl || '',
-              transcricao,
-              analise,
-            })
-            
-            console.log('[PDF] ✅ PDF gerado:', pdfBuffer.length, 'bytes')
-            
-            const pdfBlob = await put(
-              `analises/${callid}.pdf`,
-              pdfBuffer,
-              {
-                access: 'public',
-                contentType: 'application/pdf',
-                token: process.env.ATENTIMENTOS_READ_WRITE_TOKEN,
-              }
-            )
-            
-            pdfAnaliseUrl = pdfBlob.url
-            console.log('[PDF] ✅ PDF salvo no Blob:', pdfAnaliseUrl)
-            
-          } catch (pdfError) {
-            console.error('[PDF] ❌ Erro ao gerar/salvar PDF:', pdfError)
-          }
-        }
-        
         // Nota com análise SÓ vai para o lead (não para contato em notas complexas)
         // Se tem lead, manda análise completa no lead
         if (analise && lead_id) {
-          await enviarNotaKommo(String(lead_id), analise, pdfAnaliseUrl)
+          await enviarNotaKommo(String(lead_id), analise)
         } else if (analise && !lead_id && contact_id) {
           // Se não tem lead, manda nota simplificada no contato
-          await enviarNotaKommoContato(String(contact_id), analise, pdfAnaliseUrl)
+          await enviarNotaKommoContato(String(contact_id), analise)
         }
         
         // Atualiza Supabase com IDs do Kommo
