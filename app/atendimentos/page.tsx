@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   Lock, Mic, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
   TrendingUp, Users, AlertTriangle, DollarSign, Calendar,
-  ChevronRight, Star, BarChart3, Target, Tag, ChevronDown
+  ChevronRight, ChevronLeft, Star, BarChart3, Target, Tag, ChevronDown
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import Link from "next/link"
@@ -157,6 +157,7 @@ export default function AtendimentosPage() {
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
   const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao">("producao")
+  const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -255,26 +256,40 @@ export default function AtendimentosPage() {
     const hojeStr = hoje.toISOString().split("T")[0]
 
     if (filtroPeriodo === "hoje") {
-      return { inicio: hojeStr, fim: hojeStr }
+      return { inicio: hojeStr, fim: hojeStr, label: `Hoje — ${hoje.toLocaleDateString("pt-BR")}` }
     }
 
     if (filtroPeriodo === "semana") {
-      // Segunda a domingo da semana atual
-      const diaSemana = hoje.getDay() === 0 ? 6 : hoje.getDay() - 1 // 0=seg
-      const segunda = new Date(hoje)
-      segunda.setDate(hoje.getDate() - diaSemana)
-      const domingo = new Date(segunda)
-      domingo.setDate(segunda.getDate() + 6)
+      // Semana comeca no domingo (getDay() === 0)
+      const diaDaSemana = hoje.getDay() // 0=dom, 1=seg, ... 6=sab
+      const domingo = new Date(hoje)
+      domingo.setDate(hoje.getDate() - diaDaSemana + semanaOffset * 7)
+      const sabado = new Date(domingo)
+      sabado.setDate(domingo.getDate() + 6)
+
+      const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+      const isAtual = semanaOffset === 0
+      const label = isAtual
+        ? `Semana atual — ${fmt(domingo)} a ${fmt(sabado)}`
+        : semanaOffset === -1
+          ? `Semana passada — ${fmt(domingo)} a ${fmt(sabado)}`
+          : `${fmt(domingo)} a ${fmt(sabado)}`
+
       return {
-        inicio: segunda.toISOString().split("T")[0],
-        fim: domingo.toISOString().split("T")[0],
+        inicio: domingo.toISOString().split("T")[0],
+        fim: sabado.toISOString().split("T")[0],
+        label,
       }
     }
 
     // producao
     const periodo = getPeriodoProducaoAtual()
-    return { inicio: periodo.inicio, fim: periodo.fim }
-  }, [filtroPeriodo])
+    return {
+      inicio: periodo.inicio,
+      fim: periodo.fim,
+      label: `Producao ${periodo.mesReferencia} — ${periodo.inicio.split("-").reverse().join("/")} a ${periodo.fim.split("-").reverse().join("/")}`,
+    }
+  }, [filtroPeriodo, semanaOffset])
 
   // Filtra atendimentos por equipe e por periodo
   const atendimentosFiltrados = useMemo(() => {
@@ -581,24 +596,56 @@ export default function AtendimentosPage() {
 
             <div className="flex items-center gap-3">
               {/* Filtro por periodo */}
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
-                {([
-                  { key: "hoje", label: "Hoje" },
-                  { key: "semana", label: "Semana" },
-                  { key: "producao", label: "Producao" },
-                ] as const).map(op => (
-                  <button
-                    key={op.key}
-                    onClick={() => setFiltroPeriodo(op.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                      filtroPeriodo === op.key
-                        ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
-                        : "text-white/40 hover:text-white/70"
-                    }`}
-                  >
-                    {op.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                  {([
+                    { key: "hoje", label: "Hoje" },
+                    { key: "semana", label: "Semana" },
+                    { key: "producao", label: "Producao" },
+                  ] as const).map(op => (
+                    <button
+                      key={op.key}
+                      onClick={() => { setFiltroPeriodo(op.key); if (op.key !== "semana") setSemanaOffset(0) }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                        filtroPeriodo === op.key
+                          ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
+                          : "text-white/40 hover:text-white/70"
+                      }`}
+                    >
+                      {op.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Navegacao de semana — aparece apenas quando "semana" esta selecionado */}
+                {filtroPeriodo === "semana" && (
+                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                    <button
+                      onClick={() => setSemanaOffset(o => o - 1)}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
+                      {semanaOffset === 0 ? "Esta semana" : semanaOffset === -1 ? "Semana passada" : semanaOffset < 0 ? `${Math.abs(semanaOffset)}s atras` : `+${semanaOffset}s`}
+                    </span>
+                    <button
+                      onClick={() => setSemanaOffset(o => o + 1)}
+                      disabled={semanaOffset >= 0}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    {semanaOffset !== 0 && (
+                      <button
+                        onClick={() => setSemanaOffset(0)}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
+                      >
+                        Atual
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Filtro por equipe - apenas para Admin */}
@@ -681,11 +728,7 @@ export default function AtendimentosPage() {
         {/* Label do periodo ativo */}
         <div className="flex items-center gap-2 mb-4 -mt-4">
           <Calendar className="w-3.5 h-3.5 text-white/30" />
-          <span className="text-[11px] text-white/30">
-            {filtroPeriodo === "hoje" && `Hoje — ${new Date().toLocaleDateString("pt-BR")}`}
-            {filtroPeriodo === "semana" && `Semana — ${intervaloPeriodo.inicio.split("-").reverse().join("/")} a ${intervaloPeriodo.fim.split("-").reverse().join("/")}`}
-            {filtroPeriodo === "producao" && (() => { const p = getPeriodoProducaoAtual(); return `Producao ${p.mesReferencia} — ${p.inicio.split("-").reverse().join("/")} a ${p.fim.split("-").reverse().join("/")}` })()}
-          </span>
+          <span className="text-[11px] text-white/30">{intervaloPeriodo.label}</span>
         </div>
 
         {activeTab === "atendimentos" ? (
