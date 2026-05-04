@@ -2,11 +2,6 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 // Etapa "Vendido Produção" do Kommo
 const ETAPA_VENDIDO = 69615804
 const PIPELINE_ID = 7012299
@@ -67,6 +62,12 @@ export async function POST() {
   if (!token || !subdomain) {
     return NextResponse.json({ error: "Kommo não configurado" }, { status: 500 })
   }
+
+  // Inicializa Supabase client dentro da função
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   try {
     // Período de produção: dia 21 ao dia 20 do mês seguinte
