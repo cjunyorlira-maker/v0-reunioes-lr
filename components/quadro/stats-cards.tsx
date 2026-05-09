@@ -115,13 +115,17 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     "Grupo Lr Multimarcas": "Admin",
   }
 
-  // META da quinzena: R$ 5.000.000 até dia 5 do mês seguinte
-  const META_QUINZENA = 5_000_000
+  // META da quinzena: começa em R$ 5.000.000, sobe para R$ 10.000.000 quando batida
+  const META_BASE = 5_000_000
+  const META_NOVA = 10_000_000
 
   const totalVendidoMes = useMemo(() => {
     const vendas = data?.vendas || []
     return vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
   }, [data])
+
+  // Define a meta dinâmica: se já bateu 5M, meta vira 10M
+  const META_QUINZENA = totalVendidoMes >= META_BASE ? META_NOVA : META_BASE
 
   const restanteMeta = Math.max(0, META_QUINZENA - totalVendidoMes)
   const percentualMeta = Math.min(100, Math.round((totalVendidoMes / META_QUINZENA) * 100))
