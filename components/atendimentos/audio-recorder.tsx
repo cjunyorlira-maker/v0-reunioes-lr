@@ -150,7 +150,7 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
     }
   }
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (!mediaRecorderRef.current || !isRecording) return
     mediaRecorderRef.current.stop()
     setIsRecording(false)
@@ -158,12 +158,16 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     streamRef.current?.getTracks().forEach(t => t.stop())
     
-    // Desmarcar gravando
-    fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gravando: false, gravando_por: null }),
-    }).catch(() => {})
+    // Desmarcar gravando com await para garantir sequência
+    try {
+      await fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gravando: false, gravando_por: null }),
+      })
+    } catch (err) {
+      console.error("[v0] Erro ao desmarcar gravando:", err)
+    }
   }
 
   const uploadAudio = async (audioBlob: Blob) => {
@@ -190,28 +194,43 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
+        // Se falhar, resetar gravando para false
+        try {
+          await fetch(`/api/atendimentos/${atendimentoId}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gravando: false, status: "aguardando" }),
+          })
+        } catch (err) {
+          console.error("[v0] Erro ao resetar apos falha de upload:", err)
+        }
         throw new Error(data.error || "Erro ao processar audio")
       }
 
       onComplete()
     } catch (err: any) {
+      console.error("[v0] Erro no upload:", err)
       setError(err.message || "Erro ao enviar audio")
       setIsUploading(false)
     }
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (isRecording) {
       mediaRecorderRef.current?.stop()
       stopVisualizer()
       if (timerRef.current) clearInterval(timerRef.current)
       streamRef.current?.getTracks().forEach(t => t.stop())
       // Voltar para aguardando se cancelar sem enviar
-      fetch(`/api/atendimentos/${atendimentoId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "aguardando" }),
-      }).catch(() => {})
+      try {
+        await fetch(`/api/atendimentos/${atendimentoId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "aguardando", gravando: false }),
+        })
+      } catch (err) {
+        console.error("[v0] Erro ao resetar status:", err)
+      }
     }
     onCancel()
   }

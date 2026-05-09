@@ -7,17 +7,26 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { status } = await request.json()
+    const { status, gravando } = await request.json()
 
     const allowed = ["aguardando", "gravando", "processando", "concluido", "erro"]
-    if (!id || !status || !allowed.includes(status)) {
+    if (!id || (!status && gravando === undefined)) {
       return NextResponse.json({ error: "Dados invalidos" }, { status: 400 })
     }
 
+    if (status && !allowed.includes(status)) {
+      return NextResponse.json({ error: "Status invalido" }, { status: 400 })
+    }
+
     const supabase = createSupabaseAdmin()
+    
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
+    if (status) updateData.status = status
+    if (gravando !== undefined) updateData.gravando = gravando
+    
     const { error } = await supabase
       .from("atendimentos")
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq("id", id)
 
     if (error) throw error
