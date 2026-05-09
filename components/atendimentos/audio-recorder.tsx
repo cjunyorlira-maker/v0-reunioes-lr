@@ -150,24 +150,14 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
     }
   }
 
-  const stopRecording = async () => {
+  const stopRecording = () => {
     if (!mediaRecorderRef.current || !isRecording) return
-    mediaRecorderRef.current.stop()
+    mediaRecorderRef.current.stop()  // Dispara onstop callback que faz o upload
     setIsRecording(false)
     stopVisualizer()
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     streamRef.current?.getTracks().forEach(t => t.stop())
-    
-    // Desmarcar gravando com await para garantir sequência
-    try {
-      await fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gravando: false, gravando_por: null }),
-      })
-    } catch (err) {
-      console.error("[v0] Erro ao desmarcar gravando:", err)
-    }
+    // NAO marca gravando=false aqui - isso sera feito no uploadAudio apos sucesso
   }
 
   const uploadAudio = async (audioBlob: Blob) => {
@@ -194,7 +184,7 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
-        // Se falhar, resetar gravando para false
+        // Se falhar, resetar gravando para false e status para aguardando
         try {
           await fetch(`/api/atendimentos/${atendimentoId}/status`, {
             method: "POST",
@@ -205,6 +195,17 @@ export function AudioRecorder({ atendimentoId, isRetorno = false, userName = "Al
           console.error("[v0] Erro ao resetar apos falha de upload:", err)
         }
         throw new Error(data.error || "Erro ao processar audio")
+      }
+
+      // Upload OK - marcar gravando=false (o status vai para "processando" pela API de upload)
+      try {
+        await fetch(`/api/atendimentos/${atendimentoId}/gravando`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gravando: false, gravando_por: null }),
+        })
+      } catch (err) {
+        console.error("[v0] Erro ao desmarcar gravando apos sucesso:", err)
       }
 
       onComplete()
