@@ -36,12 +36,9 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     { refreshInterval: 10000, revalidateOnFocus: true }
   )
 
-  const top1VendedorMes = useMemo((): Top1Venda | null => {
+  const top3VendedoresMes = useMemo((): Top1Venda[] => {
     const vendas = data?.vendas || []
-    if (vendas.length === 0) {
-      // Fallback enquanto sincroniza - mostra valores hardcoded
-      return { nome: "Carregando...", valor: 0, vendas: 0, foto: undefined }
-    }
+    if (vendas.length === 0) return []
     const byVendedor: Record<string, { valor: number; total: number }> = {}
     vendas.forEach((v) => {
       const nome = v.responsavel || "Sem nome"
@@ -49,11 +46,13 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
       byVendedor[nome].valor += Number(v.valor_venda)
       byVendedor[nome].total++
     })
-    const sorted = Object.entries(byVendedor).sort((a, b) => b[1].valor - a[1].valor)
-    if (sorted.length === 0) return null
-    const [nome, info] = sorted[0]
-    return { nome, valor: info.valor, vendas: info.total, foto: getFotoVendedor(nome) }
+    return Object.entries(byVendedor)
+      .sort((a, b) => b[1].valor - a[1].valor)
+      .slice(0, 3)
+      .map(([nome, info]) => ({ nome, valor: info.valor, vendas: info.total, foto: getFotoVendedor(nome) }))
   }, [data])
+
+  const top1VendedorMes = top3VendedoresMes[0] ?? null
 
   const equipeLogos: Record<string, string> = {
     "TDM": "/equipes/tdm.jpg",
@@ -414,15 +413,55 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     <div className="space-y-3 px-4 md:px-6 mb-6">
       {/* Linha 1: TOP Vendas, TOP Equipe, TOP Agendei, TOP Veio */}
       <div className="flex items-center gap-4 overflow-x-auto pb-2">
-        {top1VendedorMes && (
-          <TopCardVenda
-            venda={top1VendedorMes}
-            label="Top Vendas Mes"
-            primaryColor="#a78bfa"
-            glow="rgba(167,139,250,0.3)"
-            badgeGradient="linear-gradient(135deg, #a78bfa, #c4b5fd)"
-          />
-        )}
+        {/* TOP 3 Vendedores do Mes */}
+        {top3VendedoresMes.length > 0 && (() => {
+          const config = [
+            { label: "Top 1 Vendas", primaryColor: "#f5d742", glow: "rgba(245,215,66,0.35)", badgeGradient: "linear-gradient(135deg, #d4af37, #f5d742)", troféu: "🥇" },
+            { label: "Top 2 Vendas", primaryColor: "#cbd5e1", glow: "rgba(203,213,225,0.3)", badgeGradient: "linear-gradient(135deg, #94a3b8, #cbd5e1)", troféu: "🥈" },
+            { label: "Top 3 Vendas", primaryColor: "#fb923c", glow: "rgba(251,146,60,0.3)", badgeGradient: "linear-gradient(135deg, #c2410c, #fb923c)", troféu: "🥉" },
+          ]
+          return top3VendedoresMes.map((venda, i) => {
+            const { label, primaryColor, glow, badgeGradient, troféu } = config[i]
+            const borderColor = `${glow.slice(0, -4)}0.25)`
+            const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(venda.valor)
+            return (
+              <div key={venda.nome} className="group relative flex items-center gap-4 px-5 py-4 min-w-fit rounded-2xl backdrop-blur-sm transition-all duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1 overflow-hidden cursor-default">
+                <div className="absolute inset-0 rounded-2xl transition-all duration-500" style={{ background: "rgba(0,0,0,0.12)", border: `1px solid ${borderColor}` }} />
+                <div className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl -z-10" style={{ background: `radial-gradient(ellipse at center, ${glow}, transparent 70%)` }} />
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 overflow-hidden">
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }} />
+                </div>
+                {/* Medalha */}
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="text-3xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12" style={{ filter: `drop-shadow(0 0 12px ${glow})` }}>
+                    {troféu}
+                  </div>
+                </div>
+                {/* Foto */}
+                <div className="relative z-10">
+                  <div className="absolute -inset-1 rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500 blur-sm" style={{ background: `linear-gradient(135deg, ${primaryColor}, transparent, ${primaryColor})` }} />
+                  {venda.foto ? (
+                    <img src={venda.foto} alt={venda.nome} className="relative w-14 h-14 rounded-full object-cover object-top border-2 transition-all duration-500 group-hover:scale-110" style={{ borderColor: primaryColor, boxShadow: `0 0 25px ${glow}, 0 4px 15px rgba(0,0,0,0.3)` }} />
+                  ) : (
+                    <div className="relative w-14 h-14 rounded-full border-2 flex items-center justify-center font-black text-xl transition-all duration-500 group-hover:scale-110" style={{ background: `linear-gradient(135deg, ${glow.replace('0.3', '0.2')}, ${glow.replace('0.3', '0.1')})`, borderColor: primaryColor, color: primaryColor, boxShadow: `0 0 25px ${glow}` }}>
+                      {venda.nome.charAt(0)}
+                    </div>
+                  )}
+                  <span className="absolute -top-1 -right-1 text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none text-black shadow-lg" style={{ background: badgeGradient, boxShadow: `0 2px 10px ${glow}` }}>
+                    TOP {i + 1}
+                  </span>
+                </div>
+                {/* Info */}
+                <div className="relative z-10 flex flex-col min-w-0">
+                  <span className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{ color: primaryColor, textShadow: `0 0 20px ${glow}` }}>{label}</span>
+                  <span className="text-sm font-bold text-white truncate max-w-[130px]">{venda.nome}</span>
+                  <span className="text-base font-black mt-1 transition-all duration-300 group-hover:scale-110 inline-block" style={{ color: primaryColor, textShadow: `0 0 15px ${glow}` }}>{formatted}</span>
+                  <span className="text-[10px] text-white/40 mt-0.5">{venda.vendas} {venda.vendas === 1 ? "venda" : "vendas"}</span>
+                </div>
+              </div>
+            )
+          })
+        })()}
 
         {top1EquipeMes && (
           <TopCardVenda
