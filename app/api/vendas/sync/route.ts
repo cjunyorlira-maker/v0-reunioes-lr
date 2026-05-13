@@ -149,13 +149,16 @@ export async function POST() {
 
       const equipe = vendedorEquipe[responsavelNome] || "Outro"
 
+      // Usa a data de criacao do lead no Kommo (ou updated_at se nao tiver created_at)
+      const dataLead = lead.created_at ? new Date(lead.created_at * 1000).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]
+
       vendas.push({
         kommo_id: lead.id.toString(),
         nome_lead: lead.name || "Sem nome",
         responsavel: responsavelNome,
         equipe: equipe,
         valor_venda: valorVenda,
-        data_venda: new Date().toISOString().split("T")[0], // Data de hoje quando sincroniza a venda
+        data_venda: dataLead,
       })
       console.log("[v0] Coletando:", lead.name, "| Responsável:", responsavelNome, "| Equipe:", equipe)
     }
@@ -177,14 +180,13 @@ export async function POST() {
         .single()
 
       if (existing) {
-        // Atualiza
+        // Atualiza - NAO sobrescreve data_venda para manter a data original
         const { error: updateError } = await supabase
           .from("vendas")
           .update({
             nome_lead: venda.nome_lead,
             responsavel: venda.responsavel,
             valor_venda: venda.valor_venda,
-            data_venda: venda.data_venda,
             updated_at: new Date().toISOString(),
           })
           .eq("kommo_id", venda.kommo_id)
@@ -213,11 +215,40 @@ export async function POST() {
       }
     }
 
+    // Remove vendas que nao estao mais na etapa "Vendido Producao" do Kommo
+    const kommoIds = vendas.map(v => v.kommo_id)
+    let deleted = 0
+    
+    if (kommoIds.length > 0) {
+      // Busca vendas no banco que NAO estao no Kommo (foram removidas da etapa)
+      const { data: vendasNoBanco } = await supabase
+        .from("vendas")
+        .select("id, kommo_id, nome_lead")
+        .gte("data_venda", periodo.inicio)
+        .lte("data_venda", periodo.fim)
+      
+      if (vendasNoBanco) {
+        for (const venda of vendasNoBanco) {
+          if (!kommoIds.includes(venda.kommo_id)) {
+            const { error: deleteError } = await supabase
+              .from("vendas")
+              .delete()
+              .eq("id", venda.id)
+            if (!deleteError) {
+              console.log("[v0] Venda removida (saiu do Kommo):", venda.nome_lead)
+              deleted++
+            }
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       total: vendas.length,
       inserted,
       updated,
+      deleted,
       periodo: {
         inicio: periodo.inicio,
         fim: periodo.fim,
