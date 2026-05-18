@@ -2,9 +2,9 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
-// Etapa "Vendido Produção" do Kommo
-const ETAPA_VENDIDO = 69615804
-const PIPELINE_ID = 7012299
+// Etapa "Vendido Produção" do Kommo (21/04 a 20/05)
+const ETAPA_VENDIDO = 71181426
+const PIPELINE_ID = 8637094
 
 // Campo customizado de Valor da Venda no Kommo
 // Você precisa verificar qual é o ID correto - por enquanto usa o campo price padrão do lead
