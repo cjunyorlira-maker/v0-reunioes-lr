@@ -94,20 +94,20 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     "Ana Gabrielly": "Lobos",
     "Isabelly Ribeiro": "Lobos",
     "Isabelly": "Lobos",
-    // TDM (Turma dos Milhões)
+    // TDM (Turma dos Milhões) - Klaiver, Emily, Amanda, Bianca, Ana Beatriz, João Lucas
     "Kleinver Seabra": "TDM",
+    "Klaiver": "TDM",
     "Emily Machado": "TDM",
     "Emily": "TDM",
     "Amanda Souza": "TDM",
     "Amanda": "TDM",
     "Bianca Isabela": "TDM",
+    "Bianca da Silva": "TDM",
     "Bianca": "TDM",
     "João Lucas": "TDM",
     "Joao Lucas": "TDM",
     "Ana Beatriz": "TDM",
     "Ana": "TDM",
-    "Willy Santana": "TDM",
-    "Willy": "TDM",
     // Admin (não conta para ranking)
     "Livia Rafaela": "Admin",
     "Integração Dashboard": "Admin",
