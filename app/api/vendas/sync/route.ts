@@ -7,8 +7,7 @@ const ETAPA_VENDIDO = 71181426
 const PIPELINE_ID = 8637094
 
 // Campo customizado de Valor da Venda no Kommo
-// Você precisa verificar qual é o ID correto - por enquanto usa o campo price padrão do lead
-const CAMPO_VALOR_VENDA = 1085703 // Ajustar conforme o ID real do campo no Kommo
+const CAMPO_VALOR_VENDA = 1085703
 
 // Mapeamento vendedor -> equipe
 const vendedorEquipe: Record<string, string> = {
@@ -40,6 +39,7 @@ const vendedorEquipe: Record<string, string> = {
   "Isabelly Ribeiro": "Lobos",
   "Isabelly": "Lobos",
   "Kleinver Seabra": "TDM",
+  "Klaiver": "TDM",
   "Emily Machado": "TDM",
   "Emily": "TDM",
   "Amanda Souza": "TDM",
@@ -51,8 +51,6 @@ const vendedorEquipe: Record<string, string> = {
   "Joao Lucas": "TDM",
   "Ana Beatriz": "TDM",
   "Ana": "TDM",
-  "Willy Santana": "TDM",
-  "Willy": "TDM",
 }
 
 export async function POST() {
