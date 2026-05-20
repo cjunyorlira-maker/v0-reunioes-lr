@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/vendas/sync",
+      "schedule": "*/1 * * * *"
+    }
+  ],
+  "buildCommand": "node .v0/inject-built-with-v0.mjs && next build"
+}

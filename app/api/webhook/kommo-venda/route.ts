@@ -9,8 +9,10 @@ const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SE
     )
   : null
 
-// Etapa "Vendido Produção" do Kommo (21/04 a 20/05)
-const ETAPA_VENDIDO = 71181426
+// Etapas de "Vendido Produção" do Kommo - podem ter múltiplos IDs
+// 71181426 = Vendido Produção 21/04 a 20/05 (correta para período de produção)
+// 69615804 = Etapa antiga que estava sendo usada (precisa continuar aceitando)
+const ETAPAS_VENDIDO = [71181426, 69615804]
 
 // Mapeamento de responsável para equipe
 const EQUIPE_MAP: Record<string, string> = {
@@ -68,9 +70,9 @@ export async function POST(request: Request) {
       const leadId = lead.id?.toString()
       const statusId = parseInt(lead.status_id || lead.new_status_id || "0")
       
-      // Só processa se for a etapa "Vendido Produção"
-      if (statusId !== ETAPA_VENDIDO) {
-        console.log(`[webhook-venda] Lead ${leadId} não está na etapa vendido (status: ${statusId})`)
+      // Só processa se for uma das etapas de "Vendido Produção"
+      if (!ETAPAS_VENDIDO.includes(statusId)) {
+        console.log(`[webhook-venda] Lead ${leadId} não está em etapa de vendido (status: ${statusId}, esperado: ${ETAPAS_VENDIDO})`)
         skipped++
         continue
       }
