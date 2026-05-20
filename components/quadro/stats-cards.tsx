@@ -32,8 +32,15 @@ interface VendaRow {
 export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
   const { data, error, mutate } = useSWR<{ vendas: VendaRow[] }>(
     "/api/vendas",
-    (url: string) => fetch(url).then((res) => res.json()).catch(() => ({ vendas: [] })),
-    { refreshInterval: 10000, revalidateOnFocus: true }
+    (url: string) => fetch(url, { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    }).then((res) => res.json()).catch(() => ({ vendas: [] })),
+    { 
+      refreshInterval: 10000, 
+      revalidateOnFocus: true,
+      dedupingInterval: 0, // Desabilita deduplicação para sempre buscar dados novos
+    }
   )
 
   const top3VendedoresMes = useMemo((): Top1Venda[] => {
@@ -120,7 +127,9 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
 
   const totalVendidoMes = useMemo(() => {
     const vendas = data?.vendas || []
-    return vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
+    const total = vendas.reduce((acc, v) => acc + Number(v.valor_venda), 0)
+    console.log("[v0] StatsCards - vendas recebidas:", vendas.length, "total:", total)
+    return total
   }, [data])
 
   // Define a meta dinâmica: se já bateu 5M, meta vira 10M
