@@ -2,8 +2,10 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
-// Etapa "Vendido Produção" do Kommo (21/04 a 20/05)
-const ETAPA_VENDIDO = 71181426
+// Etapas "Vendido Produção" do Kommo - múltiplos IDs possíveis
+// 71181426 = Vendido Produção 21/04 a 20/05 (período atual)
+// 69615804 = Etapa antiga que ainda recebe leads
+const ETAPAS_VENDIDO = [71181426, 69615804]
 const PIPELINE_ID = 8637094
 
 // Campo customizado de Valor da Venda no Kommo
@@ -71,11 +73,16 @@ export async function POST() {
     // Período de produção: dia 21 ao dia 20 do mês seguinte
     const periodo = getPeriodoProducaoAtual()
 
-    // Busca TODOS os leads na etapa "Vendido Produção" (69615804)
-    // Filtragem por data será feita no código, pois o Kommo usa updated_at que pode ser diferente da data de venda
-    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&filter[statuses][0][pipeline_id]=${PIPELINE_ID}&filter[statuses][0][status_id]=${ETAPA_VENDIDO}&with=custom_fields_values&limit=250`
+    // Busca leads de AMBAS as etapas "Vendido Produção"
+    // Usa múltiplos filtros de status para pegar todas as etapas
+    const statusFilters = ETAPAS_VENDIDO.map((s, i) => 
+      `filter[statuses][${i}][pipeline_id]=${PIPELINE_ID}&filter[statuses][${i}][status_id]=${s}`
+    ).join('&')
+    
+    const url = `https://${subdomain}.kommo.com/api/v4/leads?filter[pipeline_id]=${PIPELINE_ID}&${statusFilters}&with=custom_fields_values&limit=250`
 
     console.log("[v0] Buscando vendas do Kommo - Período:", periodo.mesReferencia, periodo.inicio, "a", periodo.fim)
+    console.log("[v0] URL:", url)
 
     const response = await fetch(url, {
       headers: { "Authorization": `Bearer ${token}` },
