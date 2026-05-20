@@ -117,16 +117,21 @@ export async function POST() {
     for (const lead of leads) {
       const customFields: Array<{ field_id: number; values?: Array<{ value: unknown }> }> = lead.custom_fields_values || []
       
-      // Extrai valor da venda - tenta campo customizado primeiro, depois price do lead
+      // Extrai valor da venda - PRIORIZA lead.price (campo nativo "Venda" do Kommo)
       let valorVenda = 0
-      const campoValor = customFields.find((f) => f.field_id === CAMPO_VALOR_VENDA)
-      if (campoValor?.values?.[0]?.value) {
-        valorVenda = Number(campoValor.values[0].value) || 0
+      
+      // Primeiro tenta o campo price nativo do Kommo (campo "Venda")
+      if (lead.price && Number(lead.price) > 0) {
+        valorVenda = Number(lead.price)
+      } else {
+        // Fallback para campo customizado se existir
+        const campoValor = customFields.find((f) => f.field_id === CAMPO_VALOR_VENDA)
+        if (campoValor?.values?.[0]?.value) {
+          valorVenda = Number(campoValor.values[0].value) || 0
+        }
       }
-      // Se não achou no campo customizado, usa o price do lead
-      if (valorVenda === 0 && lead.price) {
-        valorVenda = Number(lead.price) || 0
-      }
+      
+      console.log(`[v0] Lead ${lead.id} (${lead.name}) - price: ${lead.price}, valorVenda: ${valorVenda}`)
 
       // Busca responsável
       let responsavelNome = "Não informado"
