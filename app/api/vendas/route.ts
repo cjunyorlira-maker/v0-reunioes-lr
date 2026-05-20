@@ -38,14 +38,22 @@ export async function GET() {
       return NextResponse.json({ vendas: [] })
     }
 
+    // Headers para evitar cache - dados sempre frescos
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    }
+
     return NextResponse.json({ 
       vendas: vendas || [],
       periodo: {
         inicio: periodo.inicio,
         fim: periodo.fim,
         mesReferencia: periodo.mesReferencia,
-      }
-    })
+      },
+      _timestamp: Date.now(), // Para debug - mostra quando os dados foram buscados
+    }, { headers })
   } catch (err) {
     console.error("Erro na API de vendas:", err)
     return NextResponse.json({ vendas: [] })
