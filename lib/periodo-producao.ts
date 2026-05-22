@@ -43,7 +43,7 @@ export interface PeriodoProducao {
 /**
  * Retorna o período de produção atual
  * - Começa no dia 21 do mês anterior
- * - Termina no dia 20 do mês atual (ou próximo dia útil se cair em fim de semana/feriado)
+ * - Termina no dia 22 do mês atual (ou próximo dia útil se cair em fim de semana/feriado)
  */
 export function getPeriodoProducaoAtual(): PeriodoProducao {
   const hoje = new Date()
@@ -56,10 +56,10 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   let mesReferenciaNum: number
   let anoReferencia: number
 
-  // Se estamos entre dia 1 e 20, o período é do dia 21 do mês passado até dia 20 deste mês
-  // Se estamos entre dia 21 e 31, o período é do dia 21 deste mês até dia 20 do próximo mês
+  // Se estamos entre dia 1 e 20, o período é do dia 21 do mês passado até dia 22 deste mês
+  // Se estamos entre dia 21 e 31, o período é do dia 21 deste mês até dia 22 do próximo mês
   if (diaAtual <= 20) {
-    // Período: dia 21 do mês anterior até dia 20 deste mês
+    // Período: dia 21 do mês anterior até dia 22 deste mês
     if (hoje.getMonth() === 0) {
       // Janeiro - mês anterior é Dezembro do ano passado
       inicioAno = hoje.getFullYear() - 1
@@ -73,7 +73,7 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
     mesReferenciaNum = hoje.getMonth()
     anoReferencia = hoje.getFullYear()
   } else {
-    // Período: dia 21 deste mês até dia 20 do próximo mês
+    // Período: dia 21 deste mês até dia 22 do próximo mês
     inicioAno = hoje.getFullYear()
     inicioMes = hoje.getMonth()
     if (hoje.getMonth() === 11) {
@@ -91,7 +91,7 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   }
 
   const inicio = new Date(inicioAno, inicioMes, 21)
-  let fim = new Date(fimAno, fimMes, 20)
+  let fim = new Date(fimAno, fimMes, 22)
   
   // Ajusta o fim para o próximo dia útil se cair em fim de semana ou feriado
   fim = proximoDiaUtil(fim)
