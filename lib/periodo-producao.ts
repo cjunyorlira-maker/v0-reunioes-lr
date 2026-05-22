@@ -42,12 +42,15 @@ export interface PeriodoProducao {
 
 /**
  * Retorna o período de produção atual
- * - Começa no dia 21 do mês anterior
- * - Termina no dia 22 do mês atual (ou próximo dia útil se cair em fim de semana/feriado)
+ * - Começa no dia 21 do mês anterior ou atual
+ * - Termina no dia 22 do mês atual ou próximo
+ * - Importante: se estamos entre 21 e 22 de um mês, o período já começou no 21
  */
 export function getPeriodoProducaoAtual(): PeriodoProducao {
   const hoje = new Date()
   const diaAtual = hoje.getDate()
+  const mesAtual = hoje.getMonth()
+  const anoAtual = hoje.getFullYear()
   
   let inicioAno: number
   let inicioMes: number
@@ -56,37 +59,37 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   let mesReferenciaNum: number
   let anoReferencia: number
 
-  // Se estamos entre dia 1 e 20, o período é do dia 21 do mês passado até dia 22 deste mês
-  // Se estamos entre dia 21 e 31, o período é do dia 21 deste mês até dia 22 do próximo mês
+  // Se estamos entre dia 1-20: período começou no 21 do mês anterior
+  // Se estamos entre dia 21-22: período é de hoje até 22 do mês que vem
+  // Se estamos depois do dia 22: período será apenas até 22 do mês próximo
+  
   if (diaAtual <= 20) {
-    // Período: dia 21 do mês anterior até dia 22 deste mês
-    if (hoje.getMonth() === 0) {
-      // Janeiro - mês anterior é Dezembro do ano passado
-      inicioAno = hoje.getFullYear() - 1
+    // Antes do dia 21: período começou em 21 do mês anterior
+    if (mesAtual === 0) {
+      inicioAno = anoAtual - 1
       inicioMes = 11 // Dezembro
     } else {
-      inicioAno = hoje.getFullYear()
-      inicioMes = hoje.getMonth() - 1
+      inicioAno = anoAtual
+      inicioMes = mesAtual - 1
     }
-    fimAno = hoje.getFullYear()
-    fimMes = hoje.getMonth()
-    mesReferenciaNum = hoje.getMonth()
-    anoReferencia = hoje.getFullYear()
+    fimAno = anoAtual
+    fimMes = mesAtual
+    mesReferenciaNum = mesAtual
+    anoReferencia = anoAtual
   } else {
-    // Período: dia 21 deste mês até dia 22 do próximo mês
-    inicioAno = hoje.getFullYear()
-    inicioMes = hoje.getMonth()
-    if (hoje.getMonth() === 11) {
-      // Dezembro - próximo mês é Janeiro do próximo ano
-      fimAno = hoje.getFullYear() + 1
+    // Dia 21 ou depois: período vai até dia 22 do próximo mês
+    inicioAno = anoAtual
+    inicioMes = mesAtual
+    if (mesAtual === 11) {
+      fimAno = anoAtual + 1
       fimMes = 0 // Janeiro
       mesReferenciaNum = 0
-      anoReferencia = hoje.getFullYear() + 1
+      anoReferencia = anoAtual + 1
     } else {
-      fimAno = hoje.getFullYear()
-      fimMes = hoje.getMonth() + 1
-      mesReferenciaNum = hoje.getMonth() + 1
-      anoReferencia = hoje.getFullYear()
+      fimAno = anoAtual
+      fimMes = mesAtual + 1
+      mesReferenciaNum = mesAtual + 1
+      anoReferencia = anoAtual
     }
   }
 
