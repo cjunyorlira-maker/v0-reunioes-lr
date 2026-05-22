@@ -59,12 +59,12 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   let mesReferenciaNum: number
   let anoReferencia: number
 
-  // Se estamos entre dia 1-20: período começou no 21 do mês anterior
-  // Se estamos entre dia 21-22: período é de hoje até 22 do mês que vem
-  // Se estamos depois do dia 22: período será apenas até 22 do mês próximo
+  // Lógica: 
+  // Se estamos entre dia 1-22: período começou em 21 do mês anterior, termina em 22 deste mês
+  // Se estamos depois do dia 22: período começa em 21 deste mês, termina em 22 do próximo
   
-  if (diaAtual <= 20) {
-    // Antes do dia 21: período começou em 21 do mês anterior
+  if (diaAtual <= 22) {
+    // Antes ou no dia 22: período começou em 21 do mês anterior
     if (mesAtual === 0) {
       inicioAno = anoAtual - 1
       inicioMes = 11 // Dezembro
@@ -77,7 +77,7 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
     mesReferenciaNum = mesAtual
     anoReferencia = anoAtual
   } else {
-    // Dia 21 ou depois: período vai até dia 22 do próximo mês
+    // Depois do dia 22: período vai do 21 deste mês até 22 do próximo
     inicioAno = anoAtual
     inicioMes = mesAtual
     if (mesAtual === 11) {
