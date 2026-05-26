@@ -1,0 +1,372 @@
+{
+  "periodo": {
+    "inicio": "2026-04-21",
+    "fim": "2026-05-22",
+    "descricao": "Período de Produção - Abril/Maio 2026"
+  },
+  "totais_gerais": {
+    "total_vendas": 34,
+    "valor_total_vendas": "R$ 13.376.472,00",
+    "total_atendimentos": 1000,
+    "total_fechou": 856,
+    "taxa_fechamento_atendimentos": "85,6%",
+    "total_ligacoes": 4500,
+    "total_agendamentos": 1200,
+    "taxa_agendamento": "26,7%"
+  },
+  "vendas_por_vendedor": [
+    {
+      "vendedor": "Nicolas Moraes",
+      "equipe": "Legado",
+      "total_vendas": 6,
+      "valor_total": "R$ 3.581.657,00"
+    },
+    {
+      "vendedor": "Bianca da Silva",
+      "equipe": "TDM",
+      "total_vendas": 6,
+      "valor_total": "R$ 2.077.948,00"
+    },
+    {
+      "vendedor": "Ana Beatriz",
+      "equipe": "TDM",
+      "total_vendas": 3,
+      "valor_total": "R$ 1.624.320,00"
+    },
+    {
+      "vendedor": "Gabrielly Pereira",
+      "equipe": "Legado",
+      "total_vendas": 2,
+      "valor_total": "R$ 931.657,00"
+    },
+    {
+      "vendedor": "Amanda Souza",
+      "equipe": "TDM",
+      "total_vendas": 2,
+      "valor_total": "R$ 837.988,00"
+    },
+    {
+      "vendedor": "João Victor",
+      "equipe": "Samurais",
+      "total_vendas": 1,
+      "valor_total": "R$ 220.000,00"
+    },
+    {
+      "vendedor": "Brayan",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 563.314,00"
+    },
+    {
+      "vendedor": "Lidiane Fonseca",
+      "equipe": "Guerreiros",
+      "total_vendas": 1,
+      "valor_total": "R$ 300.000,00"
+    },
+    {
+      "vendedor": "Rafaella",
+      "equipe": "Guerreiros",
+      "total_vendas": 1,
+      "valor_total": "R$ 600.000,00"
+    },
+    {
+      "vendedor": "Lucas",
+      "equipe": "Lobos",
+      "total_vendas": 1,
+      "valor_total": "R$ 450.000,00"
+    },
+    {
+      "vendedor": "Janaina Dantas",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 563.314,00"
+    },
+    {
+      "vendedor": "Gisely Leal",
+      "equipe": "Guerreiros",
+      "total_vendas": 1,
+      "valor_total": "R$ 400.000,00"
+    },
+    {
+      "vendedor": "João Lucas",
+      "equipe": "TDM",
+      "total_vendas": 1,
+      "valor_total": "R$ 150.000,00"
+    },
+    {
+      "vendedor": "Perola Lucaichus",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 400.000,00"
+    },
+    {
+      "vendedor": "Luciano",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 650.000,00"
+    },
+    {
+      "vendedor": "Stefany e Hebert",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 500.000,00"
+    },
+    {
+      "vendedor": "LANAI",
+      "equipe": "Legado",
+      "total_vendas": 1,
+      "valor_total": "R$ 650.000,00"
+    }
+  ],
+  "atendimentos_por_vendedor": [
+    {
+      "vendedor": "Rafaella Antunes",
+      "equipe": "Guerreiros",
+      "total_atendimentos": 120,
+      "total_fechou": 102,
+      "taxa_fechamento": "85,0%"
+    },
+    {
+      "vendedor": "Lucas Dionisio",
+      "equipe": "Lobos",
+      "total_atendimentos": 98,
+      "total_fechou": 85,
+      "taxa_fechamento": "86,7%"
+    },
+    {
+      "vendedor": "Lidiane Fonseca",
+      "equipe": "Guerreiros",
+      "total_atendimentos": 95,
+      "total_fechou": 81,
+      "taxa_fechamento": "85,3%"
+    },
+    {
+      "vendedor": "Isabelly Ribeiro",
+      "equipe": "Lobos",
+      "total_atendimentos": 85,
+      "total_fechou": 72,
+      "taxa_fechamento": "84,7%"
+    },
+    {
+      "vendedor": "Amanda Souza",
+      "equipe": "TDM",
+      "total_atendimentos": 88,
+      "total_fechou": 75,
+      "taxa_fechamento": "85,2%"
+    }
+  ],
+  "qualificacoes_por_vendedor": [
+    {
+      "vendedor": "Rafaella Antunes",
+      "equipe": "Guerreiros",
+      "total_qualificacoes": 99
+    },
+    {
+      "vendedor": "Lucas Dionisio",
+      "equipe": "Lobos",
+      "total_qualificacoes": 77
+    },
+    {
+      "vendedor": "Lidiane Fonseca",
+      "equipe": "Guerreiros",
+      "total_qualificacoes": 73
+    },
+    {
+      "vendedor": "Isabelly Ribeiro",
+      "equipe": "Lobos",
+      "total_qualificacoes": 66
+    },
+    {
+      "vendedor": "Amanda Souza",
+      "equipe": "TDM",
+      "total_qualificacoes": 66
+    },
+    {
+      "vendedor": "Gabrielly Pereira",
+      "equipe": "Legado",
+      "total_qualificacoes": 65
+    },
+    {
+      "vendedor": "Nicolas Moraes",
+      "equipe": "Legado",
+      "total_qualificacoes": 65
+    },
+    {
+      "vendedor": "João Victor",
+      "equipe": "Samurais",
+      "total_qualificacoes": 60
+    },
+    {
+      "vendedor": "Ana Gabrielly",
+      "equipe": "Lobos",
+      "total_qualificacoes": 60
+    },
+    {
+      "vendedor": "Ana Beatriz",
+      "equipe": "TDM",
+      "total_qualificacoes": 49
+    }
+  ],
+  "agendamentos_por_equipe": {
+    "TDM": {
+      "total_agendamentos": 320,
+      "taxa": "26,7%"
+    },
+    "Legado": {
+      "total_agendamentos": 245,
+      "taxa": "20,4%"
+    },
+    "Guerreiros": {
+      "total_agendamentos": 198,
+      "taxa": "16,5%"
+    },
+    "Lobos": {
+      "total_agendamentos": 215,
+      "taxa": "17,9%"
+    },
+    "Samurais": {
+      "total_agendamentos": 135,
+      "taxa": "11,3%"
+    },
+    "Outros": {
+      "total_agendamentos": 87,
+      "taxa": "7,3%"
+    }
+  },
+  "vendas_por_equipe": {
+    "TDM": {
+      "total_vendas": 8,
+      "valor_total": "R$ 5.360.256,00"
+    },
+    "Legado": {
+      "total_vendas": 18,
+      "valor_total": "R$ 5.478.939,00"
+    },
+    "Guerreiros": {
+      "total_vendas": 3,
+      "valor_total": "R$ 1.320.000,00"
+    },
+    "Lobos": {
+      "total_vendas": 2,
+      "valor_total": "R$ 1.050.000,00"
+    },
+    "Samurais": {
+      "total_vendas": 1,
+      "valor_total": "R$ 220.000,00"
+    },
+    "Outros": {
+      "total_vendas": 2,
+      "valor_total": "R$ 400.000,00"
+    }
+  },
+  "resumo_ligacoes": {
+    "total_ligacoes": 4500,
+    "total_agendamentos": 1200,
+    "taxa_agendamento": "26,7%"
+  },
+  "ranking_top_5_vendedores": {
+    "por_valor_vendas": [
+      {
+        "posicao": 1,
+        "vendedor": "Nicolas Moraes",
+        "equipe": "Legado",
+        "valor": "R$ 3.581.657,00"
+      },
+      {
+        "posicao": 2,
+        "vendedor": "Bianca da Silva",
+        "equipe": "TDM",
+        "valor": "R$ 2.077.948,00"
+      },
+      {
+        "posicao": 3,
+        "vendedor": "Ana Beatriz",
+        "equipe": "TDM",
+        "valor": "R$ 1.624.320,00"
+      },
+      {
+        "posicao": 4,
+        "vendedor": "Gabrielly Pereira",
+        "equipe": "Legado",
+        "valor": "R$ 931.657,00"
+      },
+      {
+        "posicao": 5,
+        "vendedor": "Amanda Souza",
+        "equipe": "TDM",
+        "valor": "R$ 837.988,00"
+      }
+    ],
+    "por_qualificacoes": [
+      {
+        "posicao": 1,
+        "vendedor": "Rafaella Antunes",
+        "equipe": "Guerreiros",
+        "qualificacoes": 99
+      },
+      {
+        "posicao": 2,
+        "vendedor": "Lucas Dionisio",
+        "equipe": "Lobos",
+        "qualificacoes": 77
+      },
+      {
+        "posicao": 3,
+        "vendedor": "Lidiane Fonseca",
+        "equipe": "Guerreiros",
+        "qualificacoes": 73
+      },
+      {
+        "posicao": 4,
+        "vendedor": "Isabelly Ribeiro",
+        "equipe": "Lobos",
+        "qualificacoes": 66
+      },
+      {
+        "posicao": 5,
+        "vendedor": "Amanda Souza",
+        "equipe": "TDM",
+        "qualificacoes": 66
+      }
+    ],
+    "por_atendimentos_fechados": [
+      {
+        "posicao": 1,
+        "vendedor": "Rafaella Antunes",
+        "equipe": "Guerreiros",
+        "fechou": 102
+      },
+      {
+        "posicao": 2,
+        "vendedor": "Lucas Dionisio",
+        "equipe": "Lobos",
+        "fechou": 85
+      },
+      {
+        "posicao": 3,
+        "vendedor": "Lidiane Fonseca",
+        "equipe": "Guerreiros",
+        "fechou": 81
+      },
+      {
+        "posicao": 4,
+        "vendedor": "Isabelly Ribeiro",
+        "equipe": "Lobos",
+        "fechou": 72
+      },
+      {
+        "posicao": 5,
+        "vendedor": "Amanda Souza",
+        "equipe": "TDM",
+        "fechou": 75
+      }
+    ]
+  },
+  "notas": {
+    "nota_1": "Total de 34 vendas fechadas no período",
+    "nota_2": "Equipe TDM lidera em faturamento (R$ 5.360.256)",
+    "nota_3": "Taxa de fechamento de atendimentos: 85,6%",
+    "nota_4": "Taxa de agendamentos em ligações: 26,7%",
+    "nota_5": "Legado em segundo lugar em faturamento (R$ 5.478.939)"
+  }
+}
