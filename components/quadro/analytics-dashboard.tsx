@@ -36,11 +36,11 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   // Filtro por equipe — null = todas
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
 
-  // Busca TODOS os leads (sem filtro de data) para calcular Agendei corretamente
-  // Leads com data_agendei nesta semana podem ter data de reunião em outra semana
+  // Busca leads com filtro de data para calcular Agendei corretamente
+  // Usa o dateRange passado (semana ou período de produção)
   // Revalida a cada 5 segundos para pegar mudanças de remarcação
   const { data: allLeadsData } = useSWR<Lead[]>(
-    "/api/leads", 
+    `/api/leads?startDate=${dateRange.start}&endDate=${dateRange.end}`, 
     fetcher,
     { 
       revalidateOnFocus: true,
