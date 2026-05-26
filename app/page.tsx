@@ -17,6 +17,7 @@ import { AnimatedBackground } from "@/components/ui/animated-background"
 import type { Lead } from "@/lib/types"
 import { useLeads } from "@/hooks/use-leads"
 import { getWeekDays, getWeekRange, getWeekLabel } from "@/lib/date-utils"
+import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 import { Spinner } from "@/components/ui/spinner"
 import { Confetti } from "@/components/ui/confetti"
 import type { WeekDay } from "@/lib/types"
@@ -39,6 +40,7 @@ export default function QuadroReunioes() {
   const [isRemarcarModalOpen, setIsRemarcarModalOpen] = useState(false)
   const [pendingRemarcarLead, setPendingRemarcarLead] = useState<Lead | null>(null)
   const [agendamentoCelebration, setAgendamentoCelebration] = useState<{ nome: string; foto?: string } | null>(null)
+  const [periodoFiltro, setPeriodoFiltro] = useState<"semana" | "producao">("semana")
 
 
   useEffect(() => {
@@ -56,6 +58,13 @@ export default function QuadroReunioes() {
 
   const { leads, isLoading, createLead, updateLead, deleteLead, mutate } = useLeads(dateRange.start, dateRange.end)
   const { leads: nextWeekLeads } = useLeads(nextWeekRange.start, nextWeekRange.end)
+  
+  // Leads do período de produção (para o filtro "Producao" no analytics)
+  const periodoProducao = useMemo(() => getPeriodoProducaoAtual(), [])
+  const { leads: leadsProducao } = useLeads(periodoProducao.inicio, periodoProducao.fim)
+
+  // Leads que serão usados no AnalyticsDashboard: semana ou período de produção
+  const leadsParaAnalytics = periodoFiltro === "producao" ? leadsProducao : leads
   
   // Busca TODOS os leads para calcular Agendei corretamente (usa data_agendei - igual ao dashboard)
   const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
@@ -558,6 +567,8 @@ export default function QuadroReunioes() {
         onPrevWeek={() => setWeekOffset((w) => w - 1)}
         onNextWeek={() => setWeekOffset((w) => w + 1)}
         onNewLead={() => setIsModalOpen(true)}
+        periodoFiltro={periodoFiltro}
+        onPeriodoChange={setPeriodoFiltro}
       />
 
       <StatsCards 
@@ -636,15 +647,15 @@ export default function QuadroReunioes() {
       {/* Dashboard de Analytics */}
       {mounted && !isLoading && (
         <AnalyticsDashboard
-          leads={leads}
-          weekLabel={weekLabel}
-          dateRange={dateRange}
+          leads={leadsParaAnalytics}
+          weekLabel={periodoFiltro === "producao" ? "Producao 21 Abr – 22 Mai" : weekLabel}
+          dateRange={periodoFiltro === "producao" ? periodoProducao : dateRange}
         />
       )}
 
       {/* Comparativo Presencial vs Online */}
       {mounted && !isLoading && (
-        <OnlinePresencialStats leads={leads} />
+        <OnlinePresencialStats leads={leadsParaAnalytics} />
       )}
 
       <NewLeadModal
