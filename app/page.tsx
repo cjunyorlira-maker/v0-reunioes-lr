@@ -61,10 +61,15 @@ export default function QuadroReunioes() {
   
   // Leads do período de produção (para o filtro "Producao" no analytics)
   const periodoProducao = useMemo(() => getPeriodoProducaoAtual(), [])
+  const periodoProducaoRange = useMemo(() => ({ 
+    start: periodoProducao.inicio, 
+    end: periodoProducao.fim 
+  }), [periodoProducao])
   const { leads: leadsProducao } = useLeads(periodoProducao.inicio, periodoProducao.fim)
 
   // Leads que serão usados no AnalyticsDashboard: semana ou período de produção
   const leadsParaAnalytics = periodoFiltro === "producao" ? leadsProducao : leads
+  const dateRangeParaAnalytics = periodoFiltro === "producao" ? periodoProducaoRange : dateRange
   
   // Busca TODOS os leads para calcular Agendei corretamente (usa data_agendei - igual ao dashboard)
   const { data: allLeadsData } = useSWR<Lead[]>(`/api/leads`, (url: string) => fetch(url).then(res => res.json()), { refreshInterval: 30000 })
@@ -649,7 +654,7 @@ export default function QuadroReunioes() {
         <AnalyticsDashboard
           leads={leadsParaAnalytics}
           weekLabel={periodoFiltro === "producao" ? "Producao 21 Abr – 22 Mai" : weekLabel}
-          dateRange={periodoFiltro === "producao" ? periodoProducao : dateRange}
+          dateRange={dateRangeParaAnalytics}
         />
       )}
 
