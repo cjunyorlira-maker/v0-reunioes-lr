@@ -1,7 +1,7 @@
 "use client"
 
 import { Lead } from "@/lib/types"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import useSWR from "swr"
 import { useQualificados } from "@/hooks/use-qualificados"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
@@ -36,6 +36,18 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   // Filtro por equipe — null = todas
   const [selectedEquipe, setSelectedEquipe] = useState<string | null>(null)
 
+  // Reseta o dia selecionado sempre que o período mudar (troca semana <-> producao)
+  const prevDateRangeRef = useRef(dateRange)
+  useEffect(() => {
+    if (
+      prevDateRangeRef.current.start !== dateRange.start ||
+      prevDateRangeRef.current.end !== dateRange.end
+    ) {
+      setSelectedDay(null)
+      prevDateRangeRef.current = dateRange
+    }
+  }, [dateRange])
+
   // Busca leads com filtro de data para calcular Agendei corretamente
   // Usa o dateRange passado (semana ou período de produção)
   // Revalida a cada 5 segundos para pegar mudanças de remarcação
@@ -52,7 +64,15 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
   
 
 
-  // Dias da semana para os botões do filtro
+  // Detecta se está no modo "Produção" (período > 7 dias)
+  const isModoProducao = useMemo(() => {
+    const start = new Date(dateRange.start)
+    const end = new Date(dateRange.end)
+    const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    return diffDays > 7
+  }, [dateRange])
+
+  // Dias da semana para os botões do filtro (apenas no modo semana)
   const weekDays = useMemo(() => getWeekDays(), [])
 
   // Todas as equipes disponíveis (usa allLeads para incluir todas)
@@ -434,11 +454,12 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-[16px] font-bold text-[#f5f0e8]">
-            Relatório — {selectedDay ? weekDays.find(d => formatDateForDB(d.date) === selectedDay)?.dayName ?? selectedDay : "Semana Toda"}
+            Relatorio — {isModoProducao ? "Producao Completa" : selectedDay ? weekDays.find(d => formatDateForDB(d.date) === selectedDay)?.dayName ?? selectedDay : "Semana Toda"}
           </h2>
           <span className="text-[12px] text-[#8a8070]">{weekLabel}</span>
         </div>
-        {/* Botões de filtro por dia */}
+        {/* Botões de filtro por dia — apenas no modo semana */}
+        {!isModoProducao && (
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedDay(null)}
@@ -470,9 +491,8 @@ export function AnalyticsDashboard({ leads, weekLabel, dateRange }: AnalyticsDas
             )
           })}
         </div>
+        )}
       </div>
-
-      {/* Botões de filtro por equipe */}
       {todasEquipes.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <button
