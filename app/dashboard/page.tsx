@@ -375,89 +375,139 @@ export default function DashboardPage() {
       wsResumo["!cols"] = [{ wch: 25 }, { wch: 15 }]
       XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo Geral")
 
-      // ABA 2: Marcados e Resultados por Vendedor
-      const resultadosHeader = ["Vendedor", "Equipe", "Marcados", "Veio", "Faltou", "Vendas", "Conversao %"]
+      // ABA 2: Marcados e Resultados por Vendedor (COMPLETO)
+      const resultadosHeader = ["Vendedor", "Equipe", "Marcados", "Veio", "Faltou", "Remarcados", "Vendas", "Taxa Presenca %", "Taxa Conversao %"]
       const resultadosRows = resultadosPorVendedor.map((v: any) => {
-        const conv = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
-        return [v.nome, v.equipe, v.marcados, v.veio, v.nao, v.vendas, `${conv}%`]
+        const presenca = (v.veio + v.nao) > 0 ? Math.round((v.veio / (v.veio + v.nao)) * 100) : 0
+        const conversao = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
+        return [v.nome, v.equipe, v.marcados, v.veio, v.nao, v.remarcados || 0, v.vendas, `${presenca}%`, `${conversao}%`]
       })
+      // Totais
+      const totalMarcados = resultadosPorVendedor.reduce((a: number, v: any) => a + v.marcados, 0)
+      const totalVeio = resultadosPorVendedor.reduce((a: number, v: any) => a + v.veio, 0)
+      const totalNao = resultadosPorVendedor.reduce((a: number, v: any) => a + v.nao, 0)
+      const totalRemarcados = resultadosPorVendedor.reduce((a: number, v: any) => a + (v.remarcados || 0), 0)
+      const totalVendas = resultadosPorVendedor.reduce((a: number, v: any) => a + v.vendas, 0)
+      const totalPresenca = (totalVeio + totalNao) > 0 ? Math.round((totalVeio / (totalVeio + totalNao)) * 100) : 0
+      const totalConversao = totalVeio > 0 ? Math.round((totalVendas / totalVeio) * 100) : 0
+      
       const wsResultados = XLSX.utils.aoa_to_sheet([
-        [`Marcados & Resultados — Periodo: ${periodoLabel}`],
+        [`MARCADOS & RESULTADOS — Periodo: ${periodoLabel}`],
         [],
         resultadosHeader,
-        ...resultadosRows
+        ...resultadosRows,
+        [],
+        ["TOTAL", "", totalMarcados, totalVeio, totalNao, totalRemarcados, totalVendas, `${totalPresenca}%`, `${totalConversao}%`]
       ])
-      wsResultados["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }]
+      wsResultados["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsResultados, "Marcados e Resultados")
 
-      // ABA 3: Qualifiquei por Vendedor
-      const qualifHeader = ["Vendedor", "Equipe", "Qualificados"]
-      const qualifRows = qualifiqueiPorVendedor.map(v => [v.nome, v.equipe, v.qualificados])
-      const wsQualif = XLSX.utils.aoa_to_sheet([
-        [`Qualifiquei por Vendedor — Periodo: ${periodoLabel}`],
+      // ABA 3: Qualifiquei & Agendei por Vendedor (COMPLETO)
+      const qualAgendHeader = ["Vendedor", "Equipe", "Qualificados", "Agendamentos", "Taxa Conversao %"]
+      const qualAgendRows = qualifiqueiPorVendedor.map(qv => {
+        const agend = agendeiPorVendedor.find(av => av.nome === qv.nome)
+        const agendei = agend?.agendei || 0
+        const taxa = qv.qualificados > 0 ? Math.round((agendei / qv.qualificados) * 100) : 0
+        return [qv.nome, qv.equipe, qv.qualificados, agendei, `${taxa}%`]
+      })
+      // Adiciona vendedores que só tem agendei mas não qualificaram
+      agendeiPorVendedor.forEach(av => {
+        if (!qualifiqueiPorVendedor.find(qv => qv.nome === av.nome)) {
+          qualAgendRows.push([av.nome, av.equipe, 0, av.agendei, "0%"])
+        }
+      })
+      const totalQualif = qualifiqueiPorVendedor.reduce((a, v) => a + v.qualificados, 0)
+      const totalAgendei = agendeiPorVendedor.reduce((a, v) => a + v.agendei, 0)
+      const totalTaxaQA = totalQualif > 0 ? Math.round((totalAgendei / totalQualif) * 100) : 0
+      
+      const wsQualAgend = XLSX.utils.aoa_to_sheet([
+        [`QUALIFIQUEI & AGENDEI — Periodo: ${periodoLabel}`],
         [],
-        qualifHeader,
-        ...qualifRows
-      ])
-      wsQualif["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 15 }]
-      XLSX.utils.book_append_sheet(wb, wsQualif, "Qualifiquei")
-
-      // ABA 4: Agendei por Vendedor
-      const agendHeader = ["Vendedor", "Equipe", "Agendamentos"]
-      const agendRows = agendeiPorVendedor.map(v => [v.nome, v.equipe, v.agendei])
-      const wsAgend = XLSX.utils.aoa_to_sheet([
-        [`Agendei por Vendedor — Periodo: ${periodoLabel}`],
+        qualAgendHeader,
+        ...qualAgendRows,
         [],
-        agendHeader,
-        ...agendRows
+        ["TOTAL", "", totalQualif, totalAgendei, `${totalTaxaQA}%`]
       ])
-      wsAgend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 15 }]
-      XLSX.utils.book_append_sheet(wb, wsAgend, "Agendei")
+      wsQualAgend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }]
+      XLSX.utils.book_append_sheet(wb, wsQualAgend, "Qualifiquei e Agendei")
 
-      // ABA 5: Funil por Equipe
-      const funilHeader = ["Equipe", "Qualificados", "Agendei", "Taxa Qual→Agend"]
-      const funilRows = funilPorEquipe.map((e: any) => [e.nome, e.qualificados, e.agendei, `${e.taxa}%`])
+      // ABA 4: Funil por Equipe (COMPLETO)
+      const funilHeader = ["Equipe", "Qualificados", "Agendei", "Marcados", "Veio", "Faltou", "Vendas", "Taxa Qual→Agend %", "Taxa Presenca %", "Taxa Conversao %"]
+      const funilRows = funilPorEquipe.map((e: any) => {
+        const presenca = (e.veio + e.nao) > 0 ? Math.round((e.veio / (e.veio + e.nao)) * 100) : 0
+        const conversao = e.veio > 0 ? Math.round((e.vendas / e.veio) * 100) : 0
+        return [e.equipe, e.qualificados, e.agendei, e.marcados, e.veio, e.nao, e.vendas, `${e.taxa}%`, `${presenca}%`, `${conversao}%`]
+      })
       const wsFunil = XLSX.utils.aoa_to_sheet([
-        [`Funil por Equipe — Periodo: ${periodoLabel}`],
+        [`FUNIL POR EQUIPE — Periodo: ${periodoLabel}`],
         [],
         funilHeader,
         ...funilRows
       ])
-      wsFunil["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 18 }]
+      wsFunil["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsFunil, "Funil por Equipe")
 
-      // ABA 6: Atendentes
-      const atendHeader = ["Atendente", "Atendidos (Veio)", "Vendas", "Conversao %"]
+      // ABA 5: Atendentes (COMPLETO)
+      const atendHeader = ["Atendente", "Atendidos (Veio)", "Vendas", "Taxa Conversao %"]
       const atendRows = atendenteStats.map((a: any) => {
         const conv = a.atendidos > 0 ? Math.round((a.vendas / a.atendidos) * 100) : 0
         return [a.nome, a.atendidos, a.vendas, `${conv}%`]
       })
+      const totalAtendidos = atendenteStats.reduce((a: number, v: any) => a + v.atendidos, 0)
+      const totalVendasAtend = atendenteStats.reduce((a: number, v: any) => a + v.vendas, 0)
+      const totalConvAtend = totalAtendidos > 0 ? Math.round((totalVendasAtend / totalAtendidos) * 100) : 0
+      
       const wsAtend = XLSX.utils.aoa_to_sheet([
-        [`Atendentes — Periodo: ${periodoLabel}`],
+        [`ATENDENTES (CONVERSAO) — Periodo: ${periodoLabel}`],
         [],
         atendHeader,
-        ...atendRows
+        ...atendRows,
+        [],
+        ["TOTAL", totalAtendidos, totalVendasAtend, `${totalConvAtend}%`]
       ])
-      wsAtend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 14 }]
+      wsAtend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsAtend, "Atendentes")
 
-      // ABA 7: Origem dos Leads
-      const origemHeader = ["Origem", "Marcados", "Vendas"]
+      // ABA 6: Origem dos Leads (COMPLETO)
+      const origemHeader = ["Origem", "Marcados", "Vendas", "Taxa Conversao %"]
       const origemRows = origensMarcados.marcados.map(([origem, qtd]) => {
         const vendas = origensMarcados.vendas.find(([o]) => o === origem)?.[1] || 0
-        return [origem, qtd, vendas]
+        const taxa = qtd > 0 ? Math.round((vendas / qtd) * 100) : 0
+        return [origem, qtd, vendas, `${taxa}%`]
       })
       const wsOrigem = XLSX.utils.aoa_to_sheet([
-        [`Origem dos Leads — Periodo: ${periodoLabel}`],
+        [`ORIGEM DOS LEADS — Periodo: ${periodoLabel}`],
         [],
         origemHeader,
         ...origemRows
       ])
-      wsOrigem["!cols"] = [{ wch: 25 }, { wch: 12 }, { wch: 10 }]
+      wsOrigem["!cols"] = [{ wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsOrigem, "Origem dos Leads")
 
+      // ABA 7: Lista de Leads Detalhada
+      const leadsHeader = ["Nome Lead", "Vendedor", "Equipe", "Atendente", "Origem", "Data Reuniao", "Status", "Venda Fechada"]
+      const leadsRows = leadsAtivos.map((lead: any) => [
+        lead.nome || "Sem nome",
+        lead.responsavel || "Nao informado",
+        lead.equipe || "Sem equipe",
+        lead.atendente || "-",
+        lead.origem || "Nao informado",
+        lead.data || "-",
+        lead.status === "veio" ? "Veio" : lead.status === "nao" ? "Faltou" : "Pendente",
+        lead.venda_fechada ? "Sim" : "Nao"
+      ])
+      const wsLeads = XLSX.utils.aoa_to_sheet([
+        [`LISTA DE LEADS — Periodo: ${periodoLabel}`],
+        [`Total: ${leadsAtivos.length} leads`],
+        [],
+        leadsHeader,
+        ...leadsRows
+      ])
+      wsLeads["!cols"] = [{ wch: 30 }, { wch: 22 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 14 }]
+      XLSX.utils.book_append_sheet(wb, wsLeads, "Lista de Leads")
+
       // Salva o arquivo
-      const fileName = `LR_Dashboard_${periodoLabel.replace(/\//g, "-")}.xlsx`
+      const fileName = `LR_Dashboard_${periodoLabel.replace(/\//g, "-").replace(/ /g, "_")}.xlsx`
       XLSX.writeFile(wb, fileName)
     } finally {
       setDownloading(false)
