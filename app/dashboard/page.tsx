@@ -7,7 +7,8 @@ import useSWR from "swr"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { getWeekDays, formatDateForDB } from "@/lib/date-utils"
 import { getFotoVendedor, normalizeVendedorNome } from "@/lib/vendedor-fotos"
-import { Calendar } from "lucide-react"
+import { Calendar, Download } from "lucide-react"
+import * as XLSX from "xlsx"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("produtividade")
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [copying, setCopying] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [filterMode, setFilterMode] = useState<FilterMode>("semana")
   const [customStartDate, setCustomStartDate] = useState<string>("")
   const [customEndDate, setCustomEndDate] = useState<string>("")
@@ -341,6 +343,127 @@ export default function DashboardPage() {
 
   const COLORS = ["#06b6d4", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#6366f1"]
 
+  // Download Excel com todas as abas organizadas
+  const handleDownloadExcel = () => {
+    setDownloading(true)
+    try {
+      const wb = XLSX.utils.book_new()
+      const periodoLabel = filterMode === "custom" && customStartDate && customEndDate
+        ? `${customStartDate} a ${customEndDate}`
+        : filterMode === "dia" && selectedDay
+        ? selectedDay
+        : `${activeRange.start} a ${activeRange.end}`
+
+      // ABA 1: Resumo Geral
+      const resumoData = [
+        ["RESUMO GERAL - LR MULTIMARCAS"],
+        [`Periodo: ${periodoLabel}`],
+        [`Gerado em: ${new Date().toLocaleString("pt-BR")}`],
+        [],
+        ["Metrica", "Valor"],
+        ["Marcados", stats.total],
+        ["Veio", stats.veio],
+        ["Faltou", stats.nao],
+        ["Pendentes", stats.pendentes],
+        ["Vendas", stats.vendas],
+        ["Taxa de Presenca", `${stats.taxaPresenca}%`],
+        ["Taxa de Conversao", `${stats.taxaConversao}%`],
+        ["Qualificados", qualificados.length],
+        ["Agendei Total", agendeiPorVendedor.reduce((acc, v) => acc + v.agendei, 0)],
+      ]
+      const wsResumo = XLSX.utils.aoa_to_sheet(resumoData)
+      wsResumo["!cols"] = [{ wch: 25 }, { wch: 15 }]
+      XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo Geral")
+
+      // ABA 2: Marcados e Resultados por Vendedor
+      const resultadosHeader = ["Vendedor", "Equipe", "Marcados", "Veio", "Faltou", "Vendas", "Conversao %"]
+      const resultadosRows = resultadosPorVendedor.map((v: any) => {
+        const conv = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
+        return [v.nome, v.equipe, v.marcados, v.veio, v.nao, v.vendas, `${conv}%`]
+      })
+      const wsResultados = XLSX.utils.aoa_to_sheet([
+        [`Marcados & Resultados — Periodo: ${periodoLabel}`],
+        [],
+        resultadosHeader,
+        ...resultadosRows
+      ])
+      wsResultados["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }]
+      XLSX.utils.book_append_sheet(wb, wsResultados, "Marcados e Resultados")
+
+      // ABA 3: Qualifiquei por Vendedor
+      const qualifHeader = ["Vendedor", "Equipe", "Qualificados"]
+      const qualifRows = qualifiqueiPorVendedor.map(v => [v.nome, v.equipe, v.qualificados])
+      const wsQualif = XLSX.utils.aoa_to_sheet([
+        [`Qualifiquei por Vendedor — Periodo: ${periodoLabel}`],
+        [],
+        qualifHeader,
+        ...qualifRows
+      ])
+      wsQualif["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 15 }]
+      XLSX.utils.book_append_sheet(wb, wsQualif, "Qualifiquei")
+
+      // ABA 4: Agendei por Vendedor
+      const agendHeader = ["Vendedor", "Equipe", "Agendamentos"]
+      const agendRows = agendeiPorVendedor.map(v => [v.nome, v.equipe, v.agendei])
+      const wsAgend = XLSX.utils.aoa_to_sheet([
+        [`Agendei por Vendedor — Periodo: ${periodoLabel}`],
+        [],
+        agendHeader,
+        ...agendRows
+      ])
+      wsAgend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 15 }]
+      XLSX.utils.book_append_sheet(wb, wsAgend, "Agendei")
+
+      // ABA 5: Funil por Equipe
+      const funilHeader = ["Equipe", "Qualificados", "Agendei", "Taxa Qual→Agend"]
+      const funilRows = funilPorEquipe.map((e: any) => [e.nome, e.qualificados, e.agendei, `${e.taxa}%`])
+      const wsFunil = XLSX.utils.aoa_to_sheet([
+        [`Funil por Equipe — Periodo: ${periodoLabel}`],
+        [],
+        funilHeader,
+        ...funilRows
+      ])
+      wsFunil["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 18 }]
+      XLSX.utils.book_append_sheet(wb, wsFunil, "Funil por Equipe")
+
+      // ABA 6: Atendentes
+      const atendHeader = ["Atendente", "Atendidos (Veio)", "Vendas", "Conversao %"]
+      const atendRows = atendenteStats.map((a: any) => {
+        const conv = a.atendidos > 0 ? Math.round((a.vendas / a.atendidos) * 100) : 0
+        return [a.nome, a.atendidos, a.vendas, `${conv}%`]
+      })
+      const wsAtend = XLSX.utils.aoa_to_sheet([
+        [`Atendentes — Periodo: ${periodoLabel}`],
+        [],
+        atendHeader,
+        ...atendRows
+      ])
+      wsAtend["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 14 }]
+      XLSX.utils.book_append_sheet(wb, wsAtend, "Atendentes")
+
+      // ABA 7: Origem dos Leads
+      const origemHeader = ["Origem", "Marcados", "Vendas"]
+      const origemRows = origensMarcados.marcados.map(([origem, qtd]) => {
+        const vendas = origensMarcados.vendas.find(([o]) => o === origem)?.[1] || 0
+        return [origem, qtd, vendas]
+      })
+      const wsOrigem = XLSX.utils.aoa_to_sheet([
+        [`Origem dos Leads — Periodo: ${periodoLabel}`],
+        [],
+        origemHeader,
+        ...origemRows
+      ])
+      wsOrigem["!cols"] = [{ wch: 25 }, { wch: 12 }, { wch: 10 }]
+      XLSX.utils.book_append_sheet(wb, wsOrigem, "Origem dos Leads")
+
+      // Salva o arquivo
+      const fileName = `LR_Dashboard_${periodoLabel.replace(/\//g, "-")}.xlsx`
+      XLSX.writeFile(wb, fileName)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   // Copiar relatorio para clipboard
   const handleCopyReport = async () => {
     setCopying(true)
@@ -445,6 +568,14 @@ export default function DashboardPage() {
                 className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-400 text-xs md:text-sm font-medium transition-all disabled:opacity-50"
               >
                 {copying ? "Copiando..." : "Copiar Relatorio"}
+              </button>
+              <button
+                onClick={handleDownloadExcel}
+                disabled={downloading}
+                className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 text-xs md:text-sm font-medium transition-all disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                {downloading ? "Gerando..." : "Excel"}
               </button>
               <Link
                 href="/"
