@@ -42,9 +42,9 @@ export default function DashboardPage() {
     return dateRange
   }, [filterMode, selectedDay, customStartDate, customEndDate, dateRange])
 
-  // Busca dados da semana
+  // Busca dados baseado no range ativo (semana, dia ou período custom)
   const { data: leadsData } = useSWR(
-    `/api/leads?startDate=${dateRange.start}&endDate=${dateRange.end}`,
+    `/api/leads?startDate=${activeRange.start}&endDate=${activeRange.end}`,
     fetcher,
     { refreshInterval: 30000 }
   )
