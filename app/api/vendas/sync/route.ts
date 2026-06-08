@@ -267,12 +267,11 @@ export async function POST() {
     let deleted = 0
     
     if (kommoIds.length > 0) {
-      // Busca vendas no banco que NAO estao no Kommo (foram removidas da etapa)
+      // Busca TODAS as vendas no banco que NAO estao mais na etapa "Vendido" do Kommo.
+      // Sem filtro de periodo: a tabela vendas deve ser um espelho EXATO da etapa do Kommo.
       const { data: vendasNoBanco } = await supabase
         .from("vendas")
         .select("id, kommo_id, nome_lead")
-        .gte("data_venda", periodo.inicio)
-        .lte("data_venda", periodo.fim)
       
       if (vendasNoBanco) {
         for (const venda of vendasNoBanco) {
