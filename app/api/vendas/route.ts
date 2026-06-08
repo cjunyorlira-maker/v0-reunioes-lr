@@ -10,7 +10,7 @@ const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SE
     )
   : null
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     if (!supabase) {
       return NextResponse.json(
@@ -19,18 +19,20 @@ export async function GET() {
       )
     }
 
-    // Período de produção: dia 21 ao dia 20 do mês seguinte
-    const periodo = getPeriodoProducaoAtual()
+    // Aceita filtro de datas via query params. Se não vier, usa período de produção
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get("startDate")
+    const endDate = searchParams.get("endDate")
 
-    // REMOVIDO: throttle em memória não funciona em serverless
-    // O cron job roda a cada 1 minuto, isso é suficiente para manter atualizado
-    // Webhook do Kommo atualiza em tempo real quando uma venda é marcada
+    const periodoProd = getPeriodoProducaoAtual()
+    const inicio = startDate || periodoProd.inicio
+    const fim = endDate || periodoProd.fim
 
     const { data: vendas, error } = await supabase
       .from("vendas")
       .select("*")
-      .gte("data_venda", periodo.inicio)
-      .lte("data_venda", periodo.fim)
+      .gte("data_venda", inicio)
+      .lte("data_venda", fim)
       .order("data_venda", { ascending: false })
 
     if (error) {
@@ -48,9 +50,9 @@ export async function GET() {
     return NextResponse.json({ 
       vendas: vendas || [],
       periodo: {
-        inicio: periodo.inicio,
-        fim: periodo.fim,
-        mesReferencia: periodo.mesReferencia,
+        inicio,
+        fim,
+        mesReferencia: periodoProd.mesReferencia,
       },
       _timestamp: Date.now(), // Para debug - mostra quando os dados foram buscados
     }, { headers })

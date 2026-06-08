@@ -63,9 +63,17 @@ export default function DashboardPage() {
     { refreshInterval: 30000 }
   )
 
+  // Busca vendas reais da tabela vendas (fonte de verdade do Kommo)
+  const { data: vendasData } = useSWR(
+    `/api/vendas?startDate=${activeRange.start}&endDate=${activeRange.end}`,
+    fetcher,
+    { refreshInterval: 30000 }
+  )
+
   const leads = leadsData || []
   const allLeads = allLeadsData || []
   const qualificados = qualificadosData?.leads || []
+  const vendasReais = vendasData?.vendas || []
 
   // Leads filtrados pelo range ativo (exclui retornos)
   const leadsAtivos = useMemo(() => {
@@ -84,7 +92,8 @@ export default function DashboardPage() {
     // Conta todos com status "nao", independente de remarcado
     const nao = leadsAtivos.filter((l: any) => l.status === "nao").length
     const remarcados = leadsAtivos.filter((l: any) => l.remarcado).length
-    const vendas = leadsAtivos.filter((l: any) => l.venda_fechada).length
+    // Vendas vem da tabela vendas (fonte de verdade do Kommo), nao do campo venda_fechada
+    const vendas = vendasReais.length
     
     // Total é simplesmente a quantidade de leads ativos
     const total = leadsAtivos.length
@@ -101,7 +110,7 @@ export default function DashboardPage() {
       taxaPresenca: (veio + nao) > 0 ? Math.round((veio / (veio + nao)) * 100) : 0,
       taxaConversao: veio > 0 ? Math.round((vendas / veio) * 100) : 0,
     }
-  }, [leadsAtivos])
+  }, [leadsAtivos, vendasReais])
 
   // Agendei por vendedor (leads com data_agendei no periodo)
   // Usa allLeads para pegar leads que foram agendados nesta semana mas remarcados para outra
@@ -172,11 +181,28 @@ export default function DashboardPage() {
       if (lead.status === "veio") map[vendedor].veio++
       if (lead.status === "nao") map[vendedor].nao++
       if (lead.remarcado) map[vendedor].remarcados++
-      if (lead.venda_fechada) map[vendedor].vendas++
+    })
+
+    // Vendas vem da tabela vendas (fonte de verdade do Kommo), por responsavel
+    vendasReais.forEach((venda: any) => {
+      const vendedor = normalizeVendedorNome(venda.responsavel || "Nao informado")
+      if (!map[vendedor]) {
+        map[vendedor] = {
+          nome: vendedor,
+          foto: getFotoVendedor(vendedor) || null,
+          equipe: "Sem equipe",
+          marcados: 0,
+          veio: 0,
+          nao: 0,
+          remarcados: 0,
+          vendas: 0,
+        }
+      }
+      map[vendedor].vendas++
     })
 
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
-  }, [leadsAtivos])
+  }, [leadsAtivos, vendasReais])
 
   // Origens dos leads marcados e vendas
   const origensMarcados = useMemo(() => {
@@ -186,16 +212,19 @@ export default function DashboardPage() {
     leadsAtivos.forEach((lead: any) => {
       const origem = lead.origem || "Nao informado"
       mapMarcados[origem] = (mapMarcados[origem] || 0) + 1
-      if (lead.venda_fechada) {
-        mapVendas[origem] = (mapVendas[origem] || 0) + 1
-      }
+    })
+
+    // Vendas por origem vem da tabela vendas (fonte de verdade do Kommo)
+    vendasReais.forEach((venda: any) => {
+      const origem = venda.origem || "Nao informado"
+      mapVendas[origem] = (mapVendas[origem] || 0) + 1
     })
 
     return {
       marcados: Object.entries(mapMarcados).sort((a, b) => b[1] - a[1]),
       vendas: Object.entries(mapVendas).sort((a, b) => b[1] - a[1]),
     }
-  }, [leadsAtivos])
+  }, [leadsAtivos, vendasReais])
 
   // Funil por equipe - usa allLeads para pegar todos incluindo remarcados
   const funilPorEquipe = useMemo(() => {
@@ -240,11 +269,25 @@ export default function DashboardPage() {
       if (lead.status === "veio") map[equipe].veio++
       if (lead.status === "nao") map[equipe].nao++
       if (lead.remarcado) map[equipe].remarcados++
-      if (lead.venda_fechada) map[equipe].vendas++
+    })
+
+    // Vendas por equipe: mapeia responsavel da venda -> equipe (via leads)
+    const vendedorParaEquipe: Record<string, string> = {}
+    allLeads.forEach((lead: any) => {
+      const v = normalizeVendedorNome(lead.responsavel || "")
+      if (v && lead.equipe) vendedorParaEquipe[v] = lead.equipe
+    })
+    vendasReais.forEach((venda: any) => {
+      const v = normalizeVendedorNome(venda.responsavel || "")
+      const equipe = vendedorParaEquipe[v] || "Sem equipe"
+      if (!map[equipe]) {
+        map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
+      }
+      map[equipe].vendas++
     })
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
-  }, [qualificados, allLeads, leadsAtivos, activeRange])
+  }, [qualificados, allLeads, leadsAtivos, activeRange, vendasReais])
 
   // Conversao Qualifiquei -> Agendei por vendedor
   const conversaoQualAgendei = useMemo(() => {
@@ -324,12 +367,21 @@ export default function DashboardPage() {
           map[lead.atendente] = { nome: lead.atendente, atendidos: 0, vendas: 0 }
         }
         map[lead.atendente].atendidos++
-        if (lead.venda_fechada) map[lead.atendente].vendas++
+      }
+    })
+
+    // Vendas por atendente vem da tabela vendas (fonte de verdade do Kommo)
+    vendasReais.forEach((venda: any) => {
+      if (venda.atendente) {
+        if (!map[venda.atendente]) {
+          map[venda.atendente] = { nome: venda.atendente, atendidos: 0, vendas: 0 }
+        }
+        map[venda.atendente].vendas++
       }
     })
 
     return Object.values(map).sort((a, b) => b.atendidos - a.atendidos)
-  }, [leadsAtivos])
+  }, [leadsAtivos, vendasReais])
 
   // Origem dos leads
   const origemData = useMemo(() => {
