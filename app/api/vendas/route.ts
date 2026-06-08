@@ -19,26 +19,19 @@ export async function GET(request: Request) {
       )
     }
 
-    // Aceita filtro de datas via query params.
-    // Se NAO vier filtro: retorna TODAS as vendas (espelho da etapa "Vendido" do Kommo),
-    // pois o sync ja garante que a tabela so contem vendas da etapa de producao atual.
+    // Filtro de datas: usa o periodo de producao atual (dia 23 ao dia 22)
+    // ou datas custom passadas via query (ex: dashboard com periodo especifico)
     const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get("startDate")
-    const endDate = searchParams.get("endDate")
-
     const periodoProd = getPeriodoProducaoAtual()
+    const inicio = searchParams.get("startDate") || periodoProd.inicio
+    const fim = searchParams.get("endDate") || periodoProd.fim
 
-    let query = supabase
+    const { data: vendas, error } = await supabase
       .from("vendas")
       .select("*")
+      .gte("data_venda", inicio)
+      .lte("data_venda", fim)
       .order("data_venda", { ascending: false })
-
-    // Aplica filtro de datas APENAS se ambos vierem na query (ex: dashboard com periodo custom)
-    if (startDate && endDate) {
-      query = query.gte("data_venda", startDate).lte("data_venda", endDate)
-    }
-
-    const { data: vendas, error } = await query
 
     if (error) {
       console.error("Erro ao buscar vendas:", error)
@@ -55,8 +48,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ 
       vendas: vendas || [],
       periodo: {
-        inicio: startDate || periodoProd.inicio,
-        fim: endDate || periodoProd.fim,
+        inicio,
+        fim,
         mesReferencia: periodoProd.mesReferencia,
       },
       _timestamp: Date.now(), // Para debug - mostra quando os dados foram buscados

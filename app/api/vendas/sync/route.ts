@@ -2,45 +2,11 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
-// Etapas "Vendido Produção" do Kommo (fallback caso a busca dinâmica falhe)
-// IMPORTANTE: o Kommo cria uma nova etapa "Vendido" a cada período de produção,
-// por isso buscamos dinamicamente todas as etapas com "vendido" no nome.
-const ETAPAS_VENDIDO_FALLBACK = [71181426, 69615804]
+// Etapas "Vendido Produção" do Kommo - múltiplos IDs possíveis
+// 71181426 = Vendido Produção (etapa atual, reutilizada a cada período)
+// 69615804 = Etapa antiga que ainda pode receber leads
+const ETAPAS_VENDIDO = [71181426, 69615804]
 const PIPELINE_ID = 8637094
-
-// Busca dinamicamente os IDs de TODAS as etapas que contêm "vendido" no nome,
-// dentro do pipeline de produção. Isso garante que vendas em etapas novas
-// (criadas a cada período) sejam sempre capturadas.
-async function getEtapasVendido(subdomain: string, token: string): Promise<number[]> {
-  try {
-    const res = await fetch(
-      `https://${subdomain}.kommo.com/api/v4/leads/pipelines/${PIPELINE_ID}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
-    )
-    if (!res.ok) {
-      console.error("[v0] Erro ao buscar pipeline, usando fallback:", res.status)
-      return ETAPAS_VENDIDO_FALLBACK
-    }
-    const data = await res.json()
-    const statuses = data._embedded?.statuses || []
-    const etapasVendido = statuses
-      .filter((s: { name?: string }) => (s.name || "").toLowerCase().includes("vendido"))
-      .map((s: { id: number }) => s.id)
-
-    if (etapasVendido.length === 0) {
-      console.warn("[v0] Nenhuma etapa 'Vendido' encontrada, usando fallback")
-      return ETAPAS_VENDIDO_FALLBACK
-    }
-
-    // Garante que os IDs do fallback também estejam incluídos (etapas antigas)
-    const todasEtapas = Array.from(new Set([...etapasVendido, ...ETAPAS_VENDIDO_FALLBACK]))
-    console.log("[v0] Etapas 'Vendido' encontradas dinamicamente:", todasEtapas)
-    return todasEtapas
-  } catch (e) {
-    console.error("[v0] Erro ao buscar etapas Vendido, usando fallback:", e)
-    return ETAPAS_VENDIDO_FALLBACK
-  }
-}
 
 // Campo customizado de Valor da Venda no Kommo
 const CAMPO_VALOR_VENDA = 1085703
@@ -104,11 +70,8 @@ export async function POST() {
   )
 
   try {
-    // Período de produção: dia 21 ao dia 20 do mês seguinte
+    // Período de produção: dia 23 ao dia 22 do mês seguinte
     const periodo = getPeriodoProducaoAtual()
-
-    // Busca dinamicamente as etapas "Vendido" (o Kommo cria uma nova a cada período)
-    const ETAPAS_VENDIDO = await getEtapasVendido(subdomain, token)
 
     // Busca leads de AMBAS as etapas "Vendido Produção"
     // Usa múltiplos filtros de status para pegar todas as etapas
@@ -273,11 +236,13 @@ export async function POST() {
     let deleted = 0
     
     if (kommoIds.length > 0) {
-      // Busca TODAS as vendas no banco que NAO estao mais na etapa "Vendido" do Kommo.
-      // Sem filtro de periodo: a tabela vendas deve ser um espelho EXATO da etapa do Kommo.
+      // Busca vendas no banco DENTRO do periodo atual que NAO estao mais na etapa do Kommo.
+      // Filtra por periodo para NAO apagar producao de periodos passados.
       const { data: vendasNoBanco } = await supabase
         .from("vendas")
         .select("id, kommo_id, nome_lead")
+        .gte("data_venda", periodo.inicio)
+        .lte("data_venda", periodo.fim)
       
       if (vendasNoBanco) {
         for (const venda of vendasNoBanco) {
