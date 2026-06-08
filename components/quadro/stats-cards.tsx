@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR from "swr"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Stats } from "@/lib/types"
 import { getFotoVendedor } from "@/lib/vendedor-fotos"
 
@@ -42,6 +42,26 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
       dedupingInterval: 0, // Desabilita deduplicação para sempre buscar dados novos
     }
   )
+
+  const [syncing, setSyncing] = useState(false)
+
+  // Dispara o sync com o Kommo e atualiza os cards
+  const handleSyncVendas = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch("/api/vendas/sync", { method: "POST", cache: "no-store" })
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        console.error("[v0] Erro no sync de vendas:", json)
+      }
+      // Revalida os dados dos cards apos o sync
+      await mutate()
+    } catch (e) {
+      console.error("[v0] Falha ao sincronizar vendas:", e)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const top3VendedoresMes = useMemo((): Top1Venda[] => {
     const vendas = data?.vendas || []
@@ -676,6 +696,28 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
               style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.5), transparent)" }}
             />
           </div>
+          {/* Botao sincronizar vendas com o Kommo */}
+          <button
+            onClick={handleSyncVendas}
+            disabled={syncing}
+            title="Sincronizar vendas com o Kommo"
+            className="relative z-10 ml-auto self-start shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 text-emerald-300 text-[10px] md:text-[11px] font-bold uppercase tracking-wide transition-all disabled:opacity-50"
+          >
+            <svg
+              className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+              <polyline points="21 3 21 9 15 9" />
+            </svg>
+            {syncing ? "..." : "Sync"}
+          </button>
         </div>
       </div>
 

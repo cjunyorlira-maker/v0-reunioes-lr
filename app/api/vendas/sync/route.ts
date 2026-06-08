@@ -196,8 +196,13 @@ export async function POST() {
 
       const equipe = vendedorEquipe[responsavelNome] || "Outro"
 
-      // Usa a data de criacao do lead no Kommo (ou updated_at se nao tiver created_at)
-      const dataLead = lead.created_at ? new Date(lead.created_at * 1000).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]
+      // data_venda = data em que o lead virou VENDA (entrou na etapa Vendido).
+      // No Kommo, closed_at marca quando o lead foi ganho/fechado.
+      // Fallback: updated_at (ultima modificacao) -> created_at -> hoje.
+      const tsVenda = lead.closed_at || lead.updated_at || lead.created_at
+      const dataLead = tsVenda
+        ? new Date(tsVenda * 1000).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
 
       vendas.push({
         kommo_id: lead.id.toString(),
@@ -227,13 +232,14 @@ export async function POST() {
         .single()
 
       if (existing) {
-        // Atualiza - NAO sobrescreve data_venda para manter a data original
+        // Atualiza tambem a data_venda para refletir quando o lead entrou no Vendido
         const { error: updateError } = await supabase
           .from("vendas")
           .update({
             nome_lead: venda.nome_lead,
             responsavel: venda.responsavel,
             valor_venda: venda.valor_venda,
+            data_venda: venda.data_venda,
             updated_at: new Date().toISOString(),
           })
           .eq("kommo_id", venda.kommo_id)
