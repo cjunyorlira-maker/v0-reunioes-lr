@@ -9,7 +9,6 @@ const ETAPAS_VENDIDO = [69615804]
 // Campos customizados do lead no Kommo
 const CAMPO_VALOR_VENDA = 1085703   // fallback de valor (campo nativo lead.price é prioritário)
 const CAMPO_VENDA_FECHADA = 1026056 // timestamp da data em que a venda foi fechada
-const CAMPO_RESPONSAVEL = 1026120   // nome do vendedor responsável (campo customizado)
 
 // Mapeamento vendedor -> equipe
 const vendedorEquipe: Record<string, string> = {
@@ -140,14 +139,9 @@ export async function POST() {
       
       console.log(`[v0] Lead ${lead.id} (${lead.name}) - price: ${lead.price}, valorVenda: ${valorVenda}`)
 
-      // Responsável: PRIORIZA o campo customizado "Responsável" (1026120),
-      // com fallback para o usuário responsável padrão do lead.
+      // Responsável: usa o usuário responsável padrão do lead (já mapeado às equipes)
       let responsavelNome = "Não informado"
-      const campoResp = customFields.find((f) => f.field_id === CAMPO_RESPONSAVEL)
-      const respCustom = campoResp?.values?.[0]?.value
-      if (respCustom && String(respCustom).trim()) {
-        responsavelNome = String(respCustom).trim()
-      } else if (lead.responsible_user_id) {
+      if (lead.responsible_user_id) {
         try {
           const userResponse = await fetch(
             `https://${subdomain}.kommo.com/api/v4/users/${lead.responsible_user_id}`,
