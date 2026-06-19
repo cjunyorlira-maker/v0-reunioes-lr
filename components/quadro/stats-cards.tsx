@@ -86,6 +86,15 @@ export function StatsCards({ stats, top1Agendei, top1Veio }: StatsCardsProps) {
     "Leonardo Freitas": "Samurais",
     "João Victor": "Samurais",
     "Joao Victor": "Samurais",
+    "Luiz Miguel": "Samurais",
+    // SuperNova
+    "Bárbara Rossato": "SuperNova",
+    "Barbara Rossato": "SuperNova",
+    "Bárbara": "SuperNova",
+    "Barbara": "SuperNova",
+    // Energy
+    "Willy Santana": "Energy",
+    "Willy": "Energy",
     // Legado
     "Janaina Dantas": "Legado",
     "Janaína Dantas": "Legado",
