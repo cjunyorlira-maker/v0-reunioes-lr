@@ -2,14 +2,14 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
-// Etapas "Vendido Produção" do Kommo - múltiplos IDs possíveis
-// 71181426 = Vendido Produção (etapa atual, reutilizada a cada período)
-// 69615804 = Etapa antiga que ainda pode receber leads
-const ETAPAS_VENDIDO = [71181426, 69615804]
-const PIPELINE_ID = 8637094
+// Pipeline e etapa "Vendido Produção" reais no Kommo (pipeline "Principal")
+const PIPELINE_ID = 7012299
+const ETAPAS_VENDIDO = [69615804]
 
-// Campo customizado de Valor da Venda no Kommo
-const CAMPO_VALOR_VENDA = 1085703
+// Campos customizados do lead no Kommo
+const CAMPO_VALOR_VENDA = 1085703   // fallback de valor (campo nativo lead.price é prioritário)
+const CAMPO_VENDA_FECHADA = 1026056 // timestamp da data em que a venda foi fechada
+const CAMPO_RESPONSAVEL = 1026120   // nome do vendedor responsável (campo customizado)
 
 // Mapeamento vendedor -> equipe
 const vendedorEquipe: Record<string, string> = {
@@ -140,9 +140,14 @@ export async function POST() {
       
       console.log(`[v0] Lead ${lead.id} (${lead.name}) - price: ${lead.price}, valorVenda: ${valorVenda}`)
 
-      // Busca responsável
+      // Responsável: PRIORIZA o campo customizado "Responsável" (1026120),
+      // com fallback para o usuário responsável padrão do lead.
       let responsavelNome = "Não informado"
-      if (lead.responsible_user_id) {
+      const campoResp = customFields.find((f) => f.field_id === CAMPO_RESPONSAVEL)
+      const respCustom = campoResp?.values?.[0]?.value
+      if (respCustom && String(respCustom).trim()) {
+        responsavelNome = String(respCustom).trim()
+      } else if (lead.responsible_user_id) {
         try {
           const userResponse = await fetch(
             `https://${subdomain}.kommo.com/api/v4/users/${lead.responsible_user_id}`,
@@ -159,12 +164,15 @@ export async function POST() {
 
       const equipe = vendedorEquipe[responsavelNome] || "Outro"
 
-      // data_venda = data em que o lead virou VENDA (entrou na etapa Vendido).
-      // No Kommo, closed_at marca quando o lead foi ganho/fechado.
-      // Fallback: updated_at (ultima modificacao) -> created_at -> hoje.
-      const tsVenda = lead.closed_at || lead.updated_at || lead.created_at
+      // data_venda = data em que a venda foi fechada.
+      // PRIORIZA o campo customizado "Venda Fechada" (1026056, timestamp em segundos).
+      // Fallback: closed_at -> updated_at -> created_at -> hoje.
+      const campoVendaFechada = customFields.find((f) => f.field_id === CAMPO_VENDA_FECHADA)
+      const tsVendaFechada = campoVendaFechada?.values?.[0]?.value
+      const tsVenda = (tsVendaFechada && Number(tsVendaFechada))
+        || lead.closed_at || lead.updated_at || lead.created_at
       const dataLead = tsVenda
-        ? new Date(tsVenda * 1000).toISOString().split("T")[0]
+        ? new Date(Number(tsVenda) * 1000).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0]
 
       vendas.push({
@@ -213,11 +221,12 @@ export async function POST() {
           updated++
         }
       } else {
-        // Insere
+        // Insere (atendente é NOT NULL: usa o próprio responsável como padrão)
         const { error: insertError } = await supabase.from("vendas").insert({
           kommo_id: venda.kommo_id,
           nome_lead: venda.nome_lead,
           responsavel: venda.responsavel,
+          atendente: venda.responsavel,
           valor_venda: venda.valor_venda,
           data_venda: venda.data_venda,
           created_at: new Date().toISOString(),
