@@ -1,6 +1,6 @@
 /**
- * Calcula o período de produção (dia 23 ao dia 22 do mês seguinte)
- * Se o dia 22 cair em sábado, domingo ou feriado, o fechamento é no próximo dia útil
+ * Calcula o período de produção (dia 23 ao dia 27 do mês seguinte)
+ * Se o dia 27 cair em sábado, domingo ou feriado, o fechamento é no próximo dia útil
  */
 
 // Feriados nacionais fixos (mês é 0-indexed)
@@ -43,8 +43,8 @@ export interface PeriodoProducao {
 /**
  * Retorna o período de produção atual
  * - Começa no dia 23 do mês anterior ou atual
- * - Termina no dia 22 do mês atual ou próximo
- * - Importante: se estamos no dia 22 ou antes, o período já começou no dia 23 do mês anterior
+ * - Termina no dia 27 do mês atual ou próximo
+ * - Importante: se estamos no dia 27 ou antes, o período já começou no dia 23 do mês anterior
  */
 export function getPeriodoProducaoAtual(): PeriodoProducao {
   const hoje = new Date()
@@ -60,11 +60,11 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   let anoReferencia: number
 
   // Lógica: 
-  // Se estamos entre dia 1-22: período começou em 23 do mês anterior, termina em 22 deste mês
-  // Se estamos no dia 23 ou depois: período começa em 23 deste mês, termina em 22 do próximo
+  // Se estamos entre dia 1-27: período começou em 23 do mês anterior, termina em 27 deste mês
+  // Se estamos no dia 28 ou depois: período começa em 23 deste mês, termina em 27 do próximo
   
-  if (diaAtual <= 22) {
-    // Antes ou no dia 22: período começou em 23 do mês anterior
+  if (diaAtual <= 27) {
+    // Antes ou no dia 27: período começou em 23 do mês anterior
     if (mesAtual === 0) {
       inicioAno = anoAtual - 1
       inicioMes = 11 // Dezembro
@@ -77,7 +77,7 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
     mesReferenciaNum = mesAtual
     anoReferencia = anoAtual
   } else {
-    // Dia 23 ou depois: período vai do 23 deste mês até 22 do próximo
+    // Dia 28 ou depois: período vai do 23 deste mês até 27 do próximo
     inicioAno = anoAtual
     inicioMes = mesAtual
     if (mesAtual === 11) {
@@ -94,7 +94,7 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
   }
 
   const inicio = new Date(inicioAno, inicioMes, 23)
-  let fim = new Date(fimAno, fimMes, 22)
+  let fim = new Date(fimAno, fimMes, 27)
   
   // Ajusta o fim para o próximo dia útil se cair em fim de semana ou feriado
   fim = proximoDiaUtil(fim)
