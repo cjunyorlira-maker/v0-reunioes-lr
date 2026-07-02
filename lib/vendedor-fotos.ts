@@ -26,8 +26,9 @@ export const VENDEDOR_FOTOS: Record<string, string> = {
   "Lucas Dionisio":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lucas-Dionisio-Kluj5V4vJBSVou4FWPddzY37jKkHqS.jpeg",
   "Lucas Dionísio":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Lucas-Dionisio-Kluj5V4vJBSVou4FWPddzY37jKkHqS.jpeg",
   
-  // Kleinver Seabra
+  // Kleinver Seabra (também grafado Klaiver)
   "Kleinver Seabra":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Kleinver-Seabra-NhjTvka9YuEyRCahYJPzEKoXO9KijM.jpeg",
+  "Klaiver Seabra":    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Kleinver-Seabra-NhjTvka9YuEyRCahYJPzEKoXO9KijM.jpeg",
   
   // Rogerio Martins
   "Rogerio Martins":   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Rogerio-Martins-Vra3t5o5qB7DyS8F9Kwiq3T6xCgpA8.jpeg",
@@ -214,23 +215,43 @@ export function getVendedorGenero(nome: string): "M" | "F" {
   return VENDEDOR_GENERO[normalizado] || "M" // default masculino se nao encontrar
 }
 
-// Mapa de nomes que devem ser unificados (nome curto -> nome completo)
+// Mapa de nomes que devem ser unificados (nome curto/variação -> nome completo)
+// Chaves em minúsculo, pois a função compara em minúsculo.
 const VENDEDOR_ALIAS: Record<string, string> = {
-  "Alexia": "Alexia Cunha",
-  "Aléxia": "Alexia Cunha",
-  "Lidiane": "Lidiane Fonseca",
-  "Rafaella": "Rafaella Antunes",
-  "Bianca": "Bianca Isabela",
-  "Bianca da Silva": "Bianca Isabela",
-  "Bianca Simoes": "Bianca Isabela",
-  "Bianca Simões": "Bianca Isabela",
+  "alexia": "Alexia Cunha",
+  "aléxia": "Alexia Cunha",
+  "lidiane": "Lidiane Fonseca",
+  "rafaella": "Rafaella Antunes",
+  "bianca": "Bianca Isabela",
+  "bianca da silva": "Bianca Isabela",
+  "bianca simoes": "Bianca Isabela",
+  "bianca simões": "Bianca Isabela",
+  "kleinver seabra": "Klaiver Seabra",
+  "klaiver": "Klaiver Seabra",
+  "luis": "Luis Henrique",
+  "luís henrique": "Luis Henrique",
+  "leonardo": "Leonardo Freitas",
+  "emilaine": "Emilaine Lins",
+  "janaína dantas": "Janaina Dantas",
+  "janaina": "Janaina Dantas",
+  "amanda": "Amanda Souza",
+  "emily": "Emily Machado",
+  "nathan cauê": "Nathan Caue",
+  "lucas dionísio": "Lucas Dionisio",
+  "brayan bertolai": "Brayan",
+  "yuri ryan pereira": "Yuri Pereira",
 }
 
-// Função para normalizar nome de vendedor (unifica variações)
+// Função para normalizar nome de vendedor (unifica variações, insensível a caixa/espaços)
 export function normalizeVendedorNome(nome: string): string {
   if (!nome) return nome
-  const trimmed = nome.trim()
-  return VENDEDOR_ALIAS[trimmed] || trimmed
+  const trimmed = nome.trim().replace(/\s+/g, " ")
+  const key = trimmed.toLowerCase()
+  if (VENDEDOR_ALIAS[key]) return VENDEDOR_ALIAS[key]
+  // Se já bate com algum valor canônico (ignorando caixa), devolve o canônico
+  const canonico = Object.values(VENDEDOR_ALIAS).find(v => v.toLowerCase() === key)
+  if (canonico) return canonico
+  return trimmed
 }
 
 // Função auxiliar — busca a foto pelo nome, com fallback por primeiro nome
