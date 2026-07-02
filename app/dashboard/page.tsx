@@ -260,6 +260,18 @@ export default function DashboardPage() {
     return Object.values(map).sort((a, b) => b.fechou - a.fechou || b.atendeu - a.atendeu)
   }, [leadsAtivos, vendasReais])
 
+  // Ranking de vendas por vendedor (responsável/dono da venda)
+  const rankingVendedores = useMemo(() => {
+    const map: Record<string, { nome: string; foto: string | null; vendas: number; valor: number }> = {}
+    vendasReais.forEach((venda: any) => {
+      const v = normalizeVendedorNome(venda.responsavel || "Não informado")
+      if (!map[v]) map[v] = { nome: v, foto: getFotoVendedor(v) || null, vendas: 0, valor: 0 }
+      map[v].vendas++
+      map[v].valor += Number(venda.valor_venda || 0)
+    })
+    return Object.values(map).sort((a, b) => b.vendas - a.vendas || b.valor - a.valor)
+  }, [vendasReais])
+
   // Origens dos leads marcados e vendas
   const origensMarcados = useMemo(() => {
     const mapMarcados: Record<string, number> = {}
@@ -520,6 +532,24 @@ export default function DashboardPage() {
       ])
       wsResultados["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsResultados, "Marcados e Resultados")
+
+      // ABA: Vendas por Vendedor (dono da venda)
+      const rankVendHeader = ["Posicao", "Vendedor", "Vendas", "Valor (R$)"]
+      const rankVendRows = rankingVendedores.map((v, i) => [
+        i + 1, v.nome, v.vendas, v.valor.toLocaleString("pt-BR")
+      ])
+      const totalRankVendas = rankingVendedores.reduce((s, v) => s + v.vendas, 0)
+      const totalRankValor = rankingVendedores.reduce((s, v) => s + v.valor, 0)
+      const wsRankVend = XLSX.utils.aoa_to_sheet([
+        [`VENDAS POR VENDEDOR — Periodo: ${periodoLabel}`],
+        [],
+        rankVendHeader,
+        ...rankVendRows,
+        [],
+        ["TOTAL", "", totalRankVendas, totalRankValor.toLocaleString("pt-BR")]
+      ])
+      wsRankVend["!cols"] = [{ wch: 10 }, { wch: 28 }, { wch: 12 }, { wch: 20 }]
+      XLSX.utils.book_append_sheet(wb, wsRankVend, "Vendas por Vendedor")
 
       // ABA: Conversao por Atendente (atendeu -> fechou)
       const convAtendHeader = ["Atendente", "Atendeu", "Fechou", "Valor fechado (R$)", "Conversao %"]
@@ -1246,6 +1276,48 @@ export default function DashboardPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Ranking de vendas por vendedor (dono da venda) */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 overflow-x-auto">
+                <h3 className="text-lg font-semibold text-[#d4af37] mb-4">Ranking de Vendas por Vendedor</h3>
+                {rankingVendedores.length === 0 ? (
+                  <p className="text-white/40 text-sm">Nenhuma venda registrada</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-center py-3 px-2 text-white/50 font-medium">#</th>
+                        <th className="text-left py-3 px-2 text-white/50 font-medium">Vendedor</th>
+                        <th className="text-center py-3 px-2 text-emerald-400 font-medium">Vendas</th>
+                        <th className="text-right py-3 px-2 text-emerald-400 font-medium">Valor (R$)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankingVendedores.map((v, i) => (
+                        <tr key={v.nome} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="text-center py-3 px-2 font-bold text-white">
+                            {i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : i + 1}
+                          </td>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-3">
+                              {v.foto ? (
+                                <img src={v.foto || "/placeholder.svg"} alt={v.nome} className="w-8 h-8 rounded-full object-cover object-top" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] text-sm font-bold">
+                                  {v.nome.charAt(0)}
+                                </div>
+                              )}
+                              <p className="font-medium text-white">{v.nome}</p>
+                            </div>
+                          </td>
+                          <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{v.vendas}</td>
+                          <td className="text-right py-3 px-2 text-emerald-400 font-semibold">R$ {v.valor.toLocaleString("pt-BR")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               {/* Tabela de conversao por atendente (atendeu -> fechou) */}
