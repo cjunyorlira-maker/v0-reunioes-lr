@@ -9,28 +9,31 @@ export async function GET(request: NextRequest) {
   const endDate = searchParams.get("endDate")
   
   try {
-    let query = supabase
-      .from("qualificacoes")
-      .select("id, kommo_id, kommo_lead_id, nome, responsavel, responsavel_id, equipe, origem, data_qualificacao, created_at")
-      .order("data_qualificacao", { ascending: false })
-    
-    // Filtra por período se fornecido
-    if (startDate) {
-      query = query.gte("data_qualificacao", startDate)
-    }
-    if (endDate) {
-      query = query.lte("data_qualificacao", endDate)
-    }
-    
-    const { data, error } = await query
-    
-    if (error) {
-      console.error("[v0] Erro ao buscar qualificados:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    // Busca paginada: Supabase corta em 1000 linhas por padrão, então
+    // percorremos todas as páginas para trazer TODOS os registros.
+    let all: any[] = []
+    let from = 0
+    const PAGE = 1000
+    while (true) {
+      let query = supabase
+        .from("qualificacoes")
+        .select("id, kommo_id, kommo_lead_id, nome, responsavel, responsavel_id, equipe, origem, data_qualificacao, created_at")
+        .order("data_qualificacao", { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (startDate) query = query.gte("data_qualificacao", startDate)
+      if (endDate) query = query.lte("data_qualificacao", endDate)
+      const { data, error } = await query
+      if (error) {
+        console.error("[v0] Erro ao buscar qualificados:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      all = all.concat(data || [])
+      if (!data || data.length < PAGE) break
+      from += PAGE
     }
     
     // Formata para o padrão esperado pelo hook
-    const leads = (data || []).map(lead => ({
+    const leads = all.map(lead => ({
       id: lead.kommo_lead_id || lead.kommo_id || lead.id,
       kommo_id: lead.kommo_id,
       nome: lead.nome,
