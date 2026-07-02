@@ -158,6 +158,41 @@ export default function DashboardPage() {
     return Object.values(map).sort((a, b) => b.qualificados - a.qualificados)
   }, [qualificados])
 
+  // Grade de atividade diária: quanto cada vendedor qualificou (Q) e agendou (A) por dia
+  const atividadeDiaria = useMemo(() => {
+    // monta a lista de dias do range ativo
+    const dias: string[] = []
+    const d = new Date(activeRange.start + "T12:00:00")
+    const fim = new Date(activeRange.end + "T12:00:00")
+    while (d <= fim && dias.length < 32) {
+      dias.push(d.toISOString().slice(0, 10))
+      d.setDate(d.getDate() + 1)
+    }
+    const map: Record<string, { nome: string; foto: string | null; porDia: Record<string, { q: number; a: number }>; totalQ: number; totalA: number }> = {}
+    const garantir = (nome: string) => {
+      const n = normalizeVendedorNome(nome || "Não informado")
+      if (!map[n]) map[n] = { nome: n, foto: getFotoVendedor(n) || null, porDia: {}, totalQ: 0, totalA: 0 }
+      return map[n]
+    }
+    // Qualificações por dia (data_qualificacao)
+    qualificados.forEach((q: any) => {
+      const dia = (q.data_qualificacao || "").slice(0, 10)
+      if (!dia || dia < activeRange.start || dia > activeRange.end) return
+      const v = garantir(q.responsavel || q.vendedor)
+      if (!v.porDia[dia]) v.porDia[dia] = { q: 0, a: 0 }
+      v.porDia[dia].q++; v.totalQ++
+    })
+    // Agendamentos por dia (data_agendei) — usa allLeads
+    allLeads.forEach((lead: any) => {
+      const dia = (lead.data_agendei || "").slice(0, 10)
+      if (!dia || dia < activeRange.start || dia > activeRange.end) return
+      const v = garantir(lead.responsavel)
+      if (!v.porDia[dia]) v.porDia[dia] = { q: 0, a: 0 }
+      v.porDia[dia].a++; v.totalA++
+    })
+    return { dias, vendedores: Object.values(map).sort((x, y) => (y.totalQ + y.totalA) - (x.totalQ + x.totalA)) }
+  }, [qualificados, allLeads, activeRange])
+
   // Resultados por vendedor (marcados, veio, faltou, vendas) - sem retornos
   const resultadosPorVendedor = useMemo(() => {
     const map: Record<string, any> = {}
@@ -1080,6 +1115,53 @@ export default function DashboardPage() {
                       ))
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Grade de atividade diária (Q/A por dia) */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+                <h4 className="text-lg font-bold text-white mb-1">Atividade Diária</h4>
+                <p className="text-xs text-white/40 mb-4">Q = qualificou · A = agendou (por dia da ação)</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-2 pr-3 text-white/60 sticky left-0 bg-[#0a0a0c]">Vendedor</th>
+                        {atividadeDiaria.dias.map(dia => (
+                          <th key={dia} className="text-center px-2 py-2 text-white/50 text-xs whitespace-nowrap">
+                            {new Date(dia + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                            <span className="block text-[9px] text-white/30">{new Date(dia + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" })}</span>
+                          </th>
+                        ))}
+                        <th className="text-center px-3 py-2 text-[#d4af37] text-xs">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {atividadeDiaria.vendedores.map(v => (
+                        <tr key={v.nome} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-white whitespace-nowrap sticky left-0 bg-[#0a0a0c]">{v.nome}</td>
+                          {atividadeDiaria.dias.map(dia => {
+                            const cel = v.porDia[dia]
+                            return (
+                              <td key={dia} className="text-center px-2 py-2">
+                                {cel ? (
+                                  <div className="text-xs">
+                                    <span className="text-cyan-400 font-semibold">{cel.q > 0 ? `Q${cel.q}` : ""}</span>
+                                    {cel.q > 0 && cel.a > 0 ? " " : ""}
+                                    <span className="text-violet-400 font-semibold">{cel.a > 0 ? `A${cel.a}` : ""}</span>
+                                  </div>
+                                ) : <span className="text-white/10">·</span>}
+                              </td>
+                            )
+                          })}
+                          <td className="text-center px-3 py-2 text-xs whitespace-nowrap">
+                            <span className="text-cyan-400 font-bold">Q{v.totalQ}</span>{" "}
+                            <span className="text-violet-400 font-bold">A{v.totalA}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
