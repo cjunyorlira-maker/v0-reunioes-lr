@@ -1208,76 +1208,79 @@ export default function DashboardPage() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {funilPorEquipe.map((equipe: any) => {
-                    const taxaQualAgendei = equipe.qualificados > 0 ? Math.round((equipe.agendei / equipe.qualificados) * 100) : 0
-                    const taxaMarcados = equipe.agendei > 0 ? Math.round((equipe.marcados / equipe.agendei) * 100) : 0
-                    const taxaPresenca = equipe.marcados > 0 ? Math.round((equipe.veio / equipe.marcados) * 100) : 0
-                    const taxaNoShow = equipe.marcados > 0 ? Math.round((equipe.nao / equipe.marcados) * 100) : 0
-                    const maxValue = Math.max(equipe.qualificados, equipe.agendei, equipe.marcados, equipe.veio, 1)
+                    const etapas = [
+                      { label: "QUALIFICADOS", valor: equipe.qualificados, cor: "#22d3ee" },
+                      { label: "AGENDADOS", valor: equipe.agendei, cor: "#a78bfa" },
+                      { label: "MARCADOS", valor: equipe.marcados, cor: "#60a5fa" },
+                      { label: "VIERAM", valor: equipe.veio, cor: "#34d399" },
+                      { label: "VENDAS", valor: equipe.vendas, cor: "#d4af37" },
+                    ]
+                    const topo = Math.max(equipe.qualificados, 1)
 
                     return (
                       <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
                         <h4 className="text-lg font-bold text-[#d4af37] mb-6 text-center">{equipe.equipe}</h4>
 
-                        {/* Funil simples em linhas horizontais */}
-                        <div className="space-y-4">
-                          {/* Qualificados */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-cyan-300">QUALIFICADOS</span>
-                              <span className="text-2xl font-bold text-cyan-400">{equipe.qualificados}</span>
-                            </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400" style={{ width: "100%" }}></div>
-                            </div>
-                          </div>
+                        <div className="flex flex-col items-center">
+                          {etapas.map((etapa, i) => {
+                            // largura proporcional ao valor (mín 28% pra caber o número, máx 100%)
+                            const wAtual = Math.max(28, Math.round((etapa.valor / topo) * 100))
+                            const proxima = etapas[i + 1]
+                            const wProx = proxima ? Math.max(28, Math.round((proxima.valor / topo) * 100)) : wAtual
+                            // taxa de conversão da etapa anterior pra esta
+                            const taxaAnterior = i > 0 && etapas[i - 1].valor > 0
+                              ? Math.round((etapa.valor / etapas[i - 1].valor) * 100) : null
 
-                          {/* Agendei */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-violet-300">AGENDEI</span>
-                              <span className="text-sm text-violet-400">{taxaQualAgendei}%</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-violet-500 to-violet-400" style={{ width: equipe.qualificados > 0 ? `${(equipe.agendei / equipe.qualificados) * 100}%` : "0%" }}></div>
+                            return (
+                              <div key={etapa.label} className="w-full flex flex-col items-center">
+                                {i > 0 && (
+                                  <div className="flex items-center gap-1 py-1">
+                                    <span className="text-white/30 text-xs">{"\u25BC"}</span>
+                                    <span className="text-xs font-semibold" style={{ color: etapa.cor }}>
+                                      {taxaAnterior !== null ? `${taxaAnterior}%` : "\u2014"}
+                                    </span>
+                                  </div>
+                                )}
+                                <div
+                                  className="relative flex items-center justify-center transition-all duration-700"
+                                  style={{
+                                    width: `${wAtual}%`,
+                                    height: "52px",
+                                    background: `linear-gradient(180deg, ${etapa.cor}33, ${etapa.cor}22)`,
+                                    borderLeft: `2px solid ${etapa.cor}66`,
+                                    borderRight: `2px solid ${etapa.cor}66`,
+                                    borderTop: `2px solid ${etapa.cor}88`,
+                                    clipPath: `polygon(0 0, 100% 0, ${50 + wProx / wAtual * 50}% 100%, ${50 - wProx / wAtual * 50}% 100%)`,
+                                  }}
+                                >
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-bold" style={{ color: etapa.cor }}>{etapa.valor}</span>
+                                    <span className="text-[10px] font-semibold tracking-wider text-white/60">{etapa.label}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <span className="text-2xl font-bold text-violet-400 min-w-fit">{equipe.agendei}</span>
-                            </div>
-                          </div>
-
-                          {/* Vieram */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-emerald-300">VIERAM</span>
-                              <span className="text-sm text-emerald-400">{taxaPresenca}%</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: equipe.agendei > 0 ? `${(equipe.veio / equipe.agendei) * 100}%` : "0%" }}></div>
-                              </div>
-                              <span className="text-2xl font-bold text-emerald-400 min-w-fit">{equipe.veio}</span>
-                            </div>
-                          </div>
+                            )
+                          })}
                         </div>
 
-                        {/* Resumo final */}
-                        <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-3 gap-2">
-                          <div className="text-center">
+                        {/* rodapé: taxa ponta-a-ponta, no-show e valor vendido */}
+                        <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-[10px] text-white/50 uppercase">Qualif. {"\u2192"} Venda</p>
+                            <p className="text-xl font-bold text-[#d4af37]">
+                              {equipe.qualificados > 0 ? Math.round((equipe.vendas / equipe.qualificados) * 100) : 0}%
+                            </p>
+                          </div>
+                          <div>
                             <p className="text-[10px] text-white/50 uppercase">No-Show</p>
                             <p className="text-xl font-bold text-red-400">{equipe.nao}</p>
                           </div>
-                          {(equipe.remarcados || 0) > 0 && (
-                            <div className="text-center">
-                              <p className="text-[10px] text-white/50 uppercase">Remarcados</p>
-                              <p className="text-xl font-bold text-orange-400">{equipe.remarcados}</p>
-                            </div>
-                          )}
-                          {equipe.vendas > 0 && (
-                            <div className="text-center">
-                              <p className="text-[10px] text-white/50 uppercase">Vendas</p>
-                              <p className="text-xl font-bold text-emerald-400">{equipe.vendas}</p>
-                            </div>
-                          )}
+                          <div>
+                            <p className="text-[10px] text-white/50 uppercase">Presença</p>
+                            <p className="text-xl font-bold text-emerald-400">
+                              {equipe.marcados > 0 ? Math.round((equipe.veio / equipe.marcados) * 100) : 0}%
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )
