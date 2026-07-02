@@ -204,6 +204,27 @@ export default function DashboardPage() {
     return Object.values(map).sort((a: any, b: any) => b.marcados - a.marcados)
   }, [leadsAtivos, vendasReais])
 
+  // Conversão real por atendente: quem atendeu a reunião (lead "veio") -> quem fechou (venda)
+  const conversaoPorAtendente = useMemo(() => {
+    const map: Record<string, { nome: string; foto: string | null; atendeu: number; fechou: number; valor: number; taxa: number }> = {}
+    // Reuniões atendidas (leads "veio" têm o atendente gravado)
+    leadsAtivos.forEach((lead: any) => {
+      if (lead.status !== "veio") return
+      const at = normalizeVendedorNome(lead.atendente || "Não informado")
+      if (!map[at]) map[at] = { nome: at, foto: getFotoVendedor(at) || null, atendeu: 0, fechou: 0, valor: 0, taxa: 0 }
+      map[at].atendeu++
+    })
+    // Fechamentos (vendas têm o atendente)
+    vendasReais.forEach((venda: any) => {
+      const at = normalizeVendedorNome(venda.atendente || venda.responsavel || "Não informado")
+      if (!map[at]) map[at] = { nome: at, foto: getFotoVendedor(at) || null, atendeu: 0, fechou: 0, valor: 0, taxa: 0 }
+      map[at].fechou++
+      map[at].valor += Number(venda.valor_venda || 0)
+    })
+    Object.values(map).forEach(m => { m.taxa = m.atendeu > 0 ? Math.round((m.fechou / m.atendeu) * 100) : 0 })
+    return Object.values(map).sort((a, b) => b.fechou - a.fechou || b.atendeu - a.atendeu)
+  }, [leadsAtivos, vendasReais])
+
   // Origens dos leads marcados e vendas
   const origensMarcados = useMemo(() => {
     const mapMarcados: Record<string, number> = {}
@@ -453,6 +474,26 @@ export default function DashboardPage() {
       ])
       wsResultados["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 18 }]
       XLSX.utils.book_append_sheet(wb, wsResultados, "Marcados e Resultados")
+
+      // ABA: Conversao por Atendente (atendeu -> fechou)
+      const convAtendHeader = ["Atendente", "Atendeu", "Fechou", "Valor fechado (R$)", "Conversao %"]
+      const convAtendRows = conversaoPorAtendente.map((a) => [
+        a.nome, a.atendeu, a.fechou, a.valor.toLocaleString("pt-BR"), `${a.taxa}%`
+      ])
+      const totalConvAtendeu = conversaoPorAtendente.reduce((s, a) => s + a.atendeu, 0)
+      const totalConvFechou = conversaoPorAtendente.reduce((s, a) => s + a.fechou, 0)
+      const totalConvValor = conversaoPorAtendente.reduce((s, a) => s + a.valor, 0)
+      const totalConvTaxa = totalConvAtendeu > 0 ? Math.round((totalConvFechou / totalConvAtendeu) * 100) : 0
+      const wsConvAtend = XLSX.utils.aoa_to_sheet([
+        [`CONVERSAO POR ATENDENTE — Periodo: ${periodoLabel}`],
+        [],
+        convAtendHeader,
+        ...convAtendRows,
+        [],
+        ["TOTAL", totalConvAtendeu, totalConvFechou, totalConvValor.toLocaleString("pt-BR"), `${totalConvTaxa}%`]
+      ])
+      wsConvAtend["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 14 }]
+      XLSX.utils.book_append_sheet(wb, wsConvAtend, "Conversao por Atendente")
 
       // ABA 3: Qualifiquei & Agendei por Vendedor (COMPLETO)
       const qualAgendHeader = ["Vendedor", "Equipe", "Qualificados", "Agendamentos", "Taxa Conversao %"]
@@ -1045,6 +1086,48 @@ export default function DashboardPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Tabela de conversao por atendente (atendeu -> fechou) */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 overflow-x-auto">
+                <h3 className="text-lg font-semibold text-emerald-400 mb-4">Conversao por Atendente (atendeu &rarr; fechou)</h3>
+                {conversaoPorAtendente.length === 0 ? (
+                  <p className="text-white/40 text-sm">Nenhum atendimento registrado</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-2 text-white/50 font-medium">Atendente</th>
+                        <th className="text-center py-3 px-2 text-[#d4af37] font-medium">Atendeu</th>
+                        <th className="text-center py-3 px-2 text-emerald-400 font-medium">Fechou</th>
+                        <th className="text-right py-3 px-2 text-emerald-400 font-medium">Valor fechado</th>
+                        <th className="text-center py-3 px-2 text-amber-400 font-medium">Conversao</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {conversaoPorAtendente.map((a) => (
+                        <tr key={a.nome} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-3">
+                              {a.foto ? (
+                                <img src={a.foto || "/placeholder.svg"} alt={a.nome} className="w-8 h-8 rounded-full object-cover object-top" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold">
+                                  {a.nome.charAt(0)}
+                                </div>
+                              )}
+                              <p className="font-medium text-white">{a.nome}</p>
+                            </div>
+                          </td>
+                          <td className="text-center py-3 px-2 text-[#d4af37] font-semibold">{a.atendeu}</td>
+                          <td className="text-center py-3 px-2 text-emerald-400 font-semibold">{a.fechou}</td>
+                          <td className="text-right py-3 px-2 text-emerald-400 font-semibold">R$ {a.valor.toLocaleString("pt-BR")}</td>
+                          <td className="text-center py-3 px-2 text-amber-400 font-semibold">{a.taxa}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               {/* Atendentes e Origem */}
