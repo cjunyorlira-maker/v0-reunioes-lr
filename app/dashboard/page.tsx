@@ -185,7 +185,7 @@ export default function DashboardPage() {
 
     // Vendas vem da tabela vendas (fonte de verdade do Kommo), por responsavel
     vendasReais.forEach((venda: any) => {
-      const vendedor = normalizeVendedorNome(venda.responsavel || "Nao informado")
+      const vendedor = normalizeVendedorNome(venda.atendente || venda.responsavel || "Nao informado")
       if (!map[vendedor]) {
         map[vendedor] = {
           nome: vendedor,
@@ -278,7 +278,7 @@ export default function DashboardPage() {
       if (v && lead.equipe) vendedorParaEquipe[v] = lead.equipe
     })
     vendasReais.forEach((venda: any) => {
-      const v = normalizeVendedorNome(venda.responsavel || "")
+      const v = normalizeVendedorNome(venda.atendente || venda.responsavel || "")
       const equipe = vendedorParaEquipe[v] || "Sem equipe"
       if (!map[equipe]) {
         map[equipe] = { equipe, qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
@@ -428,7 +428,7 @@ export default function DashboardPage() {
       XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo Geral")
 
       // ABA 2: Marcados e Resultados por Vendedor (COMPLETO)
-      const resultadosHeader = ["Vendedor", "Equipe", "Marcados", "Veio", "Faltou", "Remarcados", "Vendas", "Taxa Presenca %", "Taxa Conversao %"]
+      const resultadosHeader = ["Vendedor", "Equipe", "Marcados", "Veio", "Faltou", "Remarcados", "Fechou", "Taxa Presenca %", "Taxa Conversao %"]
       const resultadosRows = resultadosPorVendedor.map((v: any) => {
         const presenca = (v.veio + v.nao) > 0 ? Math.round((v.veio / (v.veio + v.nao)) * 100) : 0
         const conversao = v.veio > 0 ? Math.round((v.vendas / v.veio) * 100) : 0
@@ -1011,7 +1011,7 @@ export default function DashboardPage() {
                       <th className="text-center py-3 px-2 text-[#d4af37] font-medium">Marcados</th>
                       <th className="text-center py-3 px-2 text-emerald-400 font-medium">Veio</th>
                       <th className="text-center py-3 px-2 text-red-400 font-medium">Faltou</th>
-                      <th className="text-center py-3 px-2 text-emerald-400 font-medium">Vendas</th>
+                      <th className="text-center py-3 px-2 text-emerald-400 font-medium">Fechou</th>
                       <th className="text-center py-3 px-2 text-white/50 font-medium">Conv.</th>
                     </tr>
                   </thead>

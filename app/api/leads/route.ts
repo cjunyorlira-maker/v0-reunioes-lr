@@ -8,23 +8,31 @@ export async function GET(request: NextRequest) {
   const startDate = searchParams.get("startDate")
   const endDate = searchParams.get("endDate")
   
-  let query = supabase
-    .from("leads")
-    .select("*")
-    .order("data", { ascending: true })
-    .order("hora", { ascending: true })
-  
-  if (startDate && endDate) {
-    query = query.gte("data", startDate).lte("data", endDate)
+  // Busca paginada: Supabase corta em 1000 linhas por padrão, então
+  // percorremos todas as páginas para trazer TODOS os registros.
+  let all: any[] = []
+  let from = 0
+  const PAGE = 1000
+  while (true) {
+    let query = supabase
+      .from("leads")
+      .select("*")
+      .order("data", { ascending: true })
+      .order("hora", { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (startDate && endDate) {
+      query = query.gte("data", startDate).lte("data", endDate)
+    }
+    const { data, error } = await query
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    all = all.concat(data || [])
+    if (!data || data.length < PAGE) break
+    from += PAGE
   }
   
-  const { data, error } = await query
-  
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-  
-  return NextResponse.json(data)
+  return NextResponse.json(all)
 }
 
 export async function POST(request: NextRequest) {
