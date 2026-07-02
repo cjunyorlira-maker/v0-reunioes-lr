@@ -158,6 +158,41 @@ export default function DashboardPage() {
     return Object.values(map).sort((a, b) => b.qualificados - a.qualificados)
   }, [qualificados])
 
+  // Grade de atividade diária: quanto cada vendedor qualificou (Q) e agendou (A) por dia
+  const atividadeDiaria = useMemo(() => {
+    // monta a lista de dias do range ativo
+    const dias: string[] = []
+    const d = new Date(activeRange.start + "T12:00:00")
+    const fim = new Date(activeRange.end + "T12:00:00")
+    while (d <= fim && dias.length < 32) {
+      dias.push(d.toISOString().slice(0, 10))
+      d.setDate(d.getDate() + 1)
+    }
+    const map: Record<string, { nome: string; foto: string | null; porDia: Record<string, { q: number; a: number }>; totalQ: number; totalA: number }> = {}
+    const garantir = (nome: string) => {
+      const n = normalizeVendedorNome(nome || "Não informado")
+      if (!map[n]) map[n] = { nome: n, foto: getFotoVendedor(n) || null, porDia: {}, totalQ: 0, totalA: 0 }
+      return map[n]
+    }
+    // Qualificações por dia (data_qualificacao)
+    qualificados.forEach((q: any) => {
+      const dia = (q.data_qualificacao || "").slice(0, 10)
+      if (!dia || dia < activeRange.start || dia > activeRange.end) return
+      const v = garantir(q.responsavel || q.vendedor)
+      if (!v.porDia[dia]) v.porDia[dia] = { q: 0, a: 0 }
+      v.porDia[dia].q++; v.totalQ++
+    })
+    // Agendamentos por dia (data_agendei) — usa allLeads
+    allLeads.forEach((lead: any) => {
+      const dia = (lead.data_agendei || "").slice(0, 10)
+      if (!dia || dia < activeRange.start || dia > activeRange.end) return
+      const v = garantir(lead.responsavel)
+      if (!v.porDia[dia]) v.porDia[dia] = { q: 0, a: 0 }
+      v.porDia[dia].a++; v.totalA++
+    })
+    return { dias, vendedores: Object.values(map).sort((x, y) => (y.totalQ + y.totalA) - (x.totalQ + x.totalA)) }
+  }, [qualificados, allLeads, activeRange])
+
   // Resultados por vendedor (marcados, veio, faltou, vendas) - sem retornos
   const resultadosPorVendedor = useMemo(() => {
     const map: Record<string, any> = {}
@@ -309,6 +344,17 @@ export default function DashboardPage() {
 
     return Object.values(map).sort((a: any, b: any) => (b.qualificados + b.agendei) - (a.qualificados + a.agendei))
   }, [qualificados, allLeads, leadsAtivos, activeRange, vendasReais])
+
+  // Funil GERAL da operação: agrega os totais de todas as equipes
+  const funilGeral = useMemo(() => {
+    const g = { equipe: "GERAL", qualificados: 0, agendei: 0, marcados: 0, veio: 0, nao: 0, remarcados: 0, vendas: 0 }
+    funilPorEquipe.forEach((e: any) => {
+      g.qualificados += e.qualificados; g.agendei += e.agendei
+      g.marcados += e.marcados; g.veio += e.veio; g.nao += e.nao
+      g.remarcados += e.remarcados || 0; g.vendas += e.vendas
+    })
+    return g
+  }, [funilPorEquipe])
 
   // Conversao Qualifiquei -> Agendei por vendedor
   const conversaoQualAgendei = useMemo(() => {
@@ -655,6 +701,73 @@ export default function DashboardPage() {
   }
 
   const weekLabel = `${weekDays[0].dayNumber}/${weekDays[0].date.getMonth() + 1} - ${weekDays[weekDays.length - 1].dayNumber}/${weekDays[weekDays.length - 1].date.getMonth() + 1}`
+
+  // Funil em dois estágios: Produção (atividade do vendedor) e Agenda & Resultado
+  function FunilDoisEstagios({ dados, destaque }: { dados: any; destaque?: boolean }) {
+    const blocoTrapezio = (etapas: { label: string; valor: number; cor: string }[]) => {
+      const topo = Math.max(etapas[0].valor, 1)
+      return (
+        <div className="flex flex-col items-center">
+          {etapas.map((etapa, i) => {
+            const wAtual = Math.max(30, Math.round((etapa.valor / topo) * 100))
+            const proxima = etapas[i + 1]
+            const wProx = proxima ? Math.max(30, Math.round((proxima.valor / topo) * 100)) : wAtual
+            const taxa = i > 0 && etapas[i - 1].valor > 0 ? Math.round((etapa.valor / etapas[i - 1].valor) * 100) : null
+            return (
+              <div key={etapa.label} className="w-full flex flex-col items-center">
+                {i > 0 && (
+                  <div className="flex items-center gap-1 py-0.5">
+                    <span className="text-white/30 text-xs">{"\u25BC"}</span>
+                    <span className="text-xs font-bold" style={{ color: etapa.cor }}>{taxa !== null ? `${taxa}%` : "\u2014"}</span>
+                  </div>
+                )}
+                <div className="relative flex items-center justify-center" style={{
+                  width: `${wAtual}%`, height: "46px",
+                  background: `linear-gradient(180deg, ${etapa.cor}33, ${etapa.cor}1a)`,
+                  borderTop: `2px solid ${etapa.cor}99`,
+                  clipPath: `polygon(0 0, 100% 0, ${50 + (wProx / wAtual) * 50}% 100%, ${50 - (wProx / wAtual) * 50}% 100%)`,
+                }}>
+                  <span className="text-xl font-bold mr-2" style={{ color: etapa.cor }}>{etapa.valor}</span>
+                  <span className="text-[10px] font-semibold tracking-wider text-white/60">{etapa.label}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+    return (
+      <div className={`bg-white/[0.03] border rounded-2xl p-6 ${destaque ? "border-[#d4af37]/40" : "border-white/10"}`}>
+        <h4 className={`text-lg font-bold mb-4 text-center ${destaque ? "text-[#d4af37] text-xl" : "text-[#d4af37]"}`}>{dados.equipe}</h4>
+        {/* BLOCO 1: PRODUÇÃO (atividade do vendedor no período) */}
+        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 text-center">Produção do período (atividade)</p>
+        {blocoTrapezio([
+          { label: "QUALIFIQUEI", valor: dados.qualificados, cor: "#22d3ee" },
+          { label: "AGENDEI", valor: dados.agendei, cor: "#a78bfa" },
+        ])}
+        {/* divisor: réguas de tempo diferentes */}
+        <div className="flex items-center gap-2 my-4">
+          <div className="flex-1 border-t border-dashed border-white/15"></div>
+          <span className="text-[9px] text-white/30 uppercase">reuniões do período</span>
+          <div className="flex-1 border-t border-dashed border-white/15"></div>
+        </div>
+        {/* BLOCO 2: AGENDA & RESULTADO */}
+        {blocoTrapezio([
+          { label: "MARCADOS", valor: dados.marcados, cor: "#60a5fa" },
+          { label: "VIERAM", valor: dados.veio, cor: "#34d399" },
+          { label: "VENDAS", valor: dados.vendas, cor: "#d4af37" },
+        ])}
+        <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2 text-center">
+          <div><p className="text-[10px] text-white/50 uppercase">Qualif {"\u2192"} Agendei</p>
+            <p className="text-lg font-bold text-violet-400">{dados.qualificados > 0 ? Math.round((dados.agendei / dados.qualificados) * 100) : 0}%</p></div>
+          <div><p className="text-[10px] text-white/50 uppercase">Presença</p>
+            <p className="text-lg font-bold text-emerald-400">{dados.marcados > 0 ? Math.round((dados.veio / dados.marcados) * 100) : 0}%</p></div>
+          <div><p className="text-[10px] text-white/50 uppercase">Veio {"\u2192"} Venda</p>
+            <p className="text-lg font-bold text-[#d4af37]">{dados.veio > 0 ? Math.round((dados.vendas / dados.veio) * 100) : 0}%</p></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#050a15] text-white overflow-x-hidden">
@@ -1004,6 +1117,53 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Grade de atividade diária (Q/A por dia) */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+                <h4 className="text-lg font-bold text-white mb-1">Atividade Diária</h4>
+                <p className="text-xs text-white/40 mb-4">Q = qualificou · A = agendou (por dia da ação)</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-2 pr-3 text-white/60 sticky left-0 bg-[#0a0a0c]">Vendedor</th>
+                        {atividadeDiaria.dias.map(dia => (
+                          <th key={dia} className="text-center px-2 py-2 text-white/50 text-xs whitespace-nowrap">
+                            {new Date(dia + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                            <span className="block text-[9px] text-white/30">{new Date(dia + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" })}</span>
+                          </th>
+                        ))}
+                        <th className="text-center px-3 py-2 text-[#d4af37] text-xs">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {atividadeDiaria.vendedores.map(v => (
+                        <tr key={v.nome} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-white whitespace-nowrap sticky left-0 bg-[#0a0a0c]">{v.nome}</td>
+                          {atividadeDiaria.dias.map(dia => {
+                            const cel = v.porDia[dia]
+                            return (
+                              <td key={dia} className="text-center px-2 py-2">
+                                {cel ? (
+                                  <div className="text-xs">
+                                    <span className="text-cyan-400 font-semibold">{cel.q > 0 ? `Q${cel.q}` : ""}</span>
+                                    {cel.q > 0 && cel.a > 0 ? " " : ""}
+                                    <span className="text-violet-400 font-semibold">{cel.a > 0 ? `A${cel.a}` : ""}</span>
+                                  </div>
+                                ) : <span className="text-white/10">·</span>}
+                              </td>
+                            )
+                          })}
+                          <td className="text-center px-3 py-2 text-xs whitespace-nowrap">
+                            <span className="text-cyan-400 font-bold">Q{v.totalQ}</span>{" "}
+                            <span className="text-violet-400 font-bold">A{v.totalA}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1201,87 +1361,19 @@ export default function DashboardPage() {
           {/* Tab: Funil por Equipe */}
           {activeTab === "funil" && (
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-white">Funil de Conversao por Equipe</h3>
-
+              <h3 className="text-xl font-bold text-white">Funil de Conversão</h3>
+              {/* GERAL */}
+              <div className="max-w-2xl mx-auto">
+                <FunilDoisEstagios dados={funilGeral} destaque />
+              </div>
+              <h3 className="text-lg font-bold text-white/80 pt-2">Por Equipe</h3>
               {funilPorEquipe.length === 0 ? (
                 <p className="text-white/40">Nenhum dado disponivel</p>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {funilPorEquipe.map((equipe: any) => {
-                    const taxaQualAgendei = equipe.qualificados > 0 ? Math.round((equipe.agendei / equipe.qualificados) * 100) : 0
-                    const taxaMarcados = equipe.agendei > 0 ? Math.round((equipe.marcados / equipe.agendei) * 100) : 0
-                    const taxaPresenca = equipe.marcados > 0 ? Math.round((equipe.veio / equipe.marcados) * 100) : 0
-                    const taxaNoShow = equipe.marcados > 0 ? Math.round((equipe.nao / equipe.marcados) * 100) : 0
-                    const maxValue = Math.max(equipe.qualificados, equipe.agendei, equipe.marcados, equipe.veio, 1)
-
-                    return (
-                      <div key={equipe.equipe} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-                        <h4 className="text-lg font-bold text-[#d4af37] mb-6 text-center">{equipe.equipe}</h4>
-
-                        {/* Funil simples em linhas horizontais */}
-                        <div className="space-y-4">
-                          {/* Qualificados */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-cyan-300">QUALIFICADOS</span>
-                              <span className="text-2xl font-bold text-cyan-400">{equipe.qualificados}</span>
-                            </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400" style={{ width: "100%" }}></div>
-                            </div>
-                          </div>
-
-                          {/* Agendei */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-violet-300">AGENDEI</span>
-                              <span className="text-sm text-violet-400">{taxaQualAgendei}%</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-violet-500 to-violet-400" style={{ width: equipe.qualificados > 0 ? `${(equipe.agendei / equipe.qualificados) * 100}%` : "0%" }}></div>
-                              </div>
-                              <span className="text-2xl font-bold text-violet-400 min-w-fit">{equipe.agendei}</span>
-                            </div>
-                          </div>
-
-                          {/* Vieram */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-emerald-300">VIERAM</span>
-                              <span className="text-sm text-emerald-400">{taxaPresenca}%</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: equipe.agendei > 0 ? `${(equipe.veio / equipe.agendei) * 100}%` : "0%" }}></div>
-                              </div>
-                              <span className="text-2xl font-bold text-emerald-400 min-w-fit">{equipe.veio}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Resumo final */}
-                        <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-3 gap-2">
-                          <div className="text-center">
-                            <p className="text-[10px] text-white/50 uppercase">No-Show</p>
-                            <p className="text-xl font-bold text-red-400">{equipe.nao}</p>
-                          </div>
-                          {(equipe.remarcados || 0) > 0 && (
-                            <div className="text-center">
-                              <p className="text-[10px] text-white/50 uppercase">Remarcados</p>
-                              <p className="text-xl font-bold text-orange-400">{equipe.remarcados}</p>
-                            </div>
-                          )}
-                          {equipe.vendas > 0 && (
-                            <div className="text-center">
-                              <p className="text-[10px] text-white/50 uppercase">Vendas</p>
-                              <p className="text-xl font-bold text-emerald-400">{equipe.vendas}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {funilPorEquipe.map((equipe: any) => (
+                    <FunilDoisEstagios key={equipe.equipe} dados={equipe} />
+                  ))}
                 </div>
               )}
             </div>
