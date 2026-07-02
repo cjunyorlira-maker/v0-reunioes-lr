@@ -119,6 +119,19 @@ export async function POST(request: Request) {
         if (!error) updated++
         console.log(`[webhook-venda] Atualizado: ${nome} (${leadId}) - R$ ${valorVenda}`)
       } else {
+        // Busca a origem do lead correspondente (leads ou qualificacoes)
+        let origemLead: string | null = null
+        const { data: leadOrigem } = await supabase
+          .from("leads").select("origem").eq("kommo_id", leadId)
+          .not("origem", "is", null).limit(1).maybeSingle()
+        if (leadOrigem?.origem) origemLead = leadOrigem.origem
+        if (!origemLead) {
+          const { data: qualOrigem } = await supabase
+            .from("qualificacoes").select("origem").eq("kommo_lead_id", leadId)
+            .not("origem", "is", null).limit(1).maybeSingle()
+          if (qualOrigem?.origem) origemLead = qualOrigem.origem
+        }
+
         // Insere nova venda
         const { error } = await supabase
           .from("vendas")
@@ -129,6 +142,7 @@ export async function POST(request: Request) {
             atendente: responsavelNome,
             valor_venda: valorVenda,
             data_venda: new Date().toISOString().split("T")[0],
+            origem: origemLead,
           })
 
         if (!error) inserted++
