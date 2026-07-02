@@ -26,12 +26,18 @@ export async function GET(request: Request) {
     const inicio = searchParams.get("startDate") || periodoProd.inicio
     const fim = searchParams.get("endDate") || periodoProd.fim
 
-    const { data: vendas, error } = await supabase
+    const temFiltroCustom = !!(searchParams.get("startDate") && searchParams.get("endDate"))
+    let query = supabase
       .from("vendas")
       .select("*")
       .gte("data_venda", inicio)
       .lte("data_venda", fim)
       .order("data_venda", { ascending: false })
+    // Sem filtro custom = modo cards/produção ativa: só o que está na etapa do Kommo
+    if (!temFiltroCustom) {
+      query = query.eq("na_etapa_kommo", true)
+    }
+    const { data: vendas, error } = await query
 
     if (error) {
       console.error("Erro ao buscar vendas:", error)

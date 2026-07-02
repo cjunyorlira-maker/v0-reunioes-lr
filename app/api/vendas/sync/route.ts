@@ -4,7 +4,7 @@ import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
 
 // Pipeline e etapa "Vendido Produção" reais no Kommo (pipeline "Principal")
 const PIPELINE_ID = 7012299
-const ETAPAS_VENDIDO = [69615804]
+const ETAPAS_VENDIDO = [71181426, 69615804]
 
 // Campos customizados do lead no Kommo
 const CAMPO_VALOR_VENDA = 1085703   // fallback de valor (campo nativo lead.price é prioritário)
@@ -205,6 +205,7 @@ export async function POST() {
             responsavel: venda.responsavel,
             valor_venda: venda.valor_venda,
             data_venda: venda.data_venda,
+            na_etapa_kommo: true,
             updated_at: new Date().toISOString(),
           })
           .eq("kommo_id", venda.kommo_id)
@@ -223,6 +224,7 @@ export async function POST() {
           atendente: venda.responsavel,
           valor_venda: venda.valor_venda,
           data_venda: venda.data_venda,
+          na_etapa_kommo: true,
           created_at: new Date().toISOString(),
         })
         if (insertError) {
@@ -243,19 +245,20 @@ export async function POST() {
       // Filtra por periodo para NAO apagar producao de periodos passados.
       const { data: vendasNoBanco } = await supabase
         .from("vendas")
-        .select("id, kommo_id, nome_lead")
+        .select("id, kommo_id, nome_lead, na_etapa_kommo")
         .gte("data_venda", periodo.inicio)
         .lte("data_venda", periodo.fim)
       
       if (vendasNoBanco) {
         for (const venda of vendasNoBanco) {
-          if (!kommoIds.includes(venda.kommo_id)) {
-            const { error: deleteError } = await supabase
+          if (venda.na_etapa_kommo === false) continue
+          if (venda.kommo_id && !kommoIds.includes(venda.kommo_id)) {
+            const { error: updError } = await supabase
               .from("vendas")
-              .delete()
+              .update({ na_etapa_kommo: false, updated_at: new Date().toISOString() })
               .eq("id", venda.id)
-            if (!deleteError) {
-              console.log("[v0] Venda removida (saiu do Kommo):", venda.nome_lead)
+            if (!updError) {
+              console.log("[v0] Venda marcada como fora da etapa:", venda.nome_lead)
               deleted++
             }
           }
