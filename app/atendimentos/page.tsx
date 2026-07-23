@@ -653,164 +653,6 @@ export default function AtendimentosPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Filtro por periodo */}
-              <div className="flex items-center gap-2">
-                <input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="🔎 buscar cliente ou vendedor..."
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-amber-500/50"
-                />
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
-                  {([
-                    { key: "hoje", label: "Hoje" },
-                    { key: "semana", label: "Semana" },
-                    { key: "producao", label: "Producao" },
-                    { key: "custom", label: "📅 Personalizado" },
-                  ] as const).map(op => (
-                    <button
-                      key={op.key}
-                      onClick={() => { setFiltroPeriodo(op.key); if (op.key !== "semana") setSemanaOffset(0); if (op.key !== "producao") setProducaoOffset(0) }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                        filtroPeriodo === op.key
-                          ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
-                          : "text-white/40 hover:text-white/70"
-                      }`}
-                    >
-                      {op.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Navegacao de semana — aparece apenas quando "semana" esta selecionado */}
-                {filtroPeriodo === "semana" && (
-                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
-                    <button
-                      onClick={() => setSemanaOffset(o => o - 1)}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
-                      {semanaOffset === 0 ? "Esta semana" : semanaOffset === -1 ? "Semana passada" : semanaOffset < 0 ? `${Math.abs(semanaOffset)}s atras` : `+${semanaOffset}s`}
-                    </span>
-                    <button
-                      onClick={() => setSemanaOffset(o => o + 1)}
-                      disabled={semanaOffset >= 0}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    {semanaOffset !== 0 && (
-                      <button
-                        onClick={() => setSemanaOffset(0)}
-                        className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
-                      >
-                        Atual
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Navegacao de producao — aparece apenas quando "producao" esta selecionado */}
-                {filtroPeriodo === "producao" && (
-                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
-                    <button
-                      onClick={() => setProducaoOffset(o => producoes.length ? Math.max(o - 1, -(producoes.length - 1)) : o - 1)}
-                      disabled={producoes.length > 0 && producaoOffset <= -(producoes.length - 1)}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
-                      {producoes[Math.abs(producaoOffset)]?.nome
-                        || (producaoOffset === 0 ? "Atual" : producaoOffset === -1 ? "Anterior" : `${Math.abs(producaoOffset)}m atras`)}
-                    </span>
-                    <button
-                      onClick={() => setProducaoOffset(o => Math.min(o + 1, 0))}
-                      disabled={producaoOffset >= 0}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    {producaoOffset !== 0 && (
-                      <button
-                        onClick={() => setProducaoOffset(0)}
-                        className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
-                      >
-                        Atual
-                      </button>
-                    )}
-                    {equipe === "Admin" && (
-                      <button
-                        onClick={() => setShowProducoesModal(true)}
-                        className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-400 hover:bg-amber-500/20"
-                      >
-                        ⚙️ Configurar
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Datas personalizadas — aparece apenas quando "custom" esta selecionado */}
-                {filtroPeriodo === "custom" && (
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="date"
-                      value={dataDe}
-                      onChange={(e) => setDataDe(e.target.value)}
-                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
-                    />
-                    <span className="text-white/30 text-xs">a</span>
-                    <input
-                      type="date"
-                      value={dataAte}
-                      onChange={(e) => setDataAte(e.target.value)}
-                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Filtro por equipe (Admin vê todas) */}
-              {equipe === "Admin" && (
-                <select
-                  value={filtroEquipe}
-                  onChange={(e) => setFiltroEquipe(e.target.value)}
-                  className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
-                >
-                  <option value="all">Todas equipes</option>
-                  {Array.from(new Set(atendimentos.map(a => a.equipe).filter(Boolean))).sort().map((eq) => (
-                    <option key={eq} value={eq}>{eq}</option>
-                  ))}
-                </select>
-              )}
-              {/* Filtro por atendente */}
-              <select
-                value={filtroAtendente}
-                onChange={(e) => setFiltroAtendente(e.target.value)}
-                className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
-              >
-                <option value="all">Todos atendentes</option>
-                {Array.from(new Set([
-                  ...atendentesOficiais,
-                  ...atendimentos.map(a => a.atendente || a.responsavel),
-                ].filter(Boolean))).sort().map((at) => (
-                  <option key={at} value={at}>{at}</option>
-                ))}
-              </select>
-              {equipe === "Admin" && (
-                <button
-                  onClick={async () => {
-                    const r = await fetch("/api/atendimentos/reprocessar-massa", { method: "POST" })
-                    const d = await r.json().catch(() => ({}))
-                    alert(d.enfileirados ? `${d.enfileirados} atendimento(s) na fila — o vigia processa 5 a cada 10min.` : "Nenhum erro reprocessável no momento.")
-                  }}
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/20"
-                >
-                  ♻️ Reprocessar erros
-                </button>
-              )}
               <button
                 onClick={() => { const v = !videoOn; setVideoOn(v); localStorage.setItem("atendimentos_video", v ? "on" : "off") }}
                 className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs hover:bg-white/10"
@@ -840,6 +682,184 @@ export default function AtendimentosPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+        {/* ═══ Faixa de Filtros ═══ */}
+        <div className="mb-6 space-y-3 rounded-2xl border border-white/10 p-4"
+          style={{ background: "rgba(10,10,14,0.85)", backdropFilter: "blur(14px)" }}>
+          {/* linha 1: período */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">Período</span>
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+              {([
+                { key: "hoje", label: "Hoje" },
+                { key: "semana", label: "Semana" },
+                { key: "producao", label: "Producao" },
+                { key: "custom", label: "📅 Personalizado" },
+              ] as const).map(op => (
+                <button
+                  key={op.key}
+                  onClick={() => { setFiltroPeriodo(op.key); if (op.key !== "semana") setSemanaOffset(0); if (op.key !== "producao") setProducaoOffset(0) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    filtroPeriodo === op.key
+                      ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  {op.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Navegacao de semana — aparece apenas quando "semana" esta selecionado */}
+            {filtroPeriodo === "semana" && (
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                <button
+                  onClick={() => setSemanaOffset(o => o - 1)}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
+                  {semanaOffset === 0 ? "Esta semana" : semanaOffset === -1 ? "Semana passada" : semanaOffset < 0 ? `${Math.abs(semanaOffset)}s atras` : `+${semanaOffset}s`}
+                </span>
+                <button
+                  onClick={() => setSemanaOffset(o => o + 1)}
+                  disabled={semanaOffset >= 0}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                {semanaOffset !== 0 && (
+                  <button
+                    onClick={() => setSemanaOffset(0)}
+                    className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
+                  >
+                    Atual
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Navegacao de producao — aparece apenas quando "producao" esta selecionado */}
+            {filtroPeriodo === "producao" && (
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                <button
+                  onClick={() => setProducaoOffset(o => producoes.length ? Math.max(o - 1, -(producoes.length - 1)) : o - 1)}
+                  disabled={producoes.length > 0 && producaoOffset <= -(producoes.length - 1)}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
+                  {producoes[Math.abs(producaoOffset)]?.nome
+                    || (producaoOffset === 0 ? "Atual" : producaoOffset === -1 ? "Anterior" : `${Math.abs(producaoOffset)}m atras`)}
+                </span>
+                <button
+                  onClick={() => setProducaoOffset(o => Math.min(o + 1, 0))}
+                  disabled={producaoOffset >= 0}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                {producaoOffset !== 0 && (
+                  <button
+                    onClick={() => setProducaoOffset(0)}
+                    className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
+                  >
+                    Atual
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Datas personalizadas — aparece apenas quando "custom" esta selecionado */}
+            {filtroPeriodo === "custom" && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={dataDe}
+                  onChange={(e) => setDataDe(e.target.value)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                />
+                <span className="text-white/30 text-xs">a</span>
+                <input
+                  type="date"
+                  value={dataAte}
+                  onChange={(e) => setDataAte(e.target.value)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                />
+              </div>
+            )}
+
+            {/* Configurar produções (Admin) */}
+            {equipe === "Admin" && filtroPeriodo === "producao" && (
+              <button onClick={() => setShowProducoesModal(true)}
+                className="rounded-lg border border-amber-500/50 bg-gradient-to-r from-amber-500/20 to-amber-600/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:from-amber-500/30">
+                ⚙️ Configurar produções
+              </button>
+            )}
+          </div>
+
+          {/* linha 2: recorte + busca */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">Recorte</span>
+
+            {/* Filtro por equipe (Admin vê todas) */}
+            {equipe === "Admin" && (
+              <select
+                value={filtroEquipe}
+                onChange={(e) => setFiltroEquipe(e.target.value)}
+                style={{ background: "rgba(10,10,14,0.9)" }}
+                className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
+              >
+                <option value="all">Todas equipes</option>
+                {Array.from(new Set(atendimentos.map(a => a.equipe).filter(Boolean))).sort().map((eq) => (
+                  <option key={eq} value={eq}>{eq}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Filtro por atendente */}
+            <select
+              value={filtroAtendente}
+              onChange={(e) => setFiltroAtendente(e.target.value)}
+              style={{ background: "rgba(10,10,14,0.9)" }}
+              className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
+            >
+              <option value="all">Todos atendentes</option>
+              {Array.from(new Set([
+                ...atendentesOficiais,
+                ...atendimentos.map(a => a.atendente || a.responsavel),
+              ].filter(Boolean))).sort().map((at) => (
+                <option key={at} value={at}>{at}</option>
+              ))}
+            </select>
+
+            {/* Busca */}
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="🔎 buscar cliente ou vendedor..."
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-amber-500/50"
+            />
+
+            {equipe === "Admin" && (
+              <button
+                onClick={async () => {
+                  const r = await fetch("/api/atendimentos/reprocessar-massa", { method: "POST" })
+                  const d = await r.json().catch(() => ({}))
+                  alert(d.enfileirados ? `${d.enfileirados} atendimento(s) na fila.` : "Nenhum erro reprocessável.")
+                }}
+                className="ml-auto rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/20"
+              >
+                ♻️ Reprocessar erros
+              </button>
+            )}
+          </div>
+
+          {/* linha 3: o intervalo ativo */}
+          <p className="text-xs font-semibold text-amber-300/80">{intervaloPeriodo.label}</p>
+        </div>
+
         {/* Stats Cards Premium */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           {[
