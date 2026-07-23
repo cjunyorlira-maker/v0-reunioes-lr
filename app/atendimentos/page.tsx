@@ -303,7 +303,7 @@ export default function AtendimentosPage() {
     // Filtro de periodo — aplica apenas nos concluidos (fechados/nao fechados)
     // Aguardando e Gravando sao sempre mostrados (sao ativos)
     lista = lista.filter(a => {
-      if (a.status === "aguardando" || a.status === "gravando" || a.status === "processando") return true
+      if (a.status === "aguardando" || a.status === "falha_audio" || a.status === "gravando" || a.status === "processando") return true
       const dataAtend = (a.data_atendimento || a.created_at || "").split("T")[0]
       return dataAtend >= intervaloPeriodo.inicio && dataAtend <= intervaloPeriodo.fim
     })
@@ -334,7 +334,7 @@ export default function AtendimentosPage() {
   }, [atendimentosFiltrados])
 
   // Stats (usando lista filtrada)
-  const aguardando = atendimentosFiltrados.filter((a) => a.status === "aguardando")
+  const aguardando = atendimentosFiltrados.filter((a) => a.status === "aguardando" || a.status === "falha_audio")
   const processando = atendimentosFiltrados.filter((a) => a.status === "processando" || a.status === "gravando")
   const concluidos = atendimentosFiltrados.filter((a) => a.status === "concluido")
   const fechados = concluidos.filter((a) => a.fechou)

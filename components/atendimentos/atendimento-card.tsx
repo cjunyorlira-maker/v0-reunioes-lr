@@ -112,6 +112,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
   const statusColor = {
     'aguardando': 'from-amber-500 to-orange-600',
+    'falha_audio': 'from-red-500 to-rose-600',
     'gravando': 'from-blue-500 to-cyan-600',
     'processando': 'from-purple-500 to-violet-600',
     'concluido': 'from-emerald-500 to-teal-600',
@@ -120,6 +121,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
 
   const statusLabel = {
     'aguardando': '⏳ Aguardando',
+    'falha_audio': '🔇 Áudio sem fala',
     'gravando': '🎤 Gravando',
     'processando': '⚙️ Processando',
     'concluido': '✓ Concluído',
@@ -176,7 +178,8 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
     }
   }
 
-  const isAguardando = atendimento.status === 'aguardando'
+  const isFalhaAudio = atendimento.status === 'falha_audio'
+  const isAguardando = atendimento.status === 'aguardando' || isFalhaAudio
   const isProcessando = atendimento.status === 'processando' || atendimento.status === 'gravando'
   const isConcluido = atendimento.status === 'concluido'
 
@@ -365,6 +368,14 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                   )}
                   Marcar como Fechou
                 </Button>
+              </div>
+            )}
+
+            {/* Badge de falha de audio - regravar */}
+            {isFalhaAudio && (
+              <div className='mb-2 flex items-center gap-1.5 rounded-md border border-red-500/40 bg-red-500/15 px-2 py-1.5 text-[11px] font-semibold text-red-300'>
+                <span aria-hidden>🔇</span>
+                <span>Áudio sem fala — regravar</span>
               </div>
             )}
 
