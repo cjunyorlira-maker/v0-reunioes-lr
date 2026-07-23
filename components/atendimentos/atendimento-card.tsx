@@ -88,6 +88,7 @@ interface AtendimentoCardProps {
   atendimento: Atendimento
   userEquipe?: string
   userName?: string
+  atendentesOficiais?: string[]
   onUpdate: () => void
 }
 
@@ -102,7 +103,8 @@ const analiseEmojis: Record<string, string> = {
   'fechamento': '🎁',
 }
 
-export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }: AtendimentoCardProps) {
+export function AtendimentoCard({ atendimento, userEquipe, userName, atendentesOficiais, onUpdate }: AtendimentoCardProps) {
+  const [novoAtendente, setNovoAtendente] = useState('')
   const [showRecorder, setShowRecorder] = useState(false)
   const [showRecorderRetorno, setShowRecorderRetorno] = useState(false)
   const [showAnalise, setShowAnalise] = useState(false)
@@ -358,6 +360,28 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             🎙 <span className='font-bold text-white/80'>{atendimento.atendente || '—'}</span>
             {' '}· lead de {atendimento.responsavel || '—'} · {atendimento.equipe}
           </p>
+
+          {!atendimento.atendente && (
+            <div className='rounded-lg border border-amber-500/50 bg-amber-500/10 p-2'>
+              <p className='text-[10px] font-bold text-amber-400'>⚠ ATENDENTE NÃO REGISTRADO — quem atendeu este cliente?</p>
+              <div className='mt-1.5 flex gap-1.5'>
+                <select value={novoAtendente} onChange={(e) => setNovoAtendente(e.target.value)}
+                  className='flex-1 rounded border border-white/15 bg-black/60 px-2 py-1 text-[11px] text-white outline-none'>
+                  <option value=''>selecionar...</option>
+                  {(atendentesOficiais || []).map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <button disabled={!novoAtendente} onClick={async () => {
+                  await fetch(`/api/atendimentos/${atendimento.id}/atendente`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ atendente: novoAtendente }),
+                  })
+                  onUpdate()
+                }} className='rounded bg-amber-500 px-2.5 py-1 text-[11px] font-black text-black disabled:opacity-40'>
+                  salvar
+                </button>
+              </div>
+            </div>
+          )}
 
           {isConcluido && temAnalise && (
             <button onClick={() => setDetalhes(v => !v)} className='flex w-full items-center justify-center gap-1 rounded-md border border-white/10 bg-white/5 py-1 text-[10px] font-bold text-white/60 hover:bg-white/10'>

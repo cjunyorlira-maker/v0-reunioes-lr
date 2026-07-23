@@ -63,14 +63,14 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
   const opcoes = useMemo(() => {
     const eq = new Set<string>(), at = new Set<string>()
     atendentesOficiais.forEach((n) => { if (n) at.add(n) })
-    atendimentos.forEach((a) => { if (a.equipe) eq.add(a.equipe); const n = a.atendente || a.responsavel; if (n) at.add(n) })
+    atendimentos.forEach((a) => { if (a.equipe) eq.add(a.equipe); if (a.atendente) at.add(a.atendente) })
     return { equipes: [...eq].sort(), atendentes: [...at].sort() }
   }, [atendimentos, atendentesOficiais])
 
   // base filtrada da Central inteira
   const dados = useMemo(() => atendimentos.filter((a) =>
     (fEquipe === "all" || a.equipe === fEquipe) &&
-    (fAtendente === "all" || (a.atendente || a.responsavel) === fAtendente) &&
+    (fAtendente === "all" || a.atendente === fAtendente) &&
     (fTemp === "all" || a.perfil_temperatura === fTemp)
   ), [atendimentos, fEquipe, fAtendente, fTemp])
 
@@ -83,7 +83,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
   const porAtendente = useMemo(() => {
     const map: Record<string, Atd[]> = {}
     concluidos.forEach((a) => {
-      const k = a.atendente || a.responsavel || "Sem nome"   // avaliação é de quem ATENDEU (supervisor)
+      const k = a.atendente || "⚠ Sem atendente registrado"   // NUNCA herdar o vendedor: sem atendente = dado a corrigir, não mérito/culpa de ninguém
       ;(map[k] = map[k] || []).push(a)
     })
     return Object.entries(map)
@@ -245,7 +245,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
                   <div key={a.id} onClick={() => onVerAtendimento?.(a.nome_lead)} className="cursor-pointer rounded-lg bg-black/60 p-2 text-xs transition-colors hover:bg-black/50">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-bold">{a.nome_lead}</span>
-                      <span className="shrink-0 text-white/50">{a.atendente || a.responsavel}</span>
+                        <span className="shrink-0 text-white/50">{a.atendente || "—"}</span>
                     </div>
                     {a.motivo_real_inferido && <p className="mt-0.5 text-white/60">real: {a.motivo_real_inferido}</p>}
                   </div>
@@ -271,7 +271,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
               <div className="flex items-center gap-3">
                 <span className="text-xl font-black text-amber-400">{i + 1}º</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || a.responsavel} · {a.equipe}</span></p>
+                  <p className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || "—"} · {a.equipe}</span></p>
                   <p className="text-xs text-white/50">{a.fechou ? "✅ fechou" : "não fechou"} · <TempBadge t={a.perfil_temperatura} /></p>
                 </div>
                 <div className="text-right">
@@ -343,7 +343,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
         // índice: quem mais promete (por atendente)
         const porPessoa: Record<string, { total: number; comData: number }> = {}
         concluidos.filter((a) => a.garantiu_contemplacao === true).forEach((a) => {
-          const k = a.atendente || a.responsavel || "—"
+          const k = a.atendente || "⚠ Sem atendente registrado"
           porPessoa[k] = porPessoa[k] || { total: 0, comData: 0 }
           porPessoa[k].total++
           if ((a.trechos_garantia || []).some((t: any) => t?.tipo === "deu_data")) porPessoa[k].comData++
@@ -384,7 +384,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
                 {g.lista.map((a: Atd) => (
                   <div key={a.id} className="rounded-lg bg-black/60 p-2 text-xs">
                     <button onClick={() => toggle(`c-${a.id}`)} onDoubleClick={() => onVerAtendimento?.(a.nome_lead)} title="duplo clique: ver atendimento" className="flex w-full items-center justify-between text-left">
-                      <span className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || a.responsavel}</span></span>
+                      <span className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || "—"}</span></span>
                       {(a.trechos_garantia || []).length > 0 && (expandido === `c-${a.id}` ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
                     </button>
                     {expandido === `c-${a.id}` && (a.trechos_garantia || []).map((t: any, i: number) => (
@@ -443,7 +443,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
       {aba === "proximos" && (() => {
         const grupos: Record<string, Atd[]> = {}
         naoFechados.filter((a) => a.proximo_passo_sugerido).forEach((a) => {
-          const k = a.atendente || a.responsavel || "Sem atendente"   // regra da casa: follow-up é de quem ATENDEU
+          const k = a.atendente || "⚠ Sem atendente registrado"   // regra da casa: follow-up é de quem ATENDEU; sem registro = corrigir o cadastro
           ;(grupos[k] = grupos[k] || []).push(a)
         })
         return (
