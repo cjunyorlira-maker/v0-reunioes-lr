@@ -18,7 +18,8 @@ import {
   FileText,
   User,
   Building2,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react'
 import { AudioRecorder } from './audio-recorder'
 import { cn } from '@/lib/utils'
@@ -108,6 +109,42 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
   const [markingResult, setMarkingResult] = useState<'fechou' | 'nao_fechou' | null>(null)
   const [deletingAtendimento, setDeletingAtendimento] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showHistorico, setShowHistorico] = useState(false)
+  const [eventos, setEventos] = useState<{ evento: string; detalhe: string | null; usuario: string | null; criado_em: string }[] | null>(null)
+  const [loadingEventos, setLoadingEventos] = useState(false)
+
+  const EVENTO_LABELS: Record<string, string> = {
+    abriu_gravador: 'Abriu o gravador',
+    pre_teste_ok: '✓ Teste de microfone OK',
+    pre_teste_mudo: '🔇 Teste acusou mudo',
+    iniciou: '🔴 Iniciou gravação',
+    parte_enviada: '📤 Parte salva',
+    parte_falhou: '⚠ Parte falhou',
+    alarme_silencio: '🔕 Alarme de silêncio',
+    parou_normal: '⏹ Parou normalmente',
+    aba_fechada_gravando: '🚪 FECHOU A ABA GRAVANDO',
+    envio_concluido: '✅ Envio concluído',
+    envio_falhou: '❌ Envio falhou',
+    recuperacao_enviada: '🛟 Recuperação enviada',
+    recuperacao_descartada: '🗑 Recuperação descartada',
+  }
+
+  const toggleHistorico = async () => {
+    if (showHistorico) { setShowHistorico(false); return }
+    setShowHistorico(true)
+    if (eventos === null) {
+      setLoadingEventos(true)
+      try {
+        const r = await fetch(`/api/atendimentos/${atendimento.id}/eventos`)
+        const d = await r.json()
+        setEventos(d.eventos || [])
+      } catch {
+        setEventos([])
+      } finally {
+        setLoadingEventos(false)
+      }
+    }
+  }
 
   const temAnalise = atendimento.score_geral !== null
 
@@ -267,6 +304,30 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
               <span>processando há {min}min{min > 15 ? ' — pode ter travado — o vigia vai retomar' : ''}</span>
             </div>
           )}
+
+          {/* "Na loja há Xmin" — cobranca visual do cliente que veio e ninguem gravou */}
+          {isAguardando && (() => {
+            const fmt = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d)
+            const criadoHoje = atendimento.created_at ? fmt(new Date(atendimento.created_at)) === fmt(new Date()) : false
+            if (!criadoHoje) {
+              return (
+                <div className='flex items-center gap-1.5 text-[11px] font-medium text-white/40'>
+                  <span aria-hidden>🕐</span>
+                  <span>{atendimento.created_at ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }).format(new Date(atendimento.created_at)) : '—'}</span>
+                </div>
+              )
+            }
+            const naLoja = minutosDesde(atendimento.created_at)
+            return (
+              <div className={cn(
+                'flex items-center gap-1.5 text-[11px] font-bold',
+                naLoja > 60 ? 'text-red-400 animate-pulse' : naLoja > 30 ? 'text-amber-400' : 'text-white/60'
+              )}>
+                <span aria-hidden>🕐</span>
+                <span>na loja há {naLoja}min</span>
+              </div>
+            )
+          })()}
 
           {/* Nome do Lead */}
           <div>
@@ -496,6 +557,46 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
                   Cancelar
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Historico da gravacao (caixa-preta) - apenas Admin */}
+          {userEquipe === 'Admin' && (
+            <div>
+              <button
+                onClick={toggleHistorico}
+                className='flex items-center gap-1.5 text-[10px] font-medium text-white/40 hover:text-white/70 transition-colors'
+              >
+                <span aria-hidden>🕵️</span>
+                <span>Histórico da gravação</span>
+                <ChevronDown className={cn('w-3 h-3 transition-transform', showHistorico && 'rotate-180')} />
+              </button>
+              {showHistorico && (
+                <div className='mt-2 rounded-lg border border-white/10 bg-black/30 p-2.5'>
+                  {loadingEventos ? (
+                    <div className='flex items-center gap-1.5 text-[11px] text-white/40'>
+                      <Loader2 className='w-3 h-3 animate-spin' /> Carregando...
+                    </div>
+                  ) : eventos && eventos.length > 0 ? (
+                    <ol className='space-y-1.5'>
+                      {eventos.map((ev, i) => (
+                        <li key={i} className='flex items-start gap-2 text-[11px] leading-tight'>
+                          <span className='shrink-0 font-mono text-white/35'>
+                            {new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(ev.criado_em))}
+                          </span>
+                          <span className={cn('flex-1', ev.evento === 'aba_fechada_gravando' || ev.evento === 'envio_falhou' || ev.evento === 'pre_teste_mudo' ? 'font-bold text-red-400' : 'text-white/70')}>
+                            {EVENTO_LABELS[ev.evento] || ev.evento}
+                            {ev.detalhe && <span className='text-white/40'> · {ev.detalhe}</span>}
+                            {ev.usuario && <span className='text-white/30'> · {ev.usuario}</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className='text-[11px] text-white/40'>Nenhum evento registrado.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
