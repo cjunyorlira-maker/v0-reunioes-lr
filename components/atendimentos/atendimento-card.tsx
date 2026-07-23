@@ -72,6 +72,7 @@ interface Atendimento {
   is_benchmark: boolean
   data_atendimento: string
   created_at: string
+  updated_at?: string | null
   atendimento_original_id?: string | null
   retorno_audio_url?: string | null
   retorno_transcricao?: string | null
@@ -183,6 +184,9 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
   const isProcessando = atendimento.status === 'processando' || atendimento.status === 'gravando'
   const isConcluido = atendimento.status === 'concluido'
 
+  const minutosDesde = (iso?: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 60000) : 0
+  const min = minutosDesde(atendimento.updated_at)
+
   return (
     <>
       <Card className={cn(
@@ -243,6 +247,26 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
               )}
             </div>
           </div>
+
+          {/* Cronometros honestos */}
+          {atendimento.status === 'gravando' && (
+            <div className={cn(
+              'flex items-center gap-1.5 text-[11px] font-bold',
+              min > 90 ? 'text-red-400 animate-pulse' : min > 45 ? 'text-amber-400' : 'text-white/60'
+            )}>
+              <span aria-hidden>⏱</span>
+              <span>gravando há {min}min</span>
+            </div>
+          )}
+          {atendimento.status === 'processando' && (
+            <div className={cn(
+              'flex items-center gap-1.5 text-[11px] font-bold',
+              min > 15 ? 'text-red-400' : 'text-white/60'
+            )}>
+              <span aria-hidden>⚙</span>
+              <span>processando há {min}min{min > 15 ? ' — pode ter travado — o vigia vai retomar' : ''}</span>
+            </div>
+          )}
 
           {/* Nome do Lead */}
           <div>
