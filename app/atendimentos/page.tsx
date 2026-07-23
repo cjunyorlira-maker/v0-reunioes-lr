@@ -15,7 +15,7 @@ import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import { CentralDecisao } from "@/components/atendimentos/central-decisao"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { getPeriodoProducaoAtual } from "@/lib/periodo-producao"
+import { getPeriodoProducaoAtual, getPeriodoProducao } from "@/lib/periodo-producao"
 
 interface Atendimento {
   id: string
@@ -157,8 +157,12 @@ export default function AtendimentosPage() {
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
-  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao">("producao")
+  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao" | "custom">("producao")
   const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
+  const [producaoOffset, setProducaoOffset] = useState(0)   // 0 = atual, -1 = anterior...
+  const [dataDe, setDataDe] = useState("")
+  const [dataAte, setDataAte] = useState("")
+  const [videoOn, setVideoOn] = useState(true)
   const [busca, setBusca] = useState("")
   const [celebracao, setCelebracao] = useState<{ cliente: string; vendedor: string } | null>(null)
   const fechadosPrevRef = useRef<Set<string>>(new Set())
@@ -169,6 +173,7 @@ export default function AtendimentosPage() {
       setEquipe(savedEquipe)
       setIsAuthenticated(true)
     }
+    setVideoOn(localStorage.getItem("atendimentos_video") !== "off")
   }, [])
 
   const fetchAtendimentos = useCallback(async () => {
@@ -295,14 +300,18 @@ export default function AtendimentosPage() {
       }
     }
 
-    // producao
-    const periodo = getPeriodoProducaoAtual()
+    if (filtroPeriodo === "custom" && dataDe && dataAte) {
+      return { inicio: dataDe, fim: dataAte, label: `${dataDe.split("-").reverse().join("/")} a ${dataAte.split("-").reverse().join("/")}` }
+    }
+    // producao (navegável)
+    const periodo = getPeriodoProducao(producaoOffset)
+    const navLabel = producaoOffset === 0 ? "Producao" : `Producao ${periodo.mesReferencia}`
     return {
       inicio: periodo.inicio,
       fim: periodo.fim,
-      label: `Producao ${periodo.mesReferencia} — ${periodo.inicio.split("-").reverse().join("/")} a ${periodo.fim.split("-").reverse().join("/")}`,
+      label: `${navLabel} — ${periodo.inicio.split("-").reverse().join("/")} a ${periodo.fim.split("-").reverse().join("/")}`,
     }
-  }, [filtroPeriodo, semanaOffset])
+  }, [filtroPeriodo, semanaOffset, producaoOffset, dataDe, dataAte])
 
   // Filtra atendimentos por equipe e por periodo
   const atendimentosFiltrados = useMemo(() => {
@@ -539,18 +548,22 @@ export default function AtendimentosPage() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
       {/* Video de fundo MP4 - atendimentos */}
-      <video
-        key="atendimentos-video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        className="fixed inset-0 w-full h-full object-cover z-0"
-        style={{ filter: "brightness(0.40) saturate(1.3)", backgroundColor: "#000" }}
-      >
-        <source src="/videos/atendimentos-bg.mp4" type="video/mp4" />
-      </video>
+      {videoOn && (
+        <video
+          key="atendimentos-video"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="fixed inset-0 w-full h-full object-cover z-0"
+          style={{ filter: "brightness(0.40) saturate(1.3)", backgroundColor: "#000" }}
+        >
+          <source src="/videos/atendimentos-bg.mp4" type="video/mp4" />
+        </video>
+      )}
+      <div className="fixed inset-0 -z-10 bg-black/55" />
+      {!videoOn && <div className="fixed inset-0 -z-20 bg-[#0a0a0e]" />}
 
       {/* Overlay escuro para profundidade */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 z-[1] pointer-events-none" />
@@ -633,10 +646,11 @@ export default function AtendimentosPage() {
                     { key: "hoje", label: "Hoje" },
                     { key: "semana", label: "Semana" },
                     { key: "producao", label: "Producao" },
+                    { key: "custom", label: "📅 Personalizado" },
                   ] as const).map(op => (
                     <button
                       key={op.key}
-                      onClick={() => { setFiltroPeriodo(op.key); if (op.key !== "semana") setSemanaOffset(0) }}
+                      onClick={() => { setFiltroPeriodo(op.key); if (op.key !== "semana") setSemanaOffset(0); if (op.key !== "producao") setProducaoOffset(0) }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                         filtroPeriodo === op.key
                           ? "bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30"
@@ -675,6 +689,55 @@ export default function AtendimentosPage() {
                         Atual
                       </button>
                     )}
+                  </div>
+                )}
+
+                {/* Navegacao de producao — aparece apenas quando "producao" esta selecionado */}
+                {filtroPeriodo === "producao" && (
+                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                    <button
+                      onClick={() => setProducaoOffset(o => o - 1)}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
+                      {producaoOffset === 0 ? "Atual" : producaoOffset === -1 ? "Anterior" : `${Math.abs(producaoOffset)}m atras`}
+                    </span>
+                    <button
+                      onClick={() => setProducaoOffset(o => Math.min(o + 1, 0))}
+                      disabled={producaoOffset >= 0}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    {producaoOffset !== 0 && (
+                      <button
+                        onClick={() => setProducaoOffset(0)}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37]/15 text-[#d4af37] hover:bg-[#d4af37]/25 transition-all"
+                      >
+                        Atual
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Datas personalizadas — aparece apenas quando "custom" esta selecionado */}
+                {filtroPeriodo === "custom" && (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={dataDe}
+                      onChange={(e) => setDataDe(e.target.value)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                    />
+                    <span className="text-white/30 text-xs">a</span>
+                    <input
+                      type="date"
+                      value={dataAte}
+                      onChange={(e) => setDataAte(e.target.value)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50"
+                    />
                   </div>
                 )}
               </div>
@@ -716,6 +779,13 @@ export default function AtendimentosPage() {
                   ♻️ Reprocessar erros
                 </button>
               )}
+              <button
+                onClick={() => { const v = !videoOn; setVideoOn(v); localStorage.setItem("atendimentos_video", v ? "on" : "off") }}
+                className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-xs hover:bg-white/10"
+                title="Ligar/desligar vídeo de fundo"
+              >
+                🎬 {videoOn ? "on" : "off"}
+              </button>
               <Button
                 onClick={fetchAtendimentos}
                 variant="outline"
@@ -798,7 +868,7 @@ export default function AtendimentosPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 h-[calc(100vh-280px)]">
 
               {/* Coluna 1: Aguardando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(10,10,14,0.82)', backdropFilter: 'blur(14px)', borderLeft: '3px solid #f59e0b' }}>
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-amber-500/10 flex-shrink-0">
                   <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
                     <Clock className="w-3.5 h-3.5 text-white" />
@@ -818,7 +888,7 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna 2: Gravando */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(10,10,14,0.82)', backdropFilter: 'blur(14px)', borderLeft: '3px solid #3b82f6' }}>
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-blue-500/10 flex-shrink-0">
                   <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 animate-pulse">
                     <Mic className="w-3.5 h-3.5 text-white" />
@@ -838,7 +908,7 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna 3: Nao Fechados */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(10,10,14,0.82)', backdropFilter: 'blur(14px)', borderLeft: '3px solid #9f1239' }}>
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-red-500/10 flex-shrink-0">
                   <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500 to-rose-600">
                     <XCircle className="w-3.5 h-3.5 text-white" />
@@ -858,7 +928,7 @@ export default function AtendimentosPage() {
               </div>
 
               {/* Coluna 4: Fechados */}
-              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(4px)' }}>
+              <div className="flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/5" style={{ background: 'rgba(10,10,14,0.82)', backdropFilter: 'blur(14px)', borderLeft: '3px solid #10b981' }}>
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 bg-emerald-500/10 flex-shrink-0">
                   <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
                     <CheckCircle className="w-3.5 h-3.5 text-white" />

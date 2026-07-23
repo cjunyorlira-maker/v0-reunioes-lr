@@ -112,6 +112,22 @@ export function getPeriodoProducaoAtual(): PeriodoProducao {
 }
 
 /**
+ * Retorna um período de produção por deslocamento: 0 = atual, -1 = anterior, -2 = retrasada...
+ * Mesma regra: 23 do mês anterior à referência → 27 do mês de referência (ajustado a dia útil).
+ */
+export function getPeriodoProducao(offset: number): PeriodoProducao {
+  const atual = getPeriodoProducaoAtual()
+  const [anoRef, mesRef] = atual.fim.split("-").map(Number) // a referência é o mês do fim
+  const ref = new Date(anoRef, mesRef - 1 + offset, 1)
+  const inicio = new Date(ref.getFullYear(), ref.getMonth() - 1, 23)
+  let fim = new Date(ref.getFullYear(), ref.getMonth(), 27)
+  fim = proximoDiaUtil(fim)
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+  return { inicio: fmt(inicio), fim: fmt(fim), mesReferencia: `${MESES[ref.getMonth()]} ${ref.getFullYear()}` }
+}
+
+/**
  * Converte timestamp Unix (segundos) para data no formato YYYY-MM-DD
  */
 export function timestampToDateString(timestamp: number): string {
