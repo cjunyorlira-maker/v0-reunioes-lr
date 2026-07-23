@@ -159,7 +159,7 @@ export default function AtendimentosPage() {
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
   const [filtroAtendente, setFiltroAtendente] = useState<string>("all")
   const [atendentesOficiais, setAtendentesOficiais] = useState<string[]>([])
-  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao" | "custom">("producao")
+  const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao" | "custom" | "tudo">("producao")
   const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
   const [producaoOffset, setProducaoOffset] = useState(0)   // 0 = atual, -1 = anterior...
   const [dataDe, setDataDe] = useState("")
@@ -289,6 +289,10 @@ export default function AtendimentosPage() {
   const intervaloPeriodo = useMemo(() => {
     const hoje = new Date()
     const hojeStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(hoje) // YYYY-MM-DD em BRT (fix: após 21h o "hoje" virava amanhã)
+
+    if (filtroPeriodo === "tudo") {
+      return { inicio: "2000-01-01", fim: "2100-12-31", label: "📚 Todo o histórico" }
+    }
 
     if (filtroPeriodo === "hoje") {
       return { inicio: hojeStr, fim: hojeStr, label: `Hoje — ${hoje.toLocaleDateString("pt-BR")}` }
@@ -694,6 +698,7 @@ export default function AtendimentosPage() {
                 { key: "semana", label: "Semana" },
                 { key: "producao", label: "Producao" },
                 { key: "custom", label: "📅 Personalizado" },
+                { key: "tudo", label: "📚 Tudo" },
               ] as const).map(op => (
                 <button
                   key={op.key}
