@@ -103,6 +103,8 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
   const partUrlsRef = useRef<{ seq: number; url: string }[]>([])
   const filaLocalRef = useRef<{ seq: number; blob: Blob }[]>([])   // partes que falharam no envio
   const paradoRef = useRef(false)
+  const beepIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const tituloOriginalRef = useRef<string>("")
 
   const dbPrefix = `at-${atendimentoId}-`
 
@@ -163,6 +165,35 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
     }
   }
 
+  // ── alarmes que atravessam abas (vendedor apresentando em outra tela) ──
+  const beep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.frequency.value = 880
+      gain.gain.value = 0.12   // discreto, mas audível na sala
+      osc.start()
+      setTimeout(() => { osc.stop(); ctx.close() }, 180)
+    } catch {}
+  }
+  const ligarAlarmeSilencio = () => {
+    if (beepIntervalRef.current) return
+    if (!tituloOriginalRef.current) tituloOriginalRef.current = document.title
+    beep()
+    document.title = "🔴 SEM SOM — verifique o microfone!"
+    beepIntervalRef.current = setInterval(() => {
+      beep()
+      document.title = document.title.startsWith("🔴") ? "⚠️ SEM SOM — Atendimentos" : "🔴 SEM SOM — verifique o microfone!"
+    }, 8000)
+  }
+  const desligarAlarmeSilencio = () => {
+    if (beepIntervalRef.current) { clearInterval(beepIntervalRef.current); beepIntervalRef.current = null }
+    if (tituloOriginalRef.current) document.title = tituloOriginalRef.current
+  }
+
   // ── visualizador + sentinela de silêncio ──
   const startVisualizer = useCallback((stream: MediaStream) => {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
@@ -188,10 +219,13 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
       const agora = Date.now()
       if (rms < SILENCE_RMS) {
         if (silencioDesdeRef.current === null) silencioDesdeRef.current = agora
-        setCaptando(agora - silencioDesdeRef.current < SILENCE_LIMIT_MS)
+        const mudo = agora - silencioDesdeRef.current >= SILENCE_LIMIT_MS
+        setCaptando(!mudo)
+        if (mudo) ligarAlarmeSilencio()
       } else {
         silencioDesdeRef.current = null
         setCaptando(true)
+        desligarAlarmeSilencio()
       }
       animFrameRef.current = requestAnimationFrame(tick)
     }
@@ -200,6 +234,7 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
 
   const stopVisualizer = useCallback(() => {
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
+    desligarAlarmeSilencio()
     audioCtxRef.current?.close()
     audioCtxRef.current = null
     analyserRef.current = null
