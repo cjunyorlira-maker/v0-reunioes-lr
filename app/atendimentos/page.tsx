@@ -952,7 +952,7 @@ export default function AtendimentosPage() {
         ) : (
           /* Relatorio - Central de Decisao */
           <div>
-            <CentralDecisao atendimentos={atendimentosFiltrados} />
+            <CentralDecisao atendimentos={atendimentosFiltrados} onVerAtendimento={(nome) => { setBusca(nome); setActiveTab("atendimentos") }} />
           </div>
         )}
       </div>

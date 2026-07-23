@@ -47,11 +47,28 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   return <div className={`rounded-xl border border-white/10 bg-white/5 p-4 ${className}`}>{children}</div>
 }
 
-export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
+export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimentos: Atd[]; onVerAtendimento?: (nome: string) => void }) {
   const [aba, setAba] = useState<(typeof ABAS)[number]["id"]>("visao")
   const [expandido, setExpandido] = useState<string | null>(null)
+  const [fEquipe, setFEquipe] = useState("all")
+  const [fAtendente, setFAtendente] = useState("all")
+  const [fTemp, setFTemp] = useState("all")
 
-  const concluidos = useMemo(() => atendimentos.filter((a) => a.status === "concluido"), [atendimentos])
+  // opções dos filtros (dos próprios dados)
+  const opcoes = useMemo(() => {
+    const eq = new Set<string>(), at = new Set<string>()
+    atendimentos.forEach((a) => { if (a.equipe) eq.add(a.equipe); const n = a.atendente || a.responsavel; if (n) at.add(n) })
+    return { equipes: [...eq].sort(), atendentes: [...at].sort() }
+  }, [atendimentos])
+
+  // base filtrada da Central inteira
+  const dados = useMemo(() => atendimentos.filter((a) =>
+    (fEquipe === "all" || a.equipe === fEquipe) &&
+    (fAtendente === "all" || (a.atendente || a.responsavel) === fAtendente) &&
+    (fTemp === "all" || a.perfil_temperatura === fTemp)
+  ), [atendimentos, fEquipe, fAtendente, fTemp])
+
+  const concluidos = useMemo(() => dados.filter((a) => a.status === "concluido"), [dados])
   const com20 = useMemo(() => concluidos.filter((a) => a.perfil_temperatura), [concluidos])
   const fechados = useMemo(() => concluidos.filter((a) => a.fechou), [concluidos])
   const naoFechados = useMemo(() => concluidos.filter((a) => !a.fechou), [concluidos])
@@ -76,7 +93,9 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
           fechados: lista.filter((a) => a.fechou).length,
           aproveitamento: com20local ? aproveitou / com20local : null,
           prometeu: lista.filter((a) => a.garantiu_contemplacao === true).length,
+          perdas: lista.filter((a) => a.perda_evitavel === true).length,
           feedbacks: lista.map((a) => a.feedback_coaching).filter(Boolean),
+          casos: lista.filter((a) => a.feedback_coaching).map((a) => ({ id: a.id, nome_lead: a.nome_lead, feedback: a.feedback_coaching, data: a.created_at ? new Date(a.created_at).toLocaleDateString("pt-BR") : "" })),
         }
       })
       .filter((r) => r.total >= 2)
@@ -157,6 +176,25 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
         <span className="ml-auto self-center text-[11px] text-white/40">{com20.length}/{concluidos.length} com Análise 2.0</span>
       </div>
 
+      {/* filtros da Central (valem pra todas as abas) */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <select value={fEquipe} onChange={(e) => setFEquipe(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+          <option value="all">Todas as equipes</option>
+          {opcoes.equipes.map((e) => <option key={e} value={e}>{e}</option>)}
+        </select>
+        <select value={fAtendente} onChange={(e) => setFAtendente(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+          <option value="all">Todos os atendentes</option>
+          {opcoes.atendentes.map((e) => <option key={e} value={e}>{e}</option>)}
+        </select>
+        <select value={fTemp} onChange={(e) => setFTemp(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+          <option value="all">Todas as temperaturas</option>
+          <option value="quente">🔥 Quente</option><option value="morno">🌤 Morno</option><option value="frio">❄️ Frio</option>
+        </select>
+        {(fEquipe !== "all" || fAtendente !== "all" || fTemp !== "all") && (
+          <button onClick={() => { setFEquipe("all"); setFAtendente("all"); setFTemp("all") }} className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 font-bold text-amber-400">limpar ✕</button>
+        )}
+      </div>
+
       {/* ═══ VISÃO ═══ */}
       {aba === "visao" && (
         <div className="space-y-4">
@@ -198,7 +236,7 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
               <p className="mb-2 text-[11px] text-white/50">o quadrante do dinheiro deixado na mesa — prioridade máxima de coaching</p>
               <div className="max-h-56 space-y-1.5 overflow-y-auto">
                 {matriz.quentePerda.map((a) => (
-                  <div key={a.id} className="rounded-lg bg-black/30 p-2 text-xs">
+                  <div key={a.id} onClick={() => onVerAtendimento?.(a.nome_lead)} className="cursor-pointer rounded-lg bg-black/30 p-2 text-xs transition-colors hover:bg-black/50">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-bold">{a.nome_lead}</span>
                       <span className="shrink-0 text-white/50">{a.atendente || a.responsavel}</span>
@@ -222,7 +260,8 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
       {aba === "top10" && (
         <div className="space-y-2">
           {concluidos.filter((a) => a.score_geral != null).sort((a, b) => b.score_geral - a.score_geral || (b.nota_contextual || 0) - (a.nota_contextual || 0)).slice(0, 10).map((a, i) => (
-            <Card key={a.id} className={i === 0 ? "border-amber-500/50" : ""}>
+            <div key={a.id} onClick={() => onVerAtendimento?.(a.nome_lead)} className="cursor-pointer">
+            <Card className={i === 0 ? "border-amber-500/50 hover:bg-white/10" : "hover:bg-white/10"}>
               <div className="flex items-center gap-3">
                 <span className="text-xl font-black text-amber-400">{i + 1}º</span>
                 <div className="min-w-0 flex-1">
@@ -235,6 +274,7 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
                 </div>
               </div>
             </Card>
+            </div>
           ))}
         </div>
       )}
@@ -252,7 +292,10 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
                   <div><p className="font-black text-base text-amber-300">{nota(r.mediaCtx)}</p><p className="text-white/40">contextual</p></div>
                   <div><p className="font-black text-base text-emerald-400">{r.fechados}</p><p className="text-white/40">fechados</p></div>
                   <div><p className="font-black text-base text-sky-400">{r.aproveitamento != null ? fmtPct(r.aproveitamento) : "—"}</p><p className="text-white/40">aproveitou</p></div>
+                  <div><p className={`font-black text-base ${r.perdas > 0 ? "text-red-400" : "text-white/30"}`}>{r.perdas}</p><p className="text-white/40">perdas evit.</p></div>
+                  <div><p className={`font-black text-base ${r.prometeu > 0 ? "text-amber-400" : "text-white/30"}`}>{r.prometeu}</p><p className="text-white/40">⚠ promessas</p></div>
                 </div>
+                <button onClick={() => { setFAtendente(r.nome); setAba("visao") }} className="rounded border border-white/15 px-2 py-1 text-[10px] hover:bg-white/10">🔎 filtrar por ele</button>
               </div>
             </Card>
           ))}
@@ -270,10 +313,16 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
                 <span className="text-xs text-white/50">{r.total} atds · média {nota(r.media)} · {r.fechados} fechados{r.prometeu > 0 ? ` · ⚠ ${r.prometeu} promessas` : ""}</span>
                 {expandido === r.nome ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
-              {expandido === r.nome && r.feedbacks.length > 0 && (
-                <div className="mt-2 space-y-1.5 border-t border-white/10 pt-2">
-                  {r.feedbacks.slice(-3).map((f: string, i: number) => (
-                    <p key={i} className="flex gap-1.5 text-xs text-white/70"><Quote className="h-3 w-3 shrink-0 text-amber-400" />{f}</p>
+              {expandido === r.nome && r.casos.length > 0 && (
+                <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
+                  {r.casos.slice(-4).map((c: any) => (
+                    <div key={c.id} className="rounded-lg bg-black/30 p-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold">{c.nome_lead} <span className="font-normal text-white/40">· {c.data}</span></span>
+                        {onVerAtendimento && <button onClick={() => onVerAtendimento(c.nome_lead)} className="shrink-0 rounded border border-white/15 px-2 py-0.5 text-[10px] hover:bg-white/10">ver atendimento →</button>}
+                      </div>
+                      <p className="mt-1 flex gap-1.5 text-white/70"><Quote className="h-3 w-3 shrink-0 text-amber-400" />{c.feedback}</p>
+                    </div>
                   ))}
                 </div>
               )}
@@ -295,7 +344,7 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
               <div className="mt-2 space-y-1.5">
                 {g.lista.map((a: Atd) => (
                   <div key={a.id} className="rounded-lg bg-black/30 p-2 text-xs">
-                    <button onClick={() => toggle(`c-${a.id}`)} className="flex w-full items-center justify-between text-left">
+                    <button onClick={() => toggle(`c-${a.id}`)} onDoubleClick={() => onVerAtendimento?.(a.nome_lead)} title="duplo clique: ver atendimento" className="flex w-full items-center justify-between text-left">
                       <span className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || a.responsavel}</span></span>
                       {(a.trechos_garantia || []).length > 0 && (expandido === `c-${a.id}` ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
                     </button>
@@ -350,18 +399,35 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
         </div>
       )}
 
-      {/* ═══ PRÓXIMOS PASSOS ═══ */}
-      {aba === "proximos" && (
-        <div className="space-y-2">
-          {naoFechados.filter((a) => a.proximo_passo_sugerido).slice(0, 30).map((a) => (
-            <Card key={a.id}>
-              <p className="text-sm font-bold">{a.nome_lead} <span className="font-normal text-white/50">· {a.responsavel} · {a.equipe}</span> <TempBadge t={a.perfil_temperatura} /></p>
-              <p className="mt-1 flex gap-1.5 text-xs text-emerald-300"><Lightbulb className="h-3.5 w-3.5 shrink-0" />{a.proximo_passo_sugerido}</p>
-            </Card>
-          ))}
-          <p className="text-[11px] text-white/40">a mina de retorno: cada linha é um follow-up sugerido pela IA que hoje morre dentro do card</p>
-        </div>
-      )}
+      {/* ═══ PRÓXIMOS PASSOS (agrupado por vendedor — a pauta de ligação de cada um) ═══ */}
+      {aba === "proximos" && (() => {
+        const grupos: Record<string, Atd[]> = {}
+        naoFechados.filter((a) => a.proximo_passo_sugerido).forEach((a) => {
+          const k = a.responsavel || "Sem vendedor"
+          ;(grupos[k] = grupos[k] || []).push(a)
+        })
+        return (
+          <div className="space-y-3">
+            {Object.entries(grupos).sort((x, y) => y[1].length - x[1].length).map(([vend, lista]) => (
+              <Card key={vend}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-black">{vend} <span className="font-normal text-white/40">({lista.length} follow-ups)</span></p>
+                  <button onClick={() => {
+                    const txt = `📞 Follow-ups — ${vend}\n` + lista.map((a) => `• ${a.nome_lead}: ${a.proximo_passo_sugerido}`).join("\n")
+                    navigator.clipboard?.writeText(txt)
+                  }} className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/20">📋 copiar lista</button>
+                </div>
+                <div className="mt-2 space-y-1.5">
+                  {lista.map((a) => (
+                    <p key={a.id} className="flex gap-1.5 text-xs"><Lightbulb className="h-3.5 w-3.5 shrink-0 text-emerald-400" /><span><b>{a.nome_lead}</b> <TempBadge t={a.perfil_temperatura} /> — <span className="text-emerald-300">{a.proximo_passo_sugerido}</span></span></p>
+                  ))}
+                </div>
+              </Card>
+            ))}
+            <p className="text-[11px] text-white/40">📋 copiar lista → cola direto no WhatsApp do vendedor</p>
+          </div>
+        )
+      })()}
     </div>
   )
 }
