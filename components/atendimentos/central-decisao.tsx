@@ -47,7 +47,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   return <div className={`rounded-xl border border-white/10 bg-white/5 p-4 ${className}`}>{children}</div>
 }
 
-export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimentos: Atd[]; onVerAtendimento?: (nome: string) => void }) {
+export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOficiais = [] }: { atendimentos: Atd[]; onVerAtendimento?: (nome: string) => void; atendentesOficiais?: string[] }) {
   const [aba, setAba] = useState<(typeof ABAS)[number]["id"]>("visao")
   const [expandido, setExpandido] = useState<string | null>(null)
   const [fEquipe, setFEquipe] = useState("all")
@@ -57,9 +57,10 @@ export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimento
   // opções dos filtros (dos próprios dados)
   const opcoes = useMemo(() => {
     const eq = new Set<string>(), at = new Set<string>()
+    atendentesOficiais.forEach((n) => { if (n) at.add(n) })
     atendimentos.forEach((a) => { if (a.equipe) eq.add(a.equipe); const n = a.atendente || a.responsavel; if (n) at.add(n) })
     return { equipes: [...eq].sort(), atendentes: [...at].sort() }
-  }, [atendimentos])
+  }, [atendimentos, atendentesOficiais])
 
   // base filtrada da Central inteira
   const dados = useMemo(() => atendimentos.filter((a) =>
