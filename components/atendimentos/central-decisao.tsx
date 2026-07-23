@@ -43,8 +43,13 @@ function TempBadge({ t }: { t?: string | null }) {
   return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/50">sem 2.0</span>
 }
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-white/10 bg-white/5 p-4 ${className}`}>{children}</div>
+function Card({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className={`rounded-xl border border-white/10 p-4 ${className}`}
+      style={{ background: "rgba(10,10,14,0.85)", backdropFilter: "blur(12px)", ...style }}>
+      {children}
+    </div>
+  )
 }
 
 export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOficiais = [] }: { atendimentos: Atd[]; onVerAtendimento?: (nome: string) => void; atendentesOficiais?: string[] }) {
@@ -169,7 +174,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
           const ativo = aba === t.id
           return (
             <button key={t.id} onClick={() => setAba(t.id)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all ${ativo ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"}`}>
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all ${ativo ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "border border-white/10 bg-black/60 text-white/70 hover:bg-white/10"}`}>
               <Icon className="h-3.5 w-3.5" /> {t.label}
             </button>
           )
@@ -179,15 +184,15 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
 
       {/* filtros da Central (valem pra todas as abas) */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <select value={fEquipe} onChange={(e) => setFEquipe(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+        <select value={fEquipe} onChange={(e) => setFEquipe(e.target.value)} style={{ background: "rgba(10,10,14,0.9)" }} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
           <option value="all">Todas as equipes</option>
           {opcoes.equipes.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
-        <select value={fAtendente} onChange={(e) => setFAtendente(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+        <select value={fAtendente} onChange={(e) => setFAtendente(e.target.value)} style={{ background: "rgba(10,10,14,0.9)" }} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
           <option value="all">Todos os atendentes</option>
           {opcoes.atendentes.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
-        <select value={fTemp} onChange={(e) => setFTemp(e.target.value)} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
+        <select value={fTemp} onChange={(e) => setFTemp(e.target.value)} style={{ background: "rgba(10,10,14,0.9)" }} className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 outline-none">
           <option value="all">Todas as temperaturas</option>
           <option value="quente">🔥 Quente</option><option value="morno">🌤 Morno</option><option value="frio">❄️ Frio</option>
         </select>
@@ -232,12 +237,12 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
 
           <p className="text-xs font-bold uppercase tracking-wider text-white/50">Matriz cliente × atendimento</p>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Card className="border-red-500/40 bg-red-500/10">
+            <Card className="border-red-500/40" style={{ background: "rgba(60,10,10,0.85)" }}>
               <p className="text-sm font-black text-red-400">🔴 PERDA EVITÁVEL — cliente com potencial, atendimento abaixo ({matriz.quentePerda.length})</p>
               <p className="mb-2 text-[11px] text-white/50">o quadrante do dinheiro deixado na mesa — prioridade máxima de coaching</p>
               <div className="max-h-56 space-y-1.5 overflow-y-auto">
                 {matriz.quentePerda.map((a) => (
-                  <div key={a.id} onClick={() => onVerAtendimento?.(a.nome_lead)} className="cursor-pointer rounded-lg bg-black/30 p-2 text-xs transition-colors hover:bg-black/50">
+                  <div key={a.id} onClick={() => onVerAtendimento?.(a.nome_lead)} className="cursor-pointer rounded-lg bg-black/60 p-2 text-xs transition-colors hover:bg-black/50">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-bold">{a.nome_lead}</span>
                       <span className="shrink-0 text-white/50">{a.atendente || a.responsavel}</span>
@@ -317,7 +322,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
               {expandido === r.nome && r.casos.length > 0 && (
                 <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
                   {r.casos.slice(-4).map((c: any) => (
-                    <div key={c.id} className="rounded-lg bg-black/30 p-2 text-xs">
+                    <div key={c.id} className="rounded-lg bg-black/60 p-2 text-xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold">{c.nome_lead} <span className="font-normal text-white/40">· {c.data}</span></span>
                         {onVerAtendimento && <button onClick={() => onVerAtendimento(c.nome_lead)} className="shrink-0 rounded border border-white/15 px-2 py-0.5 text-[10px] hover:bg-white/10">ver atendimento →</button>}
@@ -336,15 +341,15 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
       {aba === "contemplacao" && (
         <div className="space-y-3">
           {[
-            { titulo: "🔴 FECHOU e recebeu DATA/PRAZO — bomba-relógio: alinhar expectativa JÁ", lista: contemplacao.fechouComData, cor: "border-red-500/50 bg-red-500/10" },
-            { titulo: "🟡 FECHOU com expectativa criada (sem data) — monitorar", lista: contemplacao.fechouExpectativa, cor: "border-amber-500/40 bg-amber-500/5" },
-            { titulo: "🔵 NÃO fechou, mas prometeu — vício a corrigir no coaching", lista: contemplacao.naoFechouPrometeu, cor: "border-sky-500/30" },
+            { titulo: "🔴 FECHOU e recebeu DATA/PRAZO — bomba-relógio: alinhar expectativa JÁ", lista: contemplacao.fechouComData, cor: "border-red-500/50", bg: "rgba(60,10,10,0.85)" },
+            { titulo: "🟡 FECHOU com expectativa criada (sem data) — monitorar", lista: contemplacao.fechouExpectativa, cor: "border-amber-500/40", bg: "rgba(55,40,5,0.85)" },
+            { titulo: "🔵 NÃO fechou, mas prometeu — vício a corrigir no coaching", lista: contemplacao.naoFechouPrometeu, cor: "border-sky-500/30", bg: "rgba(8,20,35,0.85)" },
           ].map((g) => (
-            <Card key={g.titulo} className={g.cor}>
+            <Card key={g.titulo} className={g.cor} style={{ background: g.bg }}>
               <p className="text-sm font-bold">{g.titulo} <span className="text-white/50">({g.lista.length})</span></p>
               <div className="mt-2 space-y-1.5">
                 {g.lista.map((a: Atd) => (
-                  <div key={a.id} className="rounded-lg bg-black/30 p-2 text-xs">
+                  <div key={a.id} className="rounded-lg bg-black/60 p-2 text-xs">
                     <button onClick={() => toggle(`c-${a.id}`)} onDoubleClick={() => onVerAtendimento?.(a.nome_lead)} title="duplo clique: ver atendimento" className="flex w-full items-center justify-between text-left">
                       <span className="truncate font-bold">{a.nome_lead} <span className="font-normal text-white/50">· atendeu: {a.atendente || a.responsavel}</span></span>
                       {(a.trechos_garantia || []).length > 0 && (expandido === `c-${a.id}` ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
@@ -385,7 +390,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
             <p className="mb-2 text-sm font-bold text-purple-300">🎭 Declarado ≠ Real — onde a desculpa social escondia outra coisa ({autopsia.divergentes.length})</p>
             <div className="max-h-72 space-y-1.5 overflow-y-auto">
               {autopsia.divergentes.map((a) => (
-                <div key={a.id} className="rounded-lg bg-black/30 p-2 text-xs">
+                <div key={a.id} className="rounded-lg bg-black/60 p-2 text-xs">
                   <button onClick={() => toggle(`d-${a.id}`)} className="flex w-full items-center justify-between text-left">
                     <span className="min-w-0 flex-1"><b>{a.nome_lead}</b> disse: <i className="text-white/60">"{a.motivo_declarado}"</i> → real: <b className="text-purple-300">{a.motivo_real_inferido}</b></span>
                     {expandido === `d-${a.id}` ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
