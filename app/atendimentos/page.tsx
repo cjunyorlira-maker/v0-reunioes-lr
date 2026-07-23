@@ -704,6 +704,18 @@ export default function AtendimentosPage() {
                   </SelectContent>
                 </Select>
               )}
+              {equipe === "Admin" && (
+                <button
+                  onClick={async () => {
+                    const r = await fetch("/api/atendimentos/reprocessar-massa", { method: "POST" })
+                    const d = await r.json().catch(() => ({}))
+                    alert(d.enfileirados ? `${d.enfileirados} atendimento(s) na fila — o vigia processa 5 a cada 10min.` : "Nenhum erro reprocessável no momento.")
+                  }}
+                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/20"
+                >
+                  ♻️ Reprocessar erros
+                </button>
+              )}
               <Button
                 onClick={fetchAtendimentos}
                 variant="outline"
