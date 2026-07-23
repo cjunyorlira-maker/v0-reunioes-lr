@@ -108,6 +108,26 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
     return { ranking, divergentes, total: naoFechados.length }
   }, [naoFechados])
 
+  // ── prova social × conversão + comparativo semanal ──
+  const insights = useMemo(() => {
+    const usouProva = (a: Atd) => { const p = a.usou_prova_social; return !!(p && (p.reclame_aqui || p.site_empresa || p.referencias_clientes)) }
+    const comProva = concluidos.filter(usouProva)
+    const semProva = concluidos.filter((a) => a.usou_prova_social && !usouProva(a))
+    const convProva = comProva.length ? comProva.filter((a) => a.fechou).length / comProva.length : null
+    const convSem = semProva.length ? semProva.filter((a) => a.fechou).length / semProva.length : null
+
+    const agora = Date.now()
+    const seteDias = 7 * 24 * 3600 * 1000
+    const semanaAtual = concluidos.filter((a) => agora - new Date(a.created_at).getTime() < seteDias)
+    const semanaAnterior = concluidos.filter((a) => { const d = agora - new Date(a.created_at).getTime(); return d >= seteDias && d < 2 * seteDias })
+    const media = (l: Atd[]) => { const c = l.filter((a) => a.score_geral != null); return c.length ? c.reduce((s, a) => s + a.score_geral, 0) / c.length : null }
+    return {
+      convProva, convSem, nProva: comProva.length, nSem: semProva.length,
+      atual: { n: semanaAtual.length, fechados: semanaAtual.filter((a) => a.fechou).length, media: media(semanaAtual) },
+      anterior: { n: semanaAnterior.length, fechados: semanaAnterior.filter((a) => a.fechou).length, media: media(semanaAnterior) },
+    }
+  }, [concluidos])
+
   // ── contemplação (compliance) ──
   const contemplacao = useMemo(() => {
     const prometeu = concluidos.filter((a) => a.garantiu_contemplacao === true)
@@ -145,6 +165,30 @@ export function CentralDecisao({ atendimentos }: { atendimentos: Atd[] }) {
             <Card><p className="text-[11px] uppercase tracking-wider text-white/50">Conversão</p><p className="mt-1 text-2xl font-black text-emerald-400">{concluidos.length ? fmtPct(fechados.length / concluidos.length) : "—"}</p></Card>
             <Card><p className="text-[11px] uppercase tracking-wider text-white/50">Perdas evitáveis</p><p className="mt-1 text-2xl font-black text-red-400">{matriz.quentePerda.length}</p></Card>
             <Card><p className="text-[11px] uppercase tracking-wider text-white/50">⚠ Prometeu contemplação</p><p className="mt-1 text-2xl font-black text-amber-400">{concluidos.filter((a) => a.garantiu_contemplacao).length}</p></Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Card className="border-emerald-500/20">
+              <p className="text-xs font-bold uppercase tracking-wider text-white/50">🗣 Prova social × conversão</p>
+              {insights.convProva !== null && insights.convSem !== null ? (
+                <p className="mt-1 text-sm">
+                  Com prova social: <b className="text-emerald-400">{fmtPct(insights.convProva)}</b> ({insights.nProva} atds) · sem: <b className="text-red-400">{fmtPct(insights.convSem)}</b> ({insights.nSem})
+                  {insights.convProva > insights.convSem && <span className="ml-1 text-emerald-300">— quem usa fecha {(insights.convProva / Math.max(insights.convSem, 0.01)).toFixed(1)}× mais. Argumento de treinamento com dado da própria loja.</span>}
+                </p>
+              ) : <p className="mt-1 text-xs text-white/40">aguardando mais dados com Análise 2.0</p>}
+            </Card>
+            <Card className="border-sky-500/20">
+              <p className="text-xs font-bold uppercase tracking-wider text-white/50">📅 Semana × semana</p>
+              <p className="mt-1 text-sm">
+                Atual: <b>{insights.atual.n}</b> atds · <b className="text-emerald-400">{insights.atual.fechados}</b> fechados · média <b>{nota(insights.atual.media)}</b>
+                <span className="text-white/40"> | anterior: {insights.anterior.n} · {insights.anterior.fechados} · {nota(insights.anterior.media)}</span>
+                {insights.atual.media != null && insights.anterior.media != null && (
+                  <span className={`ml-1 font-bold ${insights.atual.media >= insights.anterior.media ? "text-emerald-400" : "text-red-400"}`}>
+                    {insights.atual.media >= insights.anterior.media ? "↑" : "↓"}
+                  </span>
+                )}
+              </p>
+            </Card>
           </div>
 
           <p className="text-xs font-bold uppercase tracking-wider text-white/50">Matriz cliente × atendimento</p>
