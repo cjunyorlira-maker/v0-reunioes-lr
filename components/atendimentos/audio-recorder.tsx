@@ -108,6 +108,19 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
 
   const dbPrefix = `at-${atendimentoId}-`
 
+  // ── caixa-preta: telemetria de cada passo ──
+  const registrar = (evento: string, detalhe?: string) => {
+    try {
+      const payload = JSON.stringify({ atendimentoId, evento, detalhe: detalhe || null, usuario: userName })
+      if (evento === "aba_fechada_gravando" && navigator.sendBeacon) {
+        navigator.sendBeacon("/api/atendimentos/evento", new Blob([payload], { type: "application/json" }))
+      } else {
+        fetch("/api/atendimentos/evento", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).catch(() => {})
+      }
+    } catch {}
+  }
+  useEffect(() => { registrar("abriu_gravador") }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── microfones: enumerar e fixar o da sala ──
   const carregarMics = useCallback(async () => {
     try {
@@ -159,9 +172,11 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
     const url = await enviarPart(seq, blob)
     if (url) {
       partUrlsRef.current.push({ seq, url })
+      registrar("parte_enviada", `parte ${seq}`)
       setPartsEnviadas(partUrlsRef.current.length)
     } else {
       filaLocalRef.current.push({ seq, blob })  // tenta de novo no final
+      registrar("parte_falhou", `parte ${seq}`)
     }
   }
 
@@ -183,6 +198,7 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
     if (beepIntervalRef.current) return
     if (!tituloOriginalRef.current) tituloOriginalRef.current = document.title
     beep()
+    registrar("alarme_silencio")
     document.title = "🔴 SEM SOM — verifique o microfone!"
     beepIntervalRef.current = setInterval(() => {
       beep()
@@ -273,6 +289,7 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
       ctx.close()
       const ok = maxRms >= SILENCE_RMS
       setPreTeste(ok ? "ok" : "mudo")
+      registrar(ok ? "pre_teste_ok" : "pre_teste_mudo", micLabel)
       return ok
     } catch {
       setPreTeste("mudo")
@@ -295,7 +312,10 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
   // ── aviso ao fechar aba gravando ──
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (isRecording || isUploading) { e.preventDefault(); e.returnValue = "" }
+      if (isRecording || isUploading) {
+        registrar("aba_fechada_gravando", `${durationRef.current}s gravados`)
+        e.preventDefault(); e.returnValue = ""
+      }
     }
     window.addEventListener("beforeunload", beforeUnload)
     return () => window.removeEventListener("beforeunload", beforeUnload)
@@ -353,6 +373,7 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
       }
 
       mediaRecorder.start(CHUNK_MS)   // ← parte a cada 30s
+      registrar("iniciou", micLabel)
       setIsRecording(true)
       durationRef.current = 0
       setDuration(0)
@@ -382,6 +403,7 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
   const stopRecording = () => {
     if (!mediaRecorderRef.current || !isRecording) return
     paradoRef.current = true
+    registrar("parou_normal", `${durationRef.current}s`)
     setIsRecording(false)
     setIsUploading(true)
     setUploadProgress("Finalizando as partes...")
@@ -431,8 +453,10 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
         body: JSON.stringify({ gravando: false, gravando_por: null }),
       }).catch(() => {})
       onComplete()
+      registrar("envio_concluido", `${partUrlsRef.current.length} partes`)
     } catch (err: any) {
       console.error("[gravador] erro ao finalizar:", err)
+      registrar("envio_falhou", err.message || "")
       setError(err.message || "Erro ao enviar o áudio")
       setIsUploading(false)
     }
@@ -452,13 +476,14 @@ export function AudioRecorder({ atendimentoId, userName, isRetorno = false, onCo
         if (url) partUrlsRef.current.push({ seq: o.seq, url })
       }
       durationRef.current = orfas.length * 30
+      registrar("recuperacao_enviada", `${orfas.length} partes`)
       await finalizarEnvio()
     } catch (err: any) {
       setError("Falha na recuperação: " + (err.message || ""))
       setIsUploading(false)
     }
   }
-  const descartarOrfas = async () => { await dbClear(dbPrefix); setRecuperacao(null) }
+  const descartarOrfas = async () => { await dbClear(dbPrefix); registrar("recuperacao_descartada"); setRecuperacao(null) }
 
   const trocarMic = (id: string, label: string) => {
     setMicId(id)
