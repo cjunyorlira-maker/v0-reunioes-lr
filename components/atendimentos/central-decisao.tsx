@@ -83,7 +83,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
   const porAtendente = useMemo(() => {
     const map: Record<string, Atd[]> = {}
     concluidos.forEach((a) => {
-      const k = a.atendente || a.responsavel || "Sem nome"   // avaliação é de quem ATENDEU (supervisor)
+      const k = a.atendente || "⚠ Sem atendente registrado"   // NUNCA herdar o vendedor: sem atendente = dado a corrigir, não mérito/culpa de ninguém
       ;(map[k] = map[k] || []).push(a)
     })
     return Object.entries(map)
@@ -343,7 +343,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
         // índice: quem mais promete (por atendente)
         const porPessoa: Record<string, { total: number; comData: number }> = {}
         concluidos.filter((a) => a.garantiu_contemplacao === true).forEach((a) => {
-          const k = a.atendente || a.responsavel || "—"
+          const k = a.atendente || "⚠ Sem atendente registrado"
           porPessoa[k] = porPessoa[k] || { total: 0, comData: 0 }
           porPessoa[k].total++
           if ((a.trechos_garantia || []).some((t: any) => t?.tipo === "deu_data")) porPessoa[k].comData++
@@ -443,7 +443,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
       {aba === "proximos" && (() => {
         const grupos: Record<string, Atd[]> = {}
         naoFechados.filter((a) => a.proximo_passo_sugerido).forEach((a) => {
-          const k = a.atendente || a.responsavel || "Sem atendente"   // regra da casa: follow-up é de quem ATENDEU
+          const k = a.atendente || "⚠ Sem atendente registrado"   // regra da casa: follow-up é de quem ATENDEU; sem registro = corrigir o cadastro
           ;(grupos[k] = grupos[k] || []).push(a)
         })
         return (
