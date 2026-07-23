@@ -158,6 +158,7 @@ export default function AtendimentosPage() {
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
   const [filtroAtendente, setFiltroAtendente] = useState<string>("all")
+  const [atendentesOficiais, setAtendentesOficiais] = useState<string[]>([])
   const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao" | "custom">("producao")
   const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
   const [producaoOffset, setProducaoOffset] = useState(0)   // 0 = atual, -1 = anterior...
@@ -181,6 +182,15 @@ export default function AtendimentosPage() {
     }
     setVideoOn(localStorage.getItem("atendimentos_video") !== "off")
     carregarProducoes()
+    fetch("/api/kommo/get-atendentes")
+      .then((r) => r.json())
+      .then((d) => {
+        const nomes = (d.atendentes || d.values || d.enums || [])
+          .map((x: any) => (typeof x === "string" ? x : x.nome || x.value))
+          .filter(Boolean)
+        setAtendentesOficiais(nomes)
+      })
+      .catch(() => {})
   }, [carregarProducoes])
 
   const fetchAtendimentos = useCallback(async () => {
@@ -782,7 +792,10 @@ export default function AtendimentosPage() {
                 className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
               >
                 <option value="all">Todos atendentes</option>
-                {Array.from(new Set(atendimentos.map(a => a.atendente || a.responsavel).filter(Boolean))).sort().map((at) => (
+                {Array.from(new Set([
+                  ...atendentesOficiais,
+                  ...atendimentos.map(a => a.atendente || a.responsavel),
+                ].filter(Boolean))).sort().map((at) => (
                   <option key={at} value={at}>{at}</option>
                 ))}
               </select>
@@ -971,7 +984,7 @@ export default function AtendimentosPage() {
         ) : (
           /* Relatorio - Central de Decisao */
           <div>
-            <CentralDecisao atendimentos={atendimentosFiltrados} onVerAtendimento={(nome) => { setBusca(nome); setActiveTab("atendimentos") }} />
+            <CentralDecisao atendimentos={atendimentosFiltrados} atendentesOficiais={atendentesOficiais} onVerAtendimento={(nome) => { setBusca(nome); setActiveTab("atendimentos") }} />
           </div>
         )}
       </div>
