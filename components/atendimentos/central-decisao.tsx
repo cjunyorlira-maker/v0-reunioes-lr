@@ -288,6 +288,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
       {/* ═══ ATENDENTES (ranking justo) ═══ */}
       {aba === "atendentes" && (
         <div className="space-y-2">
+          <p className="text-sm font-black">🥇 Ranking de Atendentes por Média <span className="text-[11px] font-normal text-white/40">— ordenado pela nota contextual (a nota diante do cliente que recebeu); sem contextual, usa a média geral · mínimo 2 atendimentos</span></p>
           {[...porAtendente].sort((a, b) => (b.mediaCtx ?? b.media ?? 0) - (a.mediaCtx ?? a.media ?? 0)).map((r, i) => (
             <Card key={r.nome}>
               <div className="flex flex-wrap items-center gap-3">
@@ -338,8 +339,40 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
       )}
 
       {/* ═══ CONTEMPLAÇÃO (compliance) ═══ */}
-      {aba === "contemplacao" && (
+      {aba === "contemplacao" && (() => {
+        // índice: quem mais promete (por atendente)
+        const porPessoa: Record<string, { total: number; comData: number }> = {}
+        concluidos.filter((a) => a.garantiu_contemplacao === true).forEach((a) => {
+          const k = a.atendente || a.responsavel || "—"
+          porPessoa[k] = porPessoa[k] || { total: 0, comData: 0 }
+          porPessoa[k].total++
+          if ((a.trechos_garantia || []).some((t: any) => t?.tipo === "deu_data")) porPessoa[k].comData++
+        })
+        const rankingPromessas = Object.entries(porPessoa).sort((x, y) => y[1].comData - x[1].comData || y[1].total - x[1].total)
+        const maxTotal = Math.max(...rankingPromessas.map(([, v]) => v.total), 1)
+        return (
         <div className="space-y-3">
+          <Card className="border-amber-500/40">
+            <p className="text-sm font-black text-amber-300">🚨 ÍNDICE DE PROMESSAS POR ATENDENTE — quem mais garante contemplação</p>
+            <p className="mb-2 text-[11px] text-white/40">🔴 barra vermelha = deu DATA/PRAZO (o proibido) · 🟡 âmbar = criou expectativa</p>
+            <div className="space-y-1.5">
+              {rankingPromessas.map(([nome, v], i) => (
+                <div key={nome} className="flex items-center gap-2 text-xs">
+                  <span className={`w-5 text-right font-black ${i === 0 ? "text-red-400" : "text-white/50"}`}>{i + 1}º</span>
+                  <span className="w-36 truncate font-bold">{nome}</span>
+                  <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full bg-red-500" style={{ width: `${(v.comData / maxTotal) * 100}%` }} />
+                    <div className="h-full bg-amber-500/70" style={{ width: `${((v.total - v.comData) / maxTotal) * 100}%` }} />
+                  </div>
+                  <span className="w-28 text-right font-mono">
+                    {v.comData > 0 && <b className="text-red-400">{v.comData} c/ data</b>}
+                    {v.comData > 0 && " · "}{v.total} total
+                  </span>
+                </div>
+              ))}
+              {rankingPromessas.length === 0 && <p className="text-xs text-white/40">nenhuma promessa mapeada no recorte 🎉</p>}
+            </div>
+          </Card>
           {[
             { titulo: "🔴 FECHOU e recebeu DATA/PRAZO — bomba-relógio: alinhar expectativa JÁ", lista: contemplacao.fechouComData, cor: "border-red-500/50", bg: "rgba(60,10,10,0.85)" },
             { titulo: "🟡 FECHOU com expectativa criada (sem data) — monitorar", lista: contemplacao.fechouExpectativa, cor: "border-amber-500/40", bg: "rgba(55,40,5,0.85)" },
@@ -367,7 +400,8 @@ export function CentralDecisao({ atendimentos, onVerAtendimento, atendentesOfici
             </Card>
           ))}
         </div>
-      )}
+        )
+      })()}
 
       {/* ═══ AUTÓPSIA ═══ */}
       {aba === "autopsia" && (
