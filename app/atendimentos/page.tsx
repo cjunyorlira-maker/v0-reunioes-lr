@@ -609,13 +609,13 @@ export default function AtendimentosPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/50 p-1">
               <button
                 onClick={() => setActiveTab("atendimentos")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "atendimentos" 
-                    ? "bg-white/10 text-white" 
-                    : "text-white/50 hover:text-white"
+                className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  activeTab === "atendimentos"
+                    ? "bg-gradient-to-r from-[#d4af37] to-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
+                    : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -625,10 +625,10 @@ export default function AtendimentosPage() {
               </button>
               <button
                 onClick={() => setActiveTab("relatorio")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "relatorio" 
-                    ? "bg-white/10 text-white" 
-                    : "text-white/50 hover:text-white"
+                className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  activeTab === "relatorio"
+                    ? "bg-gradient-to-r from-[#d4af37] to-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
+                    : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
                 <div className="flex items-center gap-2">
