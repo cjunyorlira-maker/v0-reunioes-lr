@@ -972,7 +972,7 @@ export default function AtendimentosPage() {
                     <p className="text-[11px] text-white/20 text-center py-8">Nenhum aguardando</p>
                   ) : (
                     aguardando.map(atendimento => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} atendentesOficiais={atendentesOficiais} onUpdate={fetchAtendimentos} />
                     ))
                   )}
                 </div>
@@ -992,7 +992,7 @@ export default function AtendimentosPage() {
                     <p className="text-[11px] text-white/20 text-center py-8">Nenhum gravando</p>
                   ) : (
                     processando.map(atendimento => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} atendentesOficiais={atendentesOficiais} onUpdate={fetchAtendimentos} />
                     ))
                   )}
                 </div>
@@ -1012,7 +1012,7 @@ export default function AtendimentosPage() {
                     <p className="text-[11px] text-white/20 text-center py-8">Nenhum nao fechado</p>
                   ) : (
                     naoFechados.map(atendimento => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} atendentesOficiais={atendentesOficiais} onUpdate={fetchAtendimentos} />
                     ))
                   )}
                 </div>
@@ -1032,7 +1032,7 @@ export default function AtendimentosPage() {
                     <p className="text-[11px] text-white/20 text-center py-8">Nenhum fechado</p>
                   ) : (
                     fechados.map(atendimento => (
-                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} onUpdate={fetchAtendimentos} />
+                      <AtendimentoCard key={atendimento.id} atendimento={atendimento} userEquipe={equipe} userName={equipe} atendentesOficiais={atendentesOficiais} onUpdate={fetchAtendimentos} />
                     ))
                   )}
                 </div>
