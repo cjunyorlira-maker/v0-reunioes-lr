@@ -154,6 +154,7 @@ export default function AtendimentosPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([])
+  const [atendimentosGlobal, setAtendimentosGlobal] = useState<Atendimento[]>([])
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
@@ -212,6 +213,14 @@ export default function AtendimentosPage() {
         }
         fechadosPrevRef.current = fechadosAgora
         setAtendimentos(data.atendimentos)
+      }
+      // ranking global da loja — visível a qualquer equipe (transparência/motivação)
+      if (equipe === "Admin") {
+        setAtendimentosGlobal(data.atendimentos || [])
+      } else {
+        const resG = await fetch("/api/atendimentos?equipe=all")
+        const dataG = await resG.json()
+        if (dataG.atendimentos) setAtendimentosGlobal(dataG.atendimentos)
       }
     } catch (err) {
       console.error("Erro ao carregar atendimentos:", err)
@@ -362,6 +371,31 @@ export default function AtendimentosPage() {
 
     return lista
   }, [atendimentos, equipe, filtroEquipe, filtroAtendente, intervaloPeriodo, busca])
+
+  // Mesmos filtros, porém sobre a base GLOBAL da loja (relatório visível a qualquer equipe)
+  const globaisFiltrados = useMemo(() => {
+    let lista = atendimentosGlobal
+
+    if (filtroEquipe !== "all") {
+      lista = lista.filter(a => a.equipe === filtroEquipe)
+    }
+    if (filtroAtendente !== "all") {
+      lista = lista.filter(a => (a.atendente || a.responsavel) === filtroAtendente)
+    }
+
+    if (busca.trim()) {
+      const q = busca.trim().toLowerCase()
+      lista = lista.filter(a => (a.nome_lead || "").toLowerCase().includes(q) || (a.responsavel || "").toLowerCase().includes(q))
+    }
+
+    lista = lista.filter(a => {
+      if (a.status === "aguardando" || a.status === "falha_audio" || a.status === "gravando" || a.status === "processando") return true
+      const dataAtend = (a.data_atendimento || a.created_at || "").split("T")[0]
+      return dataAtend >= intervaloPeriodo.inicio && dataAtend <= intervaloPeriodo.fim
+    })
+
+    return lista
+  }, [atendimentosGlobal, filtroEquipe, filtroAtendente, intervaloPeriodo, busca])
 
   // Agrupa motivos de nao fechamento por categoria usando as novas etiquetas
   const motivosPorCategoria = useMemo(() => {
@@ -1009,7 +1043,7 @@ export default function AtendimentosPage() {
         ) : (
           /* Relatorio - Central de Decisao */
           <div>
-            <CentralDecisao atendimentos={atendimentosFiltrados} atendentesOficiais={atendentesOficiais} onVerAtendimento={(nome) => { setBusca(nome); setActiveTab("atendimentos") }} />
+            <CentralDecisao atendimentos={globaisFiltrados} atendentesOficiais={atendentesOficiais} onVerAtendimento={(nome) => { setBusca(nome); setActiveTab("atendimentos") }} />
           </div>
         )}
       </div>
