@@ -157,6 +157,7 @@ export default function AtendimentosPage() {
   const [loadingAtendimentos, setLoadingAtendimentos] = useState(false)
   const [activeTab, setActiveTab] = useState<"atendimentos" | "relatorio">("atendimentos")
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
+  const [filtroAtendente, setFiltroAtendente] = useState<string>("all")
   const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao" | "custom">("producao")
   const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
   const [producaoOffset, setProducaoOffset] = useState(0)   // 0 = atual, -1 = anterior...
@@ -323,9 +324,12 @@ export default function AtendimentosPage() {
   const atendimentosFiltrados = useMemo(() => {
     let lista = atendimentos
 
-    // Filtro de equipe (Admin)
-    if (equipe === "Admin" && filtroEquipe !== "all") {
+    // Filtro de equipe (todas as roles; a API já limita o que cada uma vê)
+    if (filtroEquipe !== "all") {
       lista = lista.filter(a => a.equipe === filtroEquipe)
+    }
+    if (filtroAtendente !== "all") {
+      lista = lista.filter(a => (a.atendente || a.responsavel) === filtroAtendente)
     }
 
     // Busca por cliente ou vendedor
@@ -343,7 +347,7 @@ export default function AtendimentosPage() {
     })
 
     return lista
-  }, [atendimentos, equipe, filtroEquipe, intervaloPeriodo, busca])
+  }, [atendimentos, equipe, filtroEquipe, filtroAtendente, intervaloPeriodo, busca])
 
   // Agrupa motivos de nao fechamento por categoria usando as novas etiquetas
   const motivosPorCategoria = useMemo(() => {
@@ -727,6 +731,14 @@ export default function AtendimentosPage() {
                         Atual
                       </button>
                     )}
+                    {equipe === "Admin" && (
+                      <button
+                        onClick={() => setShowProducoesModal(true)}
+                        className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-400 hover:bg-amber-500/20"
+                      >
+                        ⚙️ Configurar
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -750,31 +762,30 @@ export default function AtendimentosPage() {
                 )}
               </div>
 
-              {/* Filtro por equipe - apenas para Admin */}
+              {/* Filtro por equipe (Admin vê todas) */}
               {equipe === "Admin" && (
-                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-                  <SelectTrigger className="w-40 h-9 bg-white/5 border-white/10 text-white rounded-xl text-sm">
-                    <SelectValue placeholder="Todas equipes" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a24] border-white/10 rounded-xl">
-                    <SelectItem value="all" className="text-white hover:bg-white/10">
-                      Todas equipes
-                    </SelectItem>
-                    {EQUIPES.filter(eq => eq !== "Admin").map((eq) => (
-                      <SelectItem 
-                        key={eq} 
-                        value={eq} 
-                        className="text-white hover:bg-white/10"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${EQUIPE_COLORS[eq]?.gradient}`} />
-                          {eq}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={filtroEquipe}
+                  onChange={(e) => setFiltroEquipe(e.target.value)}
+                  className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
+                >
+                  <option value="all">Todas equipes</option>
+                  {Array.from(new Set(atendimentos.map(a => a.equipe).filter(Boolean))).sort().map((eq) => (
+                    <option key={eq} value={eq}>{eq}</option>
+                  ))}
+                </select>
               )}
+              {/* Filtro por atendente */}
+              <select
+                value={filtroAtendente}
+                onChange={(e) => setFiltroAtendente(e.target.value)}
+                className="rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
+              >
+                <option value="all">Todos atendentes</option>
+                {Array.from(new Set(atendimentos.map(a => a.atendente || a.responsavel).filter(Boolean))).sort().map((at) => (
+                  <option key={at} value={at}>{at}</option>
+                ))}
+              </select>
               {equipe === "Admin" && (
                 <button
                   onClick={async () => {
@@ -785,14 +796,6 @@ export default function AtendimentosPage() {
                   className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/20"
                 >
                   ♻️ Reprocessar erros
-                </button>
-              )}
-              {equipe === "Admin" && (
-                <button
-                  onClick={() => setShowProducoesModal(true)}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
-                >
-                  ⚙️ Produções
                 </button>
               )}
               <button

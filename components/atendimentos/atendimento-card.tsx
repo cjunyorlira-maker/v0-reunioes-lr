@@ -261,7 +261,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
           </div>
         )}
 
-        <CardContent className='p-3 space-y-2.5'>
+        <CardContent className='p-2 space-y-1.5'>
           {/* Header: Status e Badges */}
           <div className='flex items-center justify-between gap-2'>
             <div className={`px-2 py-1 rounded-md bg-gradient-to-r ${statusColor} text-white text-[10px] font-bold`}>
@@ -269,24 +269,24 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             </div>
             <div className='flex gap-1.5 flex-wrap'>
               {atendimento.is_benchmark && (
-                <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[9px] px-1.5 py-0'>
+                <Badge className='bg-amber-500/25 text-amber-300 border-0 text-[8px] px-1 py-0'>
                   <Star className='w-2.5 h-2.5 mr-0.5' />
                   Benchmark
                 </Badge>
               )}
               {isConcluido && temAnalise && (
-                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[9px] px-1.5 py-0'>
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[8px] px-1 py-0'>
                   Analisado
                 </Badge>
               )}
               {isConcluido && atendimento.fechou === false && (
-                <Badge className='bg-red-500/25 text-red-400 border-0 text-[9px] px-1.5 py-0'>
+                <Badge className='bg-red-500/25 text-red-400 border-0 text-[8px] px-1 py-0'>
                   <XCircle className='w-2.5 h-2.5 mr-0.5' />
                   Nao Fechou
                 </Badge>
               )}
               {isConcluido && atendimento.fechou === true && (
-                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[9px] px-1.5 py-0'>
+                <Badge className='bg-emerald-500/25 text-emerald-300 border-0 text-[8px] px-1 py-0'>
                   <CheckCircle className='w-2.5 h-2.5 mr-0.5' />
                   Fechou
                 </Badge>
@@ -341,13 +341,13 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
           {/* Nome do Lead + nota (Nível 1) */}
           <div className='flex items-start justify-between gap-2'>
             <div className='min-w-0'>
-              <h3 className='text-base font-black text-white leading-tight truncate'>
+              <h3 className='text-sm font-black text-white leading-tight truncate'>
                 {atendimento.nome_lead || 'Sem nome'}
               </h3>
-              <p className='text-[10px] text-white/40'>ID: {atendimento.kommo_id}</p>
+              {detalhes && <p className='text-[10px] text-white/40'>ID: {atendimento.kommo_id}</p>}
             </div>
             {isConcluido && atendimento.score_geral !== null && (
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black ${atendimento.score_geral >= 8 ? 'border-emerald-400 text-emerald-400' : atendimento.score_geral >= 6 ? 'border-amber-400 text-amber-400' : 'border-red-400 text-red-400'}`}>
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-black ${atendimento.score_geral >= 8 ? 'border-emerald-400 text-emerald-400' : atendimento.score_geral >= 6 ? 'border-amber-400 text-amber-400' : 'border-red-400 text-red-400'}`}>
                 {Number(atendimento.score_geral).toFixed(1)}
               </div>
             )}
