@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   Lock, Mic, CheckCircle, XCircle, Clock, FileText, ArrowLeft, 
   TrendingUp, Users, AlertTriangle, DollarSign, Calendar,
-  ChevronRight, ChevronLeft, Star, BarChart3, Target, Tag, ChevronDown
+  ChevronRight, ChevronLeft, Star, BarChart3, Target, Tag, ChevronDown, X, Loader2
 } from "lucide-react"
 import { AtendimentoCard } from "@/components/atendimentos/atendimento-card"
 import { CentralDecisao } from "@/components/atendimentos/central-decisao"
@@ -166,6 +166,11 @@ export default function AtendimentosPage() {
   const [busca, setBusca] = useState("")
   const [celebracao, setCelebracao] = useState<{ cliente: string; vendedor: string } | null>(null)
   const fechadosPrevRef = useRef<Set<string>>(new Set())
+  const [producoes, setProducoes] = useState<{ id: string; nome: string; data_inicio: string; data_fim: string }[]>([])
+  const [showProducoesModal, setShowProducoesModal] = useState(false)
+  const carregarProducoes = useCallback(() => {
+    fetch("/api/atendimentos/producoes").then((r) => r.json()).then((d) => setProducoes(d.producoes || [])).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -174,7 +179,8 @@ export default function AtendimentosPage() {
       setIsAuthenticated(true)
     }
     setVideoOn(localStorage.getItem("atendimentos_video") !== "off")
-  }, [])
+    carregarProducoes()
+  }, [carregarProducoes])
 
   const fetchAtendimentos = useCallback(async () => {
     setLoadingAtendimentos(true)
@@ -303,15 +309,15 @@ export default function AtendimentosPage() {
     if (filtroPeriodo === "custom" && dataDe && dataAte) {
       return { inicio: dataDe, fim: dataAte, label: `${dataDe.split("-").reverse().join("/")} a ${dataAte.split("-").reverse().join("/")}` }
     }
-    // producao (navegável)
-    const periodo = getPeriodoProducao(producaoOffset)
-    const navLabel = producaoOffset === 0 ? "Producao" : `Producao ${periodo.mesReferencia}`
-    return {
-      inicio: periodo.inicio,
-      fim: periodo.fim,
-      label: `${navLabel} — ${periodo.inicio.split("-").reverse().join("/")} a ${periodo.fim.split("-").reverse().join("/")}`,
+    // producao: usa as CONFIGURADAS pelo Admin; a regra automática é só fallback
+    const idx = Math.min(Math.abs(producaoOffset), Math.max(producoes.length - 1, 0))
+    const p = producoes[idx]
+    if (p) {
+      return { inicio: p.data_inicio, fim: p.data_fim, label: `${p.nome} — ${p.data_inicio.split("-").reverse().join("/")} a ${p.data_fim.split("-").reverse().join("/")}` }
     }
-  }, [filtroPeriodo, semanaOffset, producaoOffset, dataDe, dataAte])
+    const periodo = getPeriodoProducao(producaoOffset)
+    return { inicio: periodo.inicio, fim: periodo.fim, label: `Producao ${periodo.mesReferencia} — ${periodo.inicio.split("-").reverse().join("/")} a ${periodo.fim.split("-").reverse().join("/")}` }
+  }, [filtroPeriodo, semanaOffset, producaoOffset, dataDe, dataAte, producoes])
 
   // Filtra atendimentos por equipe e por periodo
   const atendimentosFiltrados = useMemo(() => {
@@ -696,13 +702,15 @@ export default function AtendimentosPage() {
                 {filtroPeriodo === "producao" && (
                   <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
                     <button
-                      onClick={() => setProducaoOffset(o => o - 1)}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                      onClick={() => setProducaoOffset(o => producoes.length ? Math.max(o - 1, -(producoes.length - 1)) : o - 1)}
+                      disabled={producoes.length > 0 && producaoOffset <= -(producoes.length - 1)}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
                     <span className="text-[11px] font-semibold text-white/70 px-1 min-w-[80px] text-center">
-                      {producaoOffset === 0 ? "Atual" : producaoOffset === -1 ? "Anterior" : `${Math.abs(producaoOffset)}m atras`}
+                      {producoes[Math.abs(producaoOffset)]?.nome
+                        || (producaoOffset === 0 ? "Atual" : producaoOffset === -1 ? "Anterior" : `${Math.abs(producaoOffset)}m atras`)}
                     </span>
                     <button
                       onClick={() => setProducaoOffset(o => Math.min(o + 1, 0))}
@@ -777,6 +785,14 @@ export default function AtendimentosPage() {
                   className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/20"
                 >
                   ♻️ Reprocessar erros
+                </button>
+              )}
+              {equipe === "Admin" && (
+                <button
+                  onClick={() => setShowProducoesModal(true)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
+                >
+                  ⚙️ Produções
                 </button>
               )}
               <button
@@ -956,6 +972,134 @@ export default function AtendimentosPage() {
           </div>
         )}
       </div>
+      </div>
+
+      {showProducoesModal && (
+        <ProducoesModal
+          producoes={producoes}
+          onClose={() => setShowProducoesModal(false)}
+          onChanged={carregarProducoes}
+        />
+      )}
+    </div>
+  )
+}
+
+function ProducoesModal({
+  producoes,
+  onClose,
+  onChanged,
+}: {
+  producoes: { id: string; nome: string; data_inicio: string; data_fim: string }[]
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const [editId, setEditId] = useState<string | null>(null)
+  const [nome, setNome] = useState("")
+  const [inicio, setInicio] = useState("")
+  const [fim, setFim] = useState("")
+  const [salvando, setSalvando] = useState(false)
+
+  const resetForm = () => { setEditId(null); setNome(""); setInicio(""); setFim("") }
+
+  const salvar = async () => {
+    if (!nome || !inicio || !fim) { alert("Preencha nome, início e fim."); return }
+    setSalvando(true)
+    await fetch("/api/atendimentos/producoes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editId || undefined, nome, data_inicio: inicio, data_fim: fim }),
+    }).catch(() => {})
+    setSalvando(false)
+    resetForm()
+    onChanged()
+  }
+
+  const excluir = async (id: string) => {
+    if (!confirm("Excluir esta produção?")) return
+    await fetch("/api/atendimentos/producoes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, excluir: true }),
+    }).catch(() => {})
+    if (editId === id) resetForm()
+    onChanged()
+  }
+
+  const editar = (p: { id: string; nome: string; data_inicio: string; data_fim: string }) => {
+    setEditId(p.id); setNome(p.nome); setInicio(p.data_inicio); setFim(p.data_fim)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="relative w-full max-w-lg rounded-2xl border border-white/10 p-5 max-h-[85vh] overflow-y-auto"
+        style={{ background: "rgba(15,15,20,0.98)", backdropFilter: "blur(20px)" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-white">⚙️ Produções</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Lista */}
+        <div className="space-y-1.5 mb-5">
+          {producoes.length === 0 ? (
+            <p className="text-xs text-white/40 py-3 text-center">Nenhuma produção configurada.</p>
+          ) : (
+            producoes.map((p) => (
+              <div key={p.id} className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{p.nome}</p>
+                  <p className="text-[11px] text-white/40">
+                    {p.data_inicio.split("-").reverse().join("/")} a {p.data_fim.split("-").reverse().join("/")}
+                  </p>
+                </div>
+                <button onClick={() => editar(p)} className="rounded-lg px-2 py-1 text-[11px] font-bold text-sky-400 hover:bg-sky-500/10">Editar</button>
+                <button onClick={() => excluir(p.id)} className="rounded-lg px-2 py-1 text-[11px] font-bold text-red-400 hover:bg-red-500/10">Excluir</button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Formulario */}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+          <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-white/50">
+            {editId ? "Editar produção" : "Nova produção"}
+          </p>
+          <div className="space-y-2.5">
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Nome (ex: Produção Janeiro 2026)"
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-amber-500/50"
+            />
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] uppercase tracking-wider text-white/40">Início</label>
+                <input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50" />
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] uppercase tracking-wider text-white/40">Fim</label>
+                <input type="date" value={fim} onChange={(e) => setFim(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-xs text-white outline-none focus:border-amber-500/50" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Button onClick={salvar} disabled={salvando} size="sm" className="flex-1 rounded-lg bg-[#d4af37] text-black hover:bg-[#c19f2f]">
+                {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : editId ? "Salvar alterações" : "Criar produção"}
+              </Button>
+              {editId && (
+                <Button onClick={resetForm} size="sm" variant="ghost" className="rounded-lg text-white/60 hover:text-white">
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
