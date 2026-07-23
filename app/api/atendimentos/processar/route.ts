@@ -516,7 +516,7 @@ export async function POST(request: Request) {
       await supabase
         .from("atendimentos")
         .update({ 
-          status: "aguardando", 
+          status: "falha_audio", 
           gravando: false,
           gravando_por: null,
           resumo: "Audio sem fala detectada. Verifique o microfone e grave novamente.",
