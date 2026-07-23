@@ -271,6 +271,35 @@ RETORNE OBRIGATORIAMENTE UM JSON com esta estrutura:
   "motivo_nao_fechamento": "string principal ou null se fechou",
   "categoria_motivo": "vendedor|cliente|neutro|null",
   "explicacao_categoria": "string explicando por que está nessa categoria",
+  "nao_fechamento_profundo": {
+    "motivo_declarado": "o que o cliente DISSE (ou null se fechou)",
+    "motivo_real_inferido": "o motivo REAL que a conversa revela — vá além da desculpa social ('vou pensar' raramente é o real)",
+    "confianca": "alta|media|baixa",
+    "evidencia": "cite a fala/momento da transcrição que sustenta a inferência",
+    "etiqueta": "sem_entrada|vai_levantar_entrada|parcela|sem_perfil|sem_tomador_decisao|vai_pensar|tem_entrada_analisando|indecisao|faltou_gas_vendedor|concorrencia|nao_quer_consorcio|experiencia_ruim|nao_gostou_atendimento|cpf_consultado|null"
+  },
+  "temperatura_cliente": {
+    "nivel": "frio|morno|quente",
+    "fatores": ["sem_entrada|pouco_engajamento|experiencia_negativa_consorcio|so_pesquisando|sem_urgencia|terceiro_decisor|desconfiado_do_produto"],
+    "evidencia": "fala/comportamento que sustenta a classificação"
+  },
+  "avaliacao_contextual": {
+    "o_que_era_possivel": "o objetivo REALISTA com ESTE cliente específico (frio por trauma = reconstruir confiança; quente = fechar)",
+    "o_que_fez": "o que o atendente efetivamente fez diante disso",
+    "aproveitou_potencial": true/false,
+    "perda_evitavel": true/false,
+    "nota_contextual": "número 0-10 — a nota do atendimento DIANTE DAQUELE cliente. REGRA DE OURO: perfil difícil do cliente explica o não-fechamento mas NUNCA absolve o atendente — cobre o que era possível (rapport, prova social, investigação, tentativa digna de fechamento) mesmo em cliente frio. Cliente quente mal conduzido = nota baixa E perda_evitavel=true."
+  },
+  "trechos_garantia": [
+    {"trecho": "a frase EXATA dita pelo atendente sobre contemplação", "contexto": "o que vinha sendo falado naquele momento", "tipo": "deu_data|criou_expectativa"}
+  ],
+  "checklist": {
+    "teve_objecao_de_preco": true/false,
+    "terceiro_decisor_envolvido": true/false,
+    "demonstrou_desconfianca_produto": true/false,
+    "vendedor_tentou_fechar": true/false,
+    "cliente_pediu_tempo_sem_objecao_concreta": true/false
+  },
   "proximo_passo_sugerido": "string com recomendação clara e ACIONÁVEL",
   "feedback_coaching": "texto de coaching detalhado para o vendedor"
 }
