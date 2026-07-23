@@ -233,8 +233,16 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
         isProcessando && 'ring-1 ring-blue-500/30'
       )}
       style={{
-        background: 'rgba(0,0,0,0.15)',
+        background: 'rgba(10,10,14,0.6)',
         backdropFilter: 'blur(8px)',
+        borderLeft: `3px solid ${
+          isFalhaAudio ? '#ef4444'
+          : isAguardando ? '#f59e0b'
+          : isProcessando ? '#3b82f6'
+          : atendimento.fechou ? '#10b981'
+          : isConcluido ? '#9f1239'
+          : 'rgba(255,255,255,0.1)'
+        }`,
       }}>
         {/* Linha colorida no topo */}
         <div className={`h-0.5 w-full bg-gradient-to-r ${statusColor}`} />
