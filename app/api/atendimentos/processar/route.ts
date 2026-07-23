@@ -589,8 +589,25 @@ export async function POST(request: Request) {
     // 4. Salvar resultados no Supabase PRIMEIRO
     console.log("[v0] Salvando resultados no Supabase - isRetorno:", isRetorno)
     
-    // Se for retorno, salva nos campos de retorno; senão, salva nos campos normais
-    const updatePayload: any = isRetorno ? {
+    // Se for retorno, salva nos campos de retorno; senão, salva nos campos normais.
+    // MODO RE-ANÁLISE: 100% ADITIVO — grava SOMENTE os campos da Análise 2.0 e
+    // preserva intocados: nota, pontos positivos/críticos, resumo, feedback, fechou etc.
+    const updatePayload: any = reanalise && !isRetorno ? {
+      motivo_declarado: analise?.nao_fechamento_profundo?.motivo_declarado || null,
+      motivo_real_inferido: analise?.nao_fechamento_profundo?.motivo_real_inferido || null,
+      motivo_confianca: analise?.nao_fechamento_profundo?.confianca || null,
+      motivo_evidencia: analise?.nao_fechamento_profundo?.evidencia || null,
+      etiqueta_ia: analise?.nao_fechamento_profundo?.etiqueta || null,
+      perfil_temperatura: analise?.temperatura_cliente?.nivel || null,
+      perfil_fatores: analise?.temperatura_cliente?.fatores || null,
+      perfil_evidencia: analise?.temperatura_cliente?.evidencia || null,
+      nota_contextual: analise?.avaliacao_contextual?.nota_contextual ?? null,
+      aproveitou_potencial: analise?.avaliacao_contextual?.aproveitou_potencial ?? null,
+      perda_evitavel: analise?.avaliacao_contextual?.perda_evitavel ?? null,
+      trechos_garantia: analise?.trechos_garantia || null,
+      checklist: analise?.checklist || null,
+      updated_at: new Date().toISOString(),
+    } : isRetorno ? {
       retorno_transcricao: transcricao,
       retorno_resumo: analise?.resumo || null,
       retorno_fechou: analise?.tecnicas_fechamento?.resultado === "fechou" || false,
