@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -159,6 +159,9 @@ export default function AtendimentosPage() {
   const [filtroEquipe, setFiltroEquipe] = useState<string>("all")
   const [filtroPeriodo, setFiltroPeriodo] = useState<"hoje" | "semana" | "producao">("producao")
   const [semanaOffset, setSemanaOffset] = useState(0) // 0 = semana atual, -1 = anterior, etc
+  const [busca, setBusca] = useState("")
+  const [celebracao, setCelebracao] = useState<{ cliente: string; vendedor: string } | null>(null)
+  const fechadosPrevRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     const savedEquipe = localStorage.getItem("atendimentos_equipe")
@@ -177,6 +180,15 @@ export default function AtendimentosPage() {
       const res = await fetch(url)
       const data = await res.json()
       if (data.atendimentos) {
+        const fechadosAgora = new Set<string>((data.atendimentos || []).filter((a: any) => a.fechou).map((a: any) => a.id))
+        if (fechadosPrevRef.current.size > 0) {
+          const novo = (data.atendimentos || []).find((a: any) => a.fechou && !fechadosPrevRef.current.has(a.id))
+          if (novo) {
+            setCelebracao({ cliente: novo.nome_lead || "Cliente", vendedor: novo.responsavel || "" })
+            setTimeout(() => setCelebracao(null), 10000)
+          }
+        }
+        fechadosPrevRef.current = fechadosAgora
         setAtendimentos(data.atendimentos)
       }
     } catch (err) {
@@ -254,7 +266,7 @@ export default function AtendimentosPage() {
   // Calcula intervalo de datas para o filtro de periodo
   const intervaloPeriodo = useMemo(() => {
     const hoje = new Date()
-    const hojeStr = hoje.toISOString().split("T")[0]
+    const hojeStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(hoje) // YYYY-MM-DD em BRT (fix: após 21h o "hoje" virava amanhã)
 
     if (filtroPeriodo === "hoje") {
       return { inicio: hojeStr, fim: hojeStr, label: `Hoje — ${hoje.toLocaleDateString("pt-BR")}` }
@@ -301,6 +313,12 @@ export default function AtendimentosPage() {
       lista = lista.filter(a => a.equipe === filtroEquipe)
     }
 
+    // Busca por cliente ou vendedor
+    if (busca.trim()) {
+      const q = busca.trim().toLowerCase()
+      lista = lista.filter(a => (a.nome_lead || "").toLowerCase().includes(q) || (a.responsavel || "").toLowerCase().includes(q))
+    }
+
     // Filtro de periodo — aplica apenas nos concluidos (fechados/nao fechados)
     // Aguardando e Gravando sao sempre mostrados (sao ativos)
     lista = lista.filter(a => {
@@ -310,7 +328,7 @@ export default function AtendimentosPage() {
     })
 
     return lista
-  }, [atendimentos, equipe, filtroEquipe, intervaloPeriodo])
+  }, [atendimentos, equipe, filtroEquipe, intervaloPeriodo, busca])
 
   // Agrupa motivos de nao fechamento por categoria usando as novas etiquetas
   const motivosPorCategoria = useMemo(() => {
@@ -540,6 +558,12 @@ export default function AtendimentosPage() {
       {/* Conteudo com transparencia */}
       <div className="relative z-10">
 
+      {celebracao && (
+        <div className="fixed inset-x-0 top-0 z-50 animate-bounce bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 py-4 text-center shadow-2xl">
+          <p className="text-xl font-black text-white">🎉 FECHOU! {celebracao.vendedor} acaba de fechar com {celebracao.cliente}! 🏆</p>
+        </div>
+      )}
+
       {/* Header Premium - Transparente */}
       <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -598,6 +622,12 @@ export default function AtendimentosPage() {
             <div className="flex items-center gap-3">
               {/* Filtro por periodo */}
               <div className="flex items-center gap-2">
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="🔎 buscar cliente ou vendedor..."
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs outline-none placeholder:text-white/30 focus:border-amber-500/50"
+                />
                 <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
                   {([
                     { key: "hoje", label: "Hoje" },
@@ -697,13 +727,14 @@ export default function AtendimentosPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
         {/* Stats Cards Premium */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           {[
             { label: "Aguardando", value: aguardando.length, icon: Clock, color: "from-amber-500 to-orange-600", glow: "rgba(245,158,11,0.2)" },
             { label: "Gravando", value: processando.length, icon: Mic, color: "from-blue-500 to-cyan-600", glow: "rgba(59,130,246,0.2)" },
             { label: "Fechados", value: fechados.length, icon: CheckCircle, color: "from-emerald-500 to-teal-600", glow: "rgba(16,185,129,0.2)" },
             { label: "Nao Fechados", value: naoFechados.length, icon: XCircle, color: "from-red-500 to-rose-600", glow: "rgba(239,68,68,0.2)" },
             { label: "Conversao", value: `${taxaConversao}%`, icon: Target, color: "from-violet-500 to-purple-600", glow: "rgba(139,92,246,0.2)" },
+            { label: "Taxa de Gravação", value: `${atendimentosFiltrados.length ? Math.round(((atendimentosFiltrados.length - aguardando.length) / atendimentosFiltrados.length) * 100) : 0}%`, icon: Mic, color: "from-violet-500 to-purple-600", glow: "rgba(139,92,246,0.2)" },
           ].map((stat, i) => (
             <div
               key={stat.label}
