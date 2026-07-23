@@ -477,6 +477,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     atendimentoId = body.atendimentoId
     const audioUrl = body.audioUrl
+    const audioParts: string[] = Array.isArray(body.audioParts) ? body.audioParts.filter(Boolean) : []
     const isRetorno = body.isRetorno || false
 
     console.log("[v0] Body recebido:", { atendimentoId, isRetorno, audioUrl: audioUrl?.substring(0, 50) })
@@ -500,7 +501,7 @@ export async function POST(request: Request) {
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
     const transcricao = await withRetry(
-      () => transcreverAudio(audioUrl),
+      () => (audioParts.length > 1 ? transcreverAudioPartes(audioParts) : transcreverAudio(audioUrl)),
       3,
       2000,
       "Deepgram transcricao"
@@ -739,6 +740,30 @@ async function transcreverAudio(audioUrl: string): Promise<string | null> {
   }
   console.log("[v0] Transcricao simples:", transcript.substring(0, 100))
   return transcript
+}
+
+// Transcreve gravação em PARTES (gravador blindado): baixa, concatena e envia o binário
+async function transcreverAudioPartes(parts: string[]): Promise<string | null> {
+  if (!DEEPGRAM_API_KEY) throw new Error("DEEPGRAM_API_KEY nao configurada")
+  console.log("[v0] Baixando", parts.length, "partes para concatenar...")
+  const buffers: Buffer[] = []
+  for (const url of parts) {
+    const r = await fetch(url)
+    if (!r.ok) throw new Error(`Falha ao baixar parte: ${url.slice(-30)}`)
+    buffers.push(Buffer.from(await r.arrayBuffer()))
+  }
+  const audio = Buffer.concat(buffers)
+  console.log("[v0] Audio concatenado:", (audio.length / 1024 / 1024).toFixed(1), "MB — enviando ao Deepgram")
+  const response = await fetch(
+    "https://api.deepgram.com/v1/listen?language=pt-BR&model=nova-2&diarize=true&punctuate=true&smart_format=true",
+    { method: "POST", headers: { Authorization: `Token ${DEEPGRAM_API_KEY}`, "Content-Type": "audio/webm" }, body: audio }
+  )
+  if (!response.ok) throw new Error(`Deepgram HTTP ${response.status}: ${await response.text()}`)
+  const data = await response.json()
+  const transcricao = data?.results?.channels?.[0]?.alternatives?.[0]?.paragraphs?.transcript
+    || data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || null
+  if (!transcricao || transcricao.trim().length === 0) throw new Error("Transcricao vazia retornada pelo Deepgram")
+  return transcricao
 }
 
 // ─── Claude ────────────────────────────────────────────────────────────��──────
