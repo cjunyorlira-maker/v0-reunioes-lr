@@ -109,6 +109,7 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
   const [markingResult, setMarkingResult] = useState<'fechou' | 'nao_fechou' | null>(null)
   const [deletingAtendimento, setDeletingAtendimento] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [detalhes, setDetalhes] = useState(false)
   const [showHistorico, setShowHistorico] = useState(false)
   const [eventos, setEventos] = useState<{ evento: string; detalhe: string | null; usuario: string | null; criado_em: string }[] | null>(null)
   const [loadingEventos, setLoadingEventos] = useState(false)
@@ -337,86 +338,74 @@ export function AtendimentoCard({ atendimento, userEquipe, userName, onUpdate }:
             )
           })()}
 
-          {/* Nome do Lead */}
-          <div>
-            <h3 className='text-sm font-bold text-white leading-tight'>
-              {atendimento.nome_lead || 'Sem nome'}
-            </h3>
-            <p className='text-[10px] text-white/40'>ID: {atendimento.kommo_id}</p>
-          </div>
-
-          {/* Atendente, Vendedor e Equipe */}
-          <div className='p-2 rounded-lg bg-black/10 border border-white/5 space-y-1.5'>
-            <div className='grid grid-cols-2 gap-2'>
-              <div className='flex items-center gap-1.5'>
-                <User className='w-3 h-3 text-[#d4af37] flex-shrink-0' />
-                <div className='min-w-0'>
-                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Atendente</p>
-                  <p className='text-[11px] font-bold text-white truncate'>
-                    {atendimento.atendente || 'Nao informado'}
-                  </p>
-                </div>
-              </div>
-              <div className='flex items-center gap-1.5'>
-                <Building2 className='w-3 h-3 text-[#d4af37] flex-shrink-0' />
-                <div className='min-w-0'>
-                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Equipe</p>
-                  <p className='text-[11px] font-bold text-white truncate'>
-                    {atendimento.equipe || 'Padrao'}
-                  </p>
-                </div>
-              </div>
+          {/* Nome do Lead + nota (Nível 1) */}
+          <div className='flex items-start justify-between gap-2'>
+            <div className='min-w-0'>
+              <h3 className='text-base font-black text-white leading-tight truncate'>
+                {atendimento.nome_lead || 'Sem nome'}
+              </h3>
+              <p className='text-[10px] text-white/40'>ID: {atendimento.kommo_id}</p>
             </div>
-            {atendimento.responsavel && atendimento.responsavel !== atendimento.atendente && (
-              <div className='flex items-center gap-1.5 pt-1.5 border-t border-white/5'>
-                <User className='w-3 h-3 text-violet-400 flex-shrink-0' />
-                <div className='min-w-0'>
-                  <p className='text-[9px] text-white/40 uppercase tracking-wide'>Vendedor</p>
-                  <p className='text-[11px] font-medium text-white/80 truncate'>
-                    {atendimento.responsavel}
-                  </p>
-                </div>
+            {isConcluido && atendimento.score_geral !== null && (
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black ${atendimento.score_geral >= 8 ? 'border-emerald-400 text-emerald-400' : atendimento.score_geral >= 6 ? 'border-amber-400 text-amber-400' : 'border-red-400 text-red-400'}`}>
+                {Number(atendimento.score_geral).toFixed(1)}
               </div>
             )}
           </div>
 
-          {/* Score Geral - destaque */}
-          {temAnalise && (
-            <div className='px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20'>
-              <div className='flex items-center justify-between gap-2'>
-                <div>
-                  <p className='text-[9px] text-white/50 uppercase tracking-widest font-bold'>Score Geral</p>
-                  <p className={cn('text-xl font-black leading-none mt-0.5', getScoreColor(atendimento.score_geral))}>
-                    {atendimento.score_geral?.toFixed(1)}
-                    <span className='text-sm text-white/40 font-normal ml-0.5'>/10</span>
+          {/* Atendente → Vendedor · Equipe (Nível 2) */}
+          <p className='text-[11px] text-white/50 truncate'>
+            🎙 <span className='font-bold text-white/80'>{atendimento.atendente || '—'}</span>
+            {' '}· lead de {atendimento.responsavel || '—'} · {atendimento.equipe}
+          </p>
+
+          {isConcluido && temAnalise && (
+            <button onClick={() => setDetalhes(v => !v)} className='flex w-full items-center justify-center gap-1 rounded-md border border-white/10 bg-white/5 py-1 text-[10px] font-bold text-white/60 hover:bg-white/10'>
+              {detalhes ? '▲ menos detalhes' : '▼ scores, resumo e motivo'}
+            </button>
+          )}
+
+          {detalhes && (
+            <>
+              {/* Score Geral - destaque */}
+              {temAnalise && (
+                <div className='px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20'>
+                  <div className='flex items-center justify-between gap-2'>
+                    <div>
+                      <p className='text-[9px] text-white/50 uppercase tracking-widest font-bold'>Score Geral</p>
+                      <p className={cn('text-xl font-black leading-none mt-0.5', getScoreColor(atendimento.score_geral))}>
+                        {atendimento.score_geral?.toFixed(1)}
+                        <span className='text-sm text-white/40 font-normal ml-0.5'>/10</span>
+                      </p>
+                    </div>
+                    <div className='flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden'>
+                      <div
+                        className='h-full bg-gradient-to-r from-emerald-500 to-teal-500'
+                        style={{ width: `${Math.min((atendimento.score_geral! / 10) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Resumo da analise - apenas para fechados ou fechou=null */}
+              {atendimento.resumo && atendimento.fechou !== false && (
+                <p className='text-[11px] text-white/70 line-clamp-2 bg-black/10 px-2.5 py-2 rounded-lg border border-white/5'>
+                  {atendimento.resumo}
+                </p>
+              )}
+
+              {/* Motivo nao fechamento - apenas para fechados */}
+              {atendimento.motivo_nao_fechamento && atendimento.fechou === true && (
+                <div className='px-2.5 py-2 rounded-lg bg-red-500/10 border border-red-500/20'>
+                  <p className='text-[10px] text-red-400 font-bold mb-0.5 flex items-center gap-1'>
+                    <AlertTriangle className='w-2.5 h-2.5' />
+                    Motivo do Nao Fechamento
                   </p>
+                  <p className='text-[11px] text-white/70'>{atendimento.motivo_nao_fechamento}</p>
                 </div>
-                <div className='flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden'>
-                  <div
-                    className='h-full bg-gradient-to-r from-emerald-500 to-teal-500'
-                    style={{ width: `${Math.min((atendimento.score_geral! / 10) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Resumo da analise - apenas para fechados ou fechou=null */}
-          {atendimento.resumo && atendimento.fechou !== false && (
-            <p className='text-[11px] text-white/70 line-clamp-2 bg-black/10 px-2.5 py-2 rounded-lg border border-white/5'>
-              {atendimento.resumo}
-            </p>
-          )}
-
-          {/* Motivo nao fechamento - apenas para fechados */}
-          {atendimento.motivo_nao_fechamento && atendimento.fechou === true && (
-            <div className='px-2.5 py-2 rounded-lg bg-red-500/10 border border-red-500/20'>
-              <p className='text-[10px] text-red-400 font-bold mb-0.5 flex items-center gap-1'>
-                <AlertTriangle className='w-2.5 h-2.5' />
-                Motivo do Nao Fechamento
-              </p>
-              <p className='text-[11px] text-white/70'>{atendimento.motivo_nao_fechamento}</p>
-            </div>
+              )}
+            </>
           )}
 
           {/* Botoes de Acao */}

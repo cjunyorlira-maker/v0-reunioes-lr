@@ -119,7 +119,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimento
   const autopsia = useMemo(() => {
     const cont: Record<string, number> = {}
     naoFechados.forEach((a) => {
-      const e = a.etiqueta_ia || a.etiqueta
+      const e = a.etiqueta_ia   // só a classificação da IA (Análise 2.0) — zero regex
       if (e) cont[e] = (cont[e] || 0) + 1
     })
     const ranking = Object.entries(cont).sort((a, b) => b[1] - a[1])
@@ -367,7 +367,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimento
       {aba === "autopsia" && (
         <div className="space-y-4">
           <Card>
-            <p className="mb-2 text-sm font-bold">Motivos reais do não-fechamento <span className="text-white/40">({autopsia.total} casos)</span></p>
+            <p className="mb-2 text-sm font-bold">Motivos reais do não-fechamento <span className="text-white/40">— {naoFechados.filter((a) => a.etiqueta_ia).length} de {autopsia.total} com Análise 2.0 (cresce com a re-análise)</span></p>
             <div className="space-y-1.5">
               {autopsia.ranking.map(([et, qtd]) => (
                 <div key={et} className="flex items-center gap-2 text-xs">
@@ -403,7 +403,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimento
       {aba === "proximos" && (() => {
         const grupos: Record<string, Atd[]> = {}
         naoFechados.filter((a) => a.proximo_passo_sugerido).forEach((a) => {
-          const k = a.responsavel || "Sem vendedor"
+          const k = a.atendente || a.responsavel || "Sem atendente"   // regra da casa: follow-up é de quem ATENDEU
           ;(grupos[k] = grupos[k] || []).push(a)
         })
         return (
@@ -424,7 +424,7 @@ export function CentralDecisao({ atendimentos, onVerAtendimento }: { atendimento
                 </div>
               </Card>
             ))}
-            <p className="text-[11px] text-white/40">📋 copiar lista → cola direto no WhatsApp do vendedor</p>
+            <p className="text-[11px] text-white/40">agrupado por quem ATENDEU (dono do follow-up) · 📋 copiar lista → cola direto no WhatsApp</p>
           </div>
         )
       })()}
