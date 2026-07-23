@@ -507,11 +507,12 @@ export async function POST(request: Request) {
     atendimentoId = body.atendimentoId
     const audioUrl = body.audioUrl
     const audioParts: string[] = Array.isArray(body.audioParts) ? body.audioParts.filter(Boolean) : []
+    const reanalise = body.reanalise === true   // modo re-análise: usa a transcrição salva, refaz SÓ a análise, preserva fechou/status
     const isRetorno = body.isRetorno || false
 
     console.log("[v0] Body recebido:", { atendimentoId, isRetorno, audioUrl: audioUrl?.substring(0, 50) })
 
-    if (!atendimentoId || !audioUrl) {
+    if (!atendimentoId || (!audioUrl && !reanalise)) {
       console.error("[v0] Dados incompletos - atendimentoId:", atendimentoId, "audioUrl:", !!audioUrl)
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 })
     }
@@ -520,7 +521,7 @@ export async function POST(request: Request) {
     console.log("[v0] Buscando dados do atendimento:", atendimentoId)
     const { data: atendimento } = await supabase
       .from("atendimentos")
-      .select("kommo_id, nome_lead, responsavel, equipe, atendimento_original_id")
+      .select("kommo_id, nome_lead, responsavel, equipe, atendimento_original_id, transcricao_completa")
       .eq("id", atendimentoId)
       .single()
     
@@ -530,7 +531,9 @@ export async function POST(request: Request) {
     // 2. Transcrever com Deepgram (3 tentativas)
     console.log("[v0] Iniciando Deepgram...")
     const transcricao = await withRetry(
-      () => (audioParts.length > 1 ? transcreverAudioPartes(audioParts) : transcreverAudio(audioUrl)),
+      () => reanalise && atendimento?.transcricao_completa
+        ? Promise.resolve(atendimento.transcricao_completa)
+        : (audioParts.length > 1 ? transcreverAudioPartes(audioParts) : transcreverAudio(audioUrl)),
       3,
       2000,
       "Deepgram transcricao"
@@ -628,7 +631,7 @@ export async function POST(request: Request) {
       trechos_garantia: analise?.trechos_garantia || null,
       checklist: analise?.checklist || null,
       status: "concluido",
-      fechou: false,  // Por padrao, atendimento vai para "Nao Fechou" ate ser marcado manualmente
+      ...(reanalise ? {} : { fechou: false }),  // re-análise PRESERVA o fechou já marcado
       gravando: false,
       gravando_por: null,
       updated_at: new Date().toISOString(),
